@@ -35,7 +35,8 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 ### Geändert
 
 - **Die Uhr:** Nach einer falschen Antwort ist die angetippte Antwort rot mit ✗, die
-  anderen falschen Antworten sind ausgegraut, die richtige bleibt grün mit ✓.
+  anderen falschen Antworten sind ausgegraut, die richtige bleibt grün mit ✓. Nach einer
+  richtigen Antwort sind die anderen Antworten ebenfalls ausgegraut.
 - **Die Uhr:** Bei vollen Stunden nennt die Aufgabe zum Zeigerstellen nur den
   Stundenzeiger; der Minutenzeiger steht schon auf der 12.
 - Der Server meldet beim Anmelden einen unbekannten Namen jetzt eigens, statt wie bei
