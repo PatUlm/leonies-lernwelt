@@ -720,6 +720,17 @@ a.area-card:active {
   }
 }
 
+/* Small phones held upright: icon above the text, which gets the full width. */
+@media (max-width: 380px) {
+  .module-tile {
+    justify-content: center;
+  }
+
+  .module-text {
+    flex-basis: 100%;
+  }
+}
+
 .badges h2 {
   margin: 0 0 8px;
   font-size: 22px;
