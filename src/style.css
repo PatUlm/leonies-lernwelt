@@ -8,6 +8,8 @@
   --minute: #f97316;
   --good: #16a34a;
   --good-bg: #dcfce7;
+  --bad: #dc2626;
+  --bad-bg: #fee2e2;
   --accent: #f59e0b;
   --radius: 18px;
   --candy: #f472b6;
@@ -1125,7 +1127,8 @@ a.area-card:active {
   opacity: 1;
 }
 
-.answer.correct::after {
+.answer.correct::after,
+.answer.wrong::after {
   content: '✓';
   position: absolute;
   top: -12px;
@@ -1140,9 +1143,20 @@ a.area-card:active {
   place-items: center;
 }
 
-.answer.chosen {
-  opacity: 0.5;
-  border-style: dashed;
+.answer.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+  box-shadow: 0 4px 0 #fca5a5;
+}
+
+.answer.wrong::after {
+  content: '✗';
+  background: var(--bad);
+}
+
+.answer.faded {
+  opacity: 0.45;
+  filter: grayscale(1);
 }
 
 .answer.suggested {

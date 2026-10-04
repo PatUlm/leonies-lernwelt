@@ -379,7 +379,11 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     lockAnswers();
     const result = engine.answer(task, index, helpUsed, stopwatch.read());
     buttons[task.correctIndex]?.classList.add('correct');
-    if (!result.ok) buttons[index].classList.add('chosen');
+    if (!result.ok) {
+      buttons.forEach((b, i) => {
+        if (i !== task.correctIndex) b.classList.add(i === index ? 'wrong' : 'faded');
+      });
+    }
     finish(result);
   }
 

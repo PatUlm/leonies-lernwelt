@@ -117,7 +117,7 @@ async function context(viewport, reducedMotion = 'reduce') {
   for (let i = 0; ; i++) {
     await openClock(page, isDigitalQuestion);
     await page.locator('.answer').nth(i % 3).click();
-    if (await page.locator('.answer.chosen').count()) break;
+    if (await page.locator('.answer.wrong').count()) break;
     if (i > 40) throw new Error('no wrong answer found');
   }
   await page.waitForTimeout(300);
