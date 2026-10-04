@@ -15,4 +15,7 @@ FROM nginxinc/nginx-unprivileged:1.29-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1
+# Traefik only routes to healthy containers: check every second while starting,
+# so a deploy causes about a second of downtime instead of half a minute.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --start-interval=1s \
+  CMD wget -qO- http://127.0.0.1:8080/healthz >/dev/null || exit 1

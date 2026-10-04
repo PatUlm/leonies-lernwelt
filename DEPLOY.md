@@ -57,6 +57,9 @@ curl -s https://lernwelt.nieda.de/healthz   # {"ok":true,"version":"<Tag>"}
 Beim ersten Deploy eines Hostnamens liefert Traefik einige Sekunden ein
 Standardzertifikat, bis Let's Encrypt ausgestellt hat.
 
+Während des Container-Tauschs antwortet Traefik etwa zwei Sekunden mit `404`: Er leitet erst
+weiter, wenn der Health-Check des neuen Containers grün ist (in der Startphase jede Sekunde).
+
 ## Rollback
 
 ```bash
