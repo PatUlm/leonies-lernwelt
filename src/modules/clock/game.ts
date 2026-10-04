@@ -496,7 +496,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     round = newRoundStats();
     const name = sync.account()?.name;
     showDialog(
-      `<div class="trophy">${trophy()}</div><h2>${name ? `${escapeHtml(name)}, d` : 'D'}urchgang geschafft!</h2>${lines.join('')}`,
+      `<div class="trophy">${trophy()}</div><h2>${name ? `${escapeHtml(name)}, ` : ''}Durchgang geschafft!</h2>${lines.join('')}`,
       [
         { label: ctx.exitLabel, action: ctx.exit },
         { label: 'Noch ein Durchgang', action: nextTask },
