@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Engine, SESSION_GAP_MS, freshProgress, isReady, type Task } from '../src/engine';
-import { timeKey } from '../src/time';
-import { seeded } from './rng';
+import {
+  Engine, HELP_POINTS, SESSION_GAP_MS, TIER_POINTS, freshProgress, isReady, type Task,
+} from '../../src/modules/clock/engine';
+import { timeKey } from '../../src/modules/clock/time';
+import { seeded } from '../rng';
 
 const T0 = 1_700_000_000_000;
 
@@ -67,7 +69,7 @@ describe('Engine', () => {
 
   it('never repeats a time within four tasks', () => {
     const engine = new Engine(freshProgress(T0), seeded(7));
-    const tasks = play(engine, 1500, 0.9, seeded(8)).filter((t) => t.kind !== 'example');
+    const tasks = play(engine, 1500, 0.9, seeded(8));
     for (let i = 1; i < tasks.length; i++) {
       const window = tasks.slice(Math.max(0, i - 4), i).map((t) => timeKey(t.time));
       expect(window).not.toContain(timeKey(tasks[i].time));
@@ -118,13 +120,13 @@ describe('Engine', () => {
     expect(results.some((r) => r.offerPause)).toBe(true);
   });
 
-  it('gives no points and no mastery credit when help was used', () => {
+  it('gives only help points and no mastery credit when help was used', () => {
     const engine = new Engine(freshProgress(T0), seeded(19));
     play(engine, 2, 1, seeded(20));
     const t = engine.nextTask();
     const r = engine.answer(t, t.correctIndex, true);
     expect(r.scored).toBe(false);
-    expect(engine.progress.points).toBe(0);
+    expect(engine.progress.points).toBe(HELP_POINTS[1]);
     expect(engine.tierState('digital', 1).attempts).toBe(0);
   });
 
@@ -132,7 +134,6 @@ describe('Engine', () => {
     const engine = new Engine(freshProgress(T0), seeded(21));
     play(engine, 2 + 5, 1, seeded(22));
     expect(engine.stars).toBe(1);
-    expect(engine.progress.points).toBe(50);
   });
 
   it('brings a wrong answer back as review after a few tasks', () => {
@@ -161,5 +162,55 @@ describe('isReady', () => {
   it('requires at least four different hours', () => {
     const sameHours = Array.from({ length: 8 }, (_, i) => ({ ok: true, hour: 1 + (i % 3), minute: 0 }));
     expect(isReady(1, { ...base, window: sameHours })).toBe(false);
+  });
+});
+
+describe('rounds', () => {
+  it('ends a round when the point target is reached and awards a trophy', () => {
+    const engine = new Engine(freshProgress(T0), seeded(30));
+    expect(engine.progress.round.target).toBe(100);
+    play(engine, 2 + 9, 1, seeded(31), 1000);
+    expect(engine.progress.trophies).toBe(0);
+    expect(engine.progress.round.points).toBe(90);
+    const t = engine.nextTask();
+    const r = engine.answer(t, t.correctIndex, false);
+    expect(r.roundComplete).toEqual({ target: 100, points: 100, correct: 10, tasks: 10 });
+    expect(engine.progress.trophies).toBe(1);
+    expect(engine.progress.round.points).toBe(0);
+  });
+
+  it('scores by tier, gives half points with help and nothing for mistakes', () => {
+    const engine = new Engine(freshProgress(T0), seeded(32));
+    play(engine, 2, 1, seeded(33));
+    const a = engine.nextTask();
+    expect(engine.answer(a, wrongIndex(a), false).points).toBe(0);
+    const b = engine.nextTask();
+    expect(engine.answer(b, b.correctIndex, true).points).toBe(HELP_POINTS[b.tier]);
+    const c = engine.nextTask();
+    expect(engine.answer(c, c.correctIndex, false).points).toBe(TIER_POINTS[c.tier]);
+    expect(engine.progress.round).toMatchObject({ correct: 1, tasks: 3 });
+  });
+
+  it('raises the target with harder task mixes', () => {
+    const engine = new Engine(freshProgress(T0), seeded(38));
+    play(engine, 300, 1, seeded(39));
+    expect(engine.roundTarget()).toBeGreaterThan(150);
+  });
+
+  it('still reaches the trophy for a player who struggles', () => {
+    const engine = new Engine(freshProgress(T0), seeded(36));
+    play(engine, 120, 0.5, seeded(37));
+    expect(engine.progress.trophies).toBeGreaterThanOrEqual(2);
+  });
+
+  it('praises every third independent correct answer in a row', () => {
+    const engine = new Engine(freshProgress(T0), seeded(34));
+    play(engine, 2, 1, seeded(35));
+    const streaks = [];
+    for (let i = 0; i < 6; i++) {
+      const t = engine.nextTask();
+      streaks.push(engine.answer(t, t.correctIndex, false).streak);
+    }
+    expect(streaks).toEqual([null, null, 3, null, null, 6]);
   });
 });

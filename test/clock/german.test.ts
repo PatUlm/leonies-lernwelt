@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatSpoken, numberWord } from '../src/german';
+import { formatSpoken, numberWord } from '../../src/modules/clock/german';
 
 describe('numberWord', () => {
   it.each([

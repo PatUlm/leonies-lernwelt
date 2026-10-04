@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { handAngles } from '../src/clock';
-import { TIER_MINUTES, TIERS, addMinutes, formatDigital, tierOf, wrapHour } from '../src/time';
+import { handAngles } from '../../src/modules/clock/clock';
+import { TIER_MINUTES, TIERS, addMinutes, formatDigital, tierOf, wrapHour } from '../../src/modules/clock/time';
 
 describe('tiers', () => {
   it('assigns every minute to exactly one tier', () => {

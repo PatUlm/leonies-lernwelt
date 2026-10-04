@@ -39,6 +39,7 @@ export class AnalogClock {
   private readonly minuteHand: SVGGElement;
   private readonly minuteLabels: SVGGElement;
   private readonly quarters: SVGGElement;
+  private readonly focusLayer: SVGGElement;
 
   constructor() {
     this.svg = el('svg', { viewBox: '-125 -125 250 250', class: 'clock', role: 'img' });
@@ -52,8 +53,9 @@ export class AnalogClock {
 
     el('circle', { r: 96, class: 'clock-rim' }, this.svg);
     el('circle', { r: 92, class: 'clock-face' }, this.svg);
-    // Quarters sit on top of the face so they stay visible.
+    // Quarters and focus highlights sit on top of the face so they stay visible.
     this.svg.appendChild(this.quarters);
+    this.focusLayer = el('g', { class: 'clock-focus' }, this.svg);
 
     const ticks = el('g', { class: 'clock-ticks' }, this.svg);
     for (let m = 0; m < 60; m++) {
@@ -93,5 +95,28 @@ export class AnalogClock {
   setHelpers(h: ClockHelpers): void {
     this.minuteLabels.style.display = h.minuteLabels ? '' : 'none';
     this.quarters.style.display = h.quarters ? '' : 'none';
+  }
+
+  /**
+   * Visual focus for explanations: 'hour' tints the sector the hour hand is in,
+   * 'minute' draws the arc the minute hand has travelled from the 12.
+   */
+  setFocus(focus: 'hour' | 'minute' | null, t?: ClockTime): void {
+    this.focusLayer.replaceChildren();
+    this.hourHand.classList.toggle('focused', focus === 'hour');
+    this.minuteHand.classList.toggle('focused', focus === 'minute');
+    if (!focus || !t) return;
+    if (focus === 'hour') {
+      const start = (t.hour % 12) * 30;
+      const [x1, y1] = polar(start, 92);
+      const [x2, y2] = polar(start + 30, 92);
+      el('path', { d: `M0 0 L${x1} ${y1} A92 92 0 0 1 ${x2} ${y2} Z`, class: 'focus-hour' }, this.focusLayer);
+    } else if (t.minute > 0) {
+      const end = t.minute * 6;
+      const [x1, y1] = polar(0, 86);
+      const [x2, y2] = polar(end, 86);
+      const large = end > 180 ? 1 : 0;
+      el('path', { d: `M${x1} ${y1} A86 86 0 ${large} 1 ${x2} ${y2}`, class: 'focus-minute' }, this.focusLayer);
+    }
   }
 }

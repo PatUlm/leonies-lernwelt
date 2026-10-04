@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildOptions } from '../src/distractors';
-import { TIER_MINUTES, TIERS, tierOf, timeKey } from '../src/time';
-import { seeded } from './rng';
+import { buildOptions } from '../../src/modules/clock/distractors';
+import { TIER_MINUTES, TIERS, tierOf, timeKey } from '../../src/modules/clock/time';
+import { seeded } from '../rng';
 
 describe('buildOptions', () => {
   const rng = seeded(42);

@@ -22,9 +22,23 @@ export const BLOCK = 4;
 export const EXAMPLES_PER_TIER = 2;
 /** Tasks between two uses of the same time. */
 export const RECENT_SPAN = 4;
-export const POINTS_PER_CORRECT = 10;
+/** Points for an independent correct answer, by tier. */
+export const TIER_POINTS: Record<Tier, number> = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30, 6: 40 };
+/** Extra points for answering in words. */
+export const TEXT_BONUS = 5;
+/** Points for a correct answer after using help (about half, no text bonus). */
+export const HELP_POINTS: Record<Tier, number> = { 1: 5, 2: 5, 3: 10, 4: 10, 5: 15, 6: 20 };
 export const CORRECT_PER_STAR = 5;
 export const SESSION_GAP_MS = 30 * 60 * 1000;
+/**
+ * A round ends when its point target is reached: this many independent correct
+ * answers of the current task mix. Mistakes cost nothing, they only mean more
+ * practice before the trophy.
+ */
+export const ROUND_TARGET_FACTOR = 10;
+export const MIN_ROUND_TARGET = 100;
+/** Consecutive independent correct answers that earn a short praise. */
+export const STREAK_PRAISE = 3;
 
 export interface Attempt {
   ok: boolean;
@@ -55,6 +69,18 @@ export interface ReviewItem {
   dueAt: number;
 }
 
+export interface RoundState {
+  /** Point target, fixed when the round starts. */
+  target: number;
+  points: number;
+  /** Independent correct answers. */
+  correct: number;
+  /** All regular tasks answered in this round. */
+  tasks: number;
+}
+
+export type RoundSummary = RoundState;
+
 export type ForcedTask =
   | { type: 'example'; track: Track; tier: Tier }
   | { type: 'easy' };
@@ -74,6 +100,9 @@ export interface Progress {
   recent: string[];
   newestRun: number;
   wrongStreak: number;
+  correctStreak: number;
+  round: RoundState;
+  trophies: number;
 }
 
 export type TaskKind = 'example' | 'practice' | 'review' | 'easy';
@@ -90,6 +119,8 @@ export interface Task {
   minuteLabels: boolean;
   /** Explanation shown with guided examples. */
   explanation?: string;
+  /** Repetition of a tier she already reads securely ("Das kannst du schon!"). */
+  familiar: boolean;
 }
 
 export interface AnswerResult {
@@ -103,7 +134,13 @@ export interface AnswerResult {
   hintFocus?: HintFocus;
   /** Newly unlocked tiers, for a short positive announcement. */
   unlocked: { track: Track; tier: Tier }[];
+  /** Tiers that just became secure (learning badges). */
+  secured: { track: Track; tier: Tier }[];
   offerPause: boolean;
+  /** Set when a multiple of STREAK_PRAISE independent correct answers in a row is reached. */
+  streak: number | null;
+  /** Set when this answer completed the round. */
+  roundComplete: RoundSummary | null;
 }
 
 function freshTier(unlocked: boolean): TierState {
@@ -132,6 +169,9 @@ export function freshProgress(now: number): Progress {
     recent: [],
     newestRun: 0,
     wrongStreak: 0,
+    correctStreak: 0,
+    round: { target: MIN_ROUND_TARGET, points: 0, correct: 0, tasks: 0 },
+    trophies: 0,
   };
 }
 
@@ -145,7 +185,10 @@ export class Engine {
   constructor(
     readonly progress: Progress,
     private readonly rng: Rng = Math.random,
-  ) {}
+  ) {
+    // Progress saved before rounds had a point target.
+    if (typeof progress.round?.target !== 'number') this.progress.round = this.newRound();
+  }
 
   get stars(): number {
     return Math.floor(this.progress.correctTotal / CORRECT_PER_STAR);
@@ -178,9 +221,8 @@ export class Engine {
     const p = this.progress;
     p.taskCounter += 1;
     const task = this.pickForced() ?? this.pickReview() ?? this.pickPractice();
-    if (task.kind !== 'example') {
-      p.recent = [...p.recent, timeKey(task.time)].slice(-RECENT_SPAN);
-    }
+    // Examples count too, so a shown solution never comes straight back as a task.
+    p.recent = [...p.recent, timeKey(task.time)].slice(-RECENT_SPAN);
     this.current = task;
     return task;
   }
@@ -193,7 +235,8 @@ export class Engine {
     const ok = chosen.kind === 'correct';
     const result: AnswerResult = {
       ok, scored: false, correctIndex: task.correctIndex, points: 0,
-      starEarned: false, unlocked: [], offerPause: false,
+      starEarned: false, unlocked: [], secured: [], offerPause: false,
+      streak: null, roundComplete: null,
     };
 
     if (task.kind === 'example') return result;
@@ -207,19 +250,26 @@ export class Engine {
 
     if (helped) {
       p.wrongStreak = 0;
+      p.correctStreak = 0;
+      if (ok) this.award(result, HELP_POINTS[task.tier]);
+      this.countRound(result, false);
       return result;
     }
 
     result.scored = true;
     const state = this.tierState(task.track, task.tier);
+    const wasSecure = state.secure;
     this.recordAttempt(task, state, ok);
+    if (state.secure && !wasSecure) result.secured.push({ track: task.track, tier: task.tier });
     if (ok) {
-      p.points += POINTS_PER_CORRECT;
+      this.award(result, TIER_POINTS[task.tier] + (task.track === 'text' ? TEXT_BONUS : 0));
       p.correctTotal += 1;
-      result.points = POINTS_PER_CORRECT;
       result.starEarned = p.correctTotal % CORRECT_PER_STAR === 0;
       p.wrongStreak = 0;
+      p.correctStreak += 1;
+      if (p.correctStreak % STREAK_PRAISE === 0) result.streak = p.correctStreak;
     } else {
+      p.correctStreak = 0;
       p.wrongStreak += 1;
       if (p.wrongStreak === 2) {
         p.forced.push({ type: 'example', track: task.track, tier: task.tier }, { type: 'easy' });
@@ -232,7 +282,56 @@ export class Engine {
 
     if (task.track === 'text') this.steerTextShare(ok);
     result.unlocked = this.updateUnlocks();
+    this.countRound(result, ok);
     return result;
+  }
+
+  private award(result: AnswerResult, points: number): void {
+    result.points = points;
+    this.progress.points += points;
+  }
+
+  private countRound(result: AnswerResult, independentCorrect: boolean): void {
+    const round = this.progress.round;
+    round.tasks += 1;
+    round.points += result.points;
+    if (independentCorrect) round.correct += 1;
+    if (round.points < round.target) return;
+    result.roundComplete = { ...round };
+    this.progress.trophies += 1;
+    this.progress.round = this.newRound();
+  }
+
+  private newRound(): RoundState {
+    return { target: this.roundTarget(), points: 0, correct: 0, tasks: 0 };
+  }
+
+  /** Target for a new round: ROUND_TARGET_FACTOR × expected points per task, rounded to 10. */
+  roundTarget(): number {
+    const textShare = this.unlockedTiers('text').length ? TEXT_SHARES[this.progress.textStep] : 0;
+    const expected =
+      (1 - textShare) * this.expectedPoints('digital') +
+      (textShare ? textShare * (this.expectedPoints('text') + TEXT_BONUS) : 0);
+    return Math.max(MIN_ROUND_TARGET, Math.round((ROUND_TARGET_FACTOR * expected) / 10) * 10);
+  }
+
+  private expectedPoints(track: Track): number {
+    return this.tierShares(track).reduce((sum, [tier, share]) => sum + share * TIER_POINTS[tier], 0);
+  }
+
+  /** Probability of each unlocked tier for a practice task; the newest tier comes first. */
+  private tierShares(track: Track): [Tier, number][] {
+    const unlocked = this.unlockedTiers(track);
+    const newest = unlocked[unlocked.length - 1];
+    if (unlocked.length === 1) return [[newest, 1]];
+    const newestShare = NEWEST_SHARES[this.tierState(track, newest).step];
+    const easy = unlocked.filter((t) => t < newest - 1);
+    const easyShare = easy.length ? EASY_SHARE : 0;
+    return [
+      [newest, newestShare],
+      [(newest - 1) as Tier, 1 - newestShare - easyShare],
+      ...easy.map((t): [Tier, number] => [t, easyShare / easy.length]),
+    ];
   }
 
   // --- selection -----------------------------------------------------------
@@ -272,22 +371,22 @@ export class Engine {
 
   private chooseTier(track: Track): Tier {
     const p = this.progress;
-    const unlocked = this.unlockedTiers(track);
-    const newest = unlocked[unlocked.length - 1];
-    if (unlocked.length === 1) return newest;
-
-    const state = this.tierState(track, newest);
-    // At most two tasks from the newest tier in a row.
-    const newestShare = p.newestRun >= 2 ? 0 : NEWEST_SHARES[state.step];
-    const easy = unlocked.filter((t) => t < newest - 1);
-    const easyShare = easy.length ? EASY_SHARE : 0;
-
-    const r = this.rng();
-    let tier: Tier;
-    if (r < newestShare) tier = newest;
-    else if (r < newestShare + easyShare) tier = pick(easy, this.rng);
-    else tier = (newest - 1) as Tier;
-
+    const shares = this.tierShares(track);
+    const newest = shares[0][0];
+    // At most two tasks from the newest tier in a row; its share goes to the second newest.
+    if (p.newestRun >= 2 && shares.length > 1) {
+      shares[1][1] += shares[0][1];
+      shares[0][1] = 0;
+    }
+    let r = this.rng();
+    let tier = shares[shares.length - 1][0];
+    for (const [t, share] of shares) {
+      if (r < share) {
+        tier = t;
+        break;
+      }
+      r -= share;
+    }
     p.newestRun = tier === newest ? p.newestRun + 1 : 0;
     return tier;
   }
@@ -326,6 +425,7 @@ export class Engine {
       track, tier, kind, time, options, correctIndex,
       minuteLabels: kind === 'example' || (track === 'digital' && tier >= 4 && introPhase),
       explanation: kind === 'example' ? explainExample(track, time) : undefined,
+      familiar: kind !== 'example' && state.secure,
     };
   }
 
