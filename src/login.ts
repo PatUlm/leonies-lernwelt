@@ -50,15 +50,15 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
         <span>Name</span>
         <input data-ref="name" type="text" autocomplete="username" autocapitalize="words" maxlength="20" spellcheck="false" />
       </label>
-      <div class="login-field">
-        <span data-ref="pinLabel">PIN</span>
-        <div class="pin-dots" data-ref="dots" aria-live="polite"></div>
-      </div>
       <p class="login-note" data-ref="note" hidden>
         Tipp: Nimm lieber einen Spitznamen als deinen echten Namen. Wenn du viele Punkte sammelst,
         steht dein Name in der Bestenliste – die sehen alle, die hier ein Profil haben.
         Frag am besten vorher deine Eltern.
       </p>
+      <div class="login-field">
+        <span data-ref="pinLabel">PIN</span>
+        <div class="pin-dots" data-ref="dots" aria-live="polite"></div>
+      </div>
       <div data-ref="keypad"></div>
       <p class="login-error" data-ref="error" role="alert"></p>
       <button type="button" class="link-button" data-ref="switch"></button>
