@@ -8,6 +8,12 @@ export default defineConfig({
     // `npm run api` serves the API locally on 8081; the UI tests start their own (API_URL).
     proxy: { '/api': process.env.API_URL ?? 'http://127.0.0.1:8081' },
   },
+  build: {
+    rolldownOptions: {
+      // Imprint and privacy notice: own pages, readable without JavaScript or signing in.
+      input: ['index.html', 'impressum.html', 'datenschutz.html'],
+    },
+  },
   define: {
     // Release tag from bin/release.sh (Docker build arg), shown in the app.
     __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? 'dev'),

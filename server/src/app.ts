@@ -25,6 +25,7 @@ const LOGIN_FAILURES_PER_CLIENT = 20;
 const SIGNUPS_PER_CLIENT = 5;
 const QUARTER_HOUR = 15 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
+const SWEEP_INTERVAL = 10 * 60 * 1000;
 
 // No parameter properties: Node runs this file with type stripping only.
 class HttpError extends Error {
@@ -109,6 +110,10 @@ export function createApp(options: AppOptions) {
   const signups = new FailureLimiter(options.signupsPerClient ?? SIGNUPS_PER_CLIENT, HOUR, now);
   const loginQueue = serial();
   const signupQueue = serial();
+  // Client addresses leave memory at most SWEEP_INTERVAL after their window (privacy notice: 70 minutes).
+  setInterval(() => {
+    for (const limiter of [profileFailures, clientFailures, signups]) limiter.sweep();
+  }, SWEEP_INTERVAL).unref();
 
   function blocked(...waits: number[]): void {
     const wait = Math.max(...waits);
@@ -281,6 +286,32 @@ export function createApp(options: AppOptions) {
     });
   }
 
+  /**
+   * Deletes the signed-in profile with all its data (Art. 17 GDPR). The PIN
+   * confirms it, so a device left signed in cannot delete the profile alone;
+   * wrong PINs count like wrong logins.
+   */
+  async function deleteProfile(req: IncomingMessage) {
+    const client = clientKey(req);
+    const { id } = await authenticate(req);
+    const body = await readJson(req, 4096);
+    if (!isValidPin(body.pin)) throw new HttpError(400, 'invalid_pin');
+    const pin = body.pin;
+    return loginQueue(async () => {
+      blocked(profileFailures.retryAfter(id), clientFailures.retryAfter(client));
+      return store.update(id, async (profile) => {
+        if (!profile) throw new HttpError(401, 'unauthorized');
+        if (!(await verifyPin(pin, profile.pinHash))) {
+          profileFailures.fail(id);
+          clientFailures.fail(client);
+          throw new HttpError(403, 'wrong_pin');
+        }
+        profileFailures.reset(id);
+        return { next: null, remove: true, result: { status: 204, body: null } };
+      });
+    });
+  }
+
   const routes: Record<string, (req: IncomingMessage) => Promise<{ status: number; body: unknown }>> = {
     'POST /api/profiles': signup,
     'POST /api/login': login,
@@ -289,6 +320,7 @@ export function createApp(options: AppOptions) {
     'POST /api/points': addPoints,
     'GET /api/leaderboard': leaderboard,
     'POST /api/logout': logout,
+    'DELETE /api/profile': deleteProfile,
     'GET /api/health': async () => ({ status: 200, body: { ok: true } }),
   };
 

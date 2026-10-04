@@ -171,6 +171,42 @@ describe('progress', () => {
   });
 });
 
+describe('deleting a profile', () => {
+  async function signup(name = 'Leonie'): Promise<string> {
+    return (await call('POST', '/api/profiles', { name, pin: '1234' })).body.token;
+  }
+
+  it('deletes the file, the device tokens and the leaderboard entry; the name is free again', async () => {
+    const leonie = await signup();
+    const other = (await call('POST', '/api/login', { name: 'Leonie', pin: '1234' })).body.token;
+    await call('POST', '/api/points', { id: 'inc-delete-1', week: '2026-09-28', points: 30 }, leonie);
+    const max = await signup('Max');
+    expect((await call('DELETE', '/api/profile', { pin: '1234' }, leonie)).status).toBe(204);
+    expect(await readdir(dir)).toHaveLength(1);
+    expect((await call('GET', '/api/progress', undefined, other)).status).toBe(401);
+    const board = await call('GET', '/api/leaderboard?week=2026-09-28', undefined, max);
+    expect(board.body.top).toEqual([]);
+    expect((await call('POST', '/api/login', { name: 'Leonie', pin: '1234' })).body.error).toBe('unknown_name');
+    expect((await call('POST', '/api/profiles', { name: 'Leonie', pin: '5678' })).status).toBe(201);
+  });
+
+  it('needs the right PIN and blocks after five wrong ones', async () => {
+    const t = await signup();
+    const wrong = await call('DELETE', '/api/profile', { pin: '0000' }, t);
+    expect([wrong.status, wrong.body.error]).toEqual([403, 'wrong_pin']);
+    for (let i = 1; i < 5; i++) await call('DELETE', '/api/profile', { pin: `000${i}` }, t);
+    expect((await call('DELETE', '/api/profile', { pin: '1234' }, t)).status).toBe(429);
+    expect(await readdir(dir)).toHaveLength(1);
+  });
+
+  it('needs a valid token and a PIN', async () => {
+    const t = await signup();
+    expect((await call('DELETE', '/api/profile', { pin: '1234' })).status).toBe(401);
+    expect((await call('DELETE', '/api/profile', {}, t)).status).toBe(400);
+    expect(await readdir(dir)).toHaveLength(1);
+  });
+});
+
 describe('points and leaderboard', () => {
   const WEEK = '2026-09-28';
   let seq = 0;

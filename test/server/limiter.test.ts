@@ -11,6 +11,20 @@ describe('FailureLimiter', () => {
     expect(limiter.retryAfter('a')).toBe(0);
   });
 
+  it('drops idle keys on a sweep once their window has passed', () => {
+    let t = 0;
+    const limiter = new FailureLimiter(3, 1000, () => t);
+    limiter.fail('a');
+    t = 500;
+    limiter.fail('b');
+    t = 1001;
+    limiter.sweep();
+    expect(limiter.size).toBe(1);
+    t = 1501;
+    limiter.sweep();
+    expect(limiter.size).toBe(0);
+  });
+
   it('forgets expired keys, so memory does not grow forever', () => {
     let t = 0;
     const limiter = new FailureLimiter(3, 1000, () => t);

@@ -9,6 +9,19 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 
 ### Hinzugefügt
 
+- **Impressum und Datenschutzhinweis** als eigene Seiten, verlinkt bei der Anmeldung und
+  unten auf der Übersicht; lesbar ohne Anmeldung.
+- **Profil löschen:** auf der Übersicht unten, mit PIN bestätigt. Löscht Profil,
+  Spielstand und Bestenlisten-Eintrag sofort auf dem Server und auf dem Gerät.
+- Beim Anlegen eines Profils rät ein Hinweis zu einem Spitznamen, weil der Name in der
+  Bestenliste für alle mit Profil sichtbar ist.
+
+### Geändert
+
+- Der Webserver speichert keine Zugriffsprotokolle mit IP-Adressen mehr. Die Zähler gegen
+  PIN-Durchprobieren verwerfen IP-Adressen spätestens 70 Minuten nach dem letzten
+  Versuch.
+
 - **Bestenliste dieser Woche** auf dem Dashboard unter den Lernbereichen (nur mit
   Profil): Platz 1 bis 3 mit Pokalen in Gold, Silber und Bronze, darunter der eigene
   Platz. Es zählen die Punkte der laufenden Woche; montags beginnt die Liste neu. Bei

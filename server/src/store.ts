@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 export interface DeviceToken {
@@ -61,12 +61,17 @@ export class ProfileStore {
     return profiles.filter((p): p is { id: string; profile: Profile } => p.profile !== null);
   }
 
-  /** Runs read-modify-write for one profile without interleaving. */
-  update<T>(id: string, fn: (current: Profile | null) => Promise<{ next: Profile | null; result: T }>): Promise<T> {
+  /** Runs read-modify-write for one profile without interleaving; `remove` deletes its file. */
+  update<T>(
+    id: string,
+    fn: (current: Profile | null) => Promise<{ next: Profile | null; result: T; remove?: boolean }>,
+  ): Promise<T> {
     const previous = this.queue.get(id) ?? Promise.resolve();
     const run = previous.catch(() => undefined).then(async () => {
-      const { next, result } = await fn(await this.get(id));
-      if (next) {
+      const { next, result, remove } = await fn(await this.get(id));
+      if (remove) {
+        await rm(this.file(id), { force: true });
+      } else if (next) {
         const target = this.file(id);
         const tmp = `${target}.${process.pid}.tmp`;
         await writeFile(tmp, JSON.stringify(next));

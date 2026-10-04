@@ -1,16 +1,21 @@
 import { createKeypad } from './shared/keypad';
 import { skyLayer } from './shared/decor';
+import { legalLinks } from './shared/legal';
 import { ApiError, sync } from './shared/sync';
 
 type Mode = 'login' | 'signup';
 
-function errorText(err: unknown): string {
+export function errorText(err: unknown): string {
   if (!(err instanceof ApiError)) return 'Das hat nicht geklappt. Bitte noch einmal versuchen.';
   switch (err.code) {
     case 'offline':
       return 'Keine Verbindung zum Internet. Bitte später noch einmal versuchen.';
     case 'wrong_login':
       return 'Name oder PIN stimmt nicht.';
+    case 'wrong_pin':
+      return 'Die PIN stimmt nicht.';
+    case 'unauthorized':
+      return 'Du bist auf diesem Gerät nicht mehr angemeldet. Bitte zuerst neu anmelden.';
     case 'name_taken':
       return 'Diesen Namen gibt es schon. Bitte anmelden oder einen anderen Namen wählen.';
     case 'invalid_name':
@@ -49,10 +54,16 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
         <span data-ref="pinLabel">PIN</span>
         <div class="pin-dots" data-ref="dots" aria-live="polite"></div>
       </div>
+      <p class="login-note" data-ref="note" hidden>
+        Tipp: Nimm lieber einen Spitznamen als deinen echten Namen. Wenn du viele Punkte sammelst,
+        steht dein Name in der Bestenliste – die sehen alle, die hier ein Profil haben.
+        Frag am besten vorher deine Eltern.
+      </p>
       <div data-ref="keypad"></div>
       <p class="login-error" data-ref="error" role="alert"></p>
       <button type="button" class="link-button" data-ref="switch"></button>
       <button type="button" class="link-button quiet" data-ref="local">Ohne Anmeldung spielen (nur auf diesem Gerät)</button>
+      ${legalLinks()}
     </main>`;
 
   const ref = <T extends HTMLElement>(name: string) => app.querySelector<T>(`[data-ref="${name}"]`)!;
@@ -78,6 +89,7 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
         : confirmPin !== null && unknownName === nameInput.value.trim()
           ? `Den Namen „${unknownName}“ gibt es noch nicht. Gib deine PIN noch einmal ein, dann ist dein neues Profil fertig.`
           : 'Neues Profil: Wähle einen Namen und eine geheime PIN aus vier Ziffern.';
+    ref('note').hidden = mode !== 'signup';
     ref('pinLabel').textContent = confirmPin !== null ? 'PIN noch einmal' : 'PIN';
     ref('dots').innerHTML = Array.from({ length: 4 }, (_, i) => `<span class="pin-dot${i < pin.length ? ' filled' : ''}"></span>`).join('');
     ref('switch').textContent = mode === 'login' ? 'Ich bin neu hier – Profil anlegen' : 'Ich habe schon ein Profil – anmelden';

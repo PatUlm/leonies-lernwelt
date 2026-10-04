@@ -247,6 +247,43 @@ describe('SyncClient', () => {
     expect(tablet.client.hasChosen()).toBe(false);
   });
 
+  it('deletes the profile and everything of it on the device, also unsent changes', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    tablet.online = false;
+    writeJson('uhr.progress.v1', { stars: 4 });
+    tablet.client.addPoints(10, '2026-09-28');
+    tablet.online = true;
+    await tablet.client.deleteProfile('1234');
+    expect(readJson('uhr.progress.v1')).toBeNull();
+    expect(readJson('points.v1')).toEqual([]);
+    expect(tablet.client.hasChosen()).toBe(false);
+
+    const phone = new Device(base);
+    phone.use();
+    await expect(phone.client.login('Leonie', '1234')).rejects.toMatchObject({ code: 'unknown_name' });
+  });
+
+  it('keeps what was chosen while the deletion was on its way', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    const deleting = tablet.client.deleteProfile('1234');
+    tablet.client.playLocally();
+    writeJson('uhr.progress.v1', { stars: 2 });
+    await expect(deleting).rejects.toMatchObject({ code: 'stale' });
+    expect(readJson('uhr.progress.v1')).toEqual({ stars: 2 });
+    expect(tablet.client.hasChosen()).toBe(true);
+  });
+
+  it('keeps profile and device data when the PIN for deleting is wrong', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    writeJson('uhr.progress.v1', { stars: 4 });
+    await expect(tablet.client.deleteProfile('0000')).rejects.toMatchObject({ code: 'wrong_pin' });
+    expect(readJson('uhr.progress.v1')).toEqual({ stars: 4 });
+    expect(tablet.client.account()?.name).toBe('Leonie');
+  });
+
   it('adds points from two devices on the server, whatever progress is uploaded', async () => {
     const week = '2026-09-28';
     const tablet = new Device(base);

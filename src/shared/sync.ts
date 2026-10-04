@@ -267,6 +267,27 @@ export class SyncClient {
     } else if (this.state().dirty) {
       throw new ApiError(0, 'unsaved');
     }
+    this.clearDevice();
+  }
+
+  /**
+   * Deletes the signed-in profile on the server (the PIN confirms it) and
+   * everything of it on this device, also progress and points not uploaded yet.
+   */
+  async deleteProfile(pin: string): Promise<void> {
+    const account = this.account();
+    if (!account) return;
+    const gen = this.generation;
+    await this.request('DELETE', '/profile', { pin }, account.token);
+    // Another choice was made meanwhile: its data stays.
+    this.assertCurrent(gen);
+    const name = account.name.toLocaleLowerCase('de');
+    writeJson(POINTS_KEY, this.pendingPoints().filter((p) => p.profile.toLocaleLowerCase('de') !== name));
+    this.clearDevice();
+  }
+
+  /** Leaves no account and no progress behind on this device. */
+  private clearDevice(): void {
     this.generation += 1;
     clearTimeout(this.timer);
     this.deferred = null;

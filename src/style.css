@@ -480,6 +480,31 @@ button {
   font-weight: 700;
 }
 
+.login-note {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fef3c7;
+  font-size: 16px;
+  text-align: left;
+}
+
+.legal-links {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 18px;
+  font-size: 15px;
+}
+
+.legal-links a {
+  padding: 6px 0;
+  color: var(--ink-soft);
+  text-underline-offset: 3px;
+}
+
 .keypad {
   display: grid;
   grid-template-columns: repeat(6, 1fr);

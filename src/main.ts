@@ -3,6 +3,7 @@ import './style.css';
 import { AREAS } from './areas';
 import { appTitle } from './config';
 import { Sound } from './shared/sound';
+import { DELETE_PROFILE_ROUTE, renderDeleteProfile } from './deleteProfile';
 import { renderLogin } from './login';
 import { listenForInstallPrompt } from './shared/install';
 import { loadSettings, saveSettings } from './shared/storage';
@@ -58,6 +59,12 @@ function route(): void {
   reloadIfPending();
 
   const [areaId, moduleId] = location.hash.replace(/^#\/?/, '').split('/');
+  if (areaId === DELETE_PROFILE_ROUTE) {
+    renderDeleteProfile(app, () => {
+      location.hash = '#/';
+    });
+    return;
+  }
   // Old links before learning areas existed (#/uhr).
   const legacy = AREAS.find((a) => a.modules.some((m) => m.id === areaId));
   if (legacy) {

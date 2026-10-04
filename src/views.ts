@@ -4,6 +4,8 @@ import { STATUS_ICONS, wrappedCandy } from './shared/candy';
 import { TROPHY_BRONZE, TROPHY_GOLD, TROPHY_SILVER, medal, plainStar, skyLayer, trophy } from './shared/decor';
 import { escapeHtml } from './shared/html';
 import { canInstall, onInstallChange, promptInstall } from './shared/install';
+import { legalLinks } from './shared/legal';
+import { DELETE_PROFILE_ROUTE } from './deleteProfile';
 import { sync, type Leaderboard, type SyncStatus } from './shared/sync';
 import { APP_VERSION, checkForUpdate } from './shared/update';
 import { weekKey } from './shared/week';
@@ -147,8 +149,10 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
       <span class="account-name">${account ? `👤 ${escapeHtml(account.name)}` : ''}</span>
       <span class="sync-status" data-ref="sync"></span>
       <button type="button" class="link-button" data-ref="account">${account ? 'Abmelden' : 'Anmelden'}</button>
+      ${account ? `<a class="link-button quiet" href="#/${DELETE_PROFILE_ROUTE}">Profil löschen</a>` : ''}
       <button type="button" class="link-button quiet version" data-ref="version" title="Nach Updates suchen">Version ${escapeHtml(APP_VERSION)}</button>
-    </footer>`;
+    </footer>
+    ${legalLinks()}`;
 
   const install = app.querySelector<HTMLElement>('.install')!;
   const update = () => (install.hidden = !canInstall());

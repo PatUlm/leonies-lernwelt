@@ -81,7 +81,7 @@ export class FailureLimiter {
   }
 
   /** Drops expired entries; above the hard cap the oldest keys go first. */
-  private sweep(): void {
+  sweep(): void {
     for (const key of [...this.failures.keys()]) this.recent(key);
     for (const key of this.failures.keys()) {
       if (this.failures.size <= MAX_TRACKED_KEYS) break;

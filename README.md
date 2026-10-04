@@ -201,6 +201,9 @@ des Profils mit.
 - Die App funktioniert auch offline; Änderungen werden hochgeladen, sobald wieder Internet
   da ist. Spielt jemand auf zwei Geräten, gewinnt die spätere Änderung.
 - Wer das nicht möchte: „Ohne Anmeldung spielen“ – dann bleibt alles nur auf dem Gerät.
+- **Profil löschen** (unten auf der Startseite, mit PIN) entfernt Profil und Spielstand
+  sofort vom Server. Was wo gespeichert wird, steht im
+  [Datenschutzhinweis](datenschutz.html).
 
 <p align="center">
   <img src="docs/screenshots/login.png" alt="Anmeldung 'Wer lernt hier?' mit Name und PIN-Tastatur" width="360">
