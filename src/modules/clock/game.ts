@@ -1,13 +1,14 @@
 import { CHILD_NAME } from '../../config';
-import { confetti, plainStar, skyLayer, trophy } from '../../shared/decor';
+import { afternoonScene, confetti, plainStar, skyLayer, trophy } from '../../shared/decor';
 import { canSpeak, speak, stopSpeaking } from '../../shared/speech';
 import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
 import {
-  CORRECT_PER_STAR, Engine, label,
+  CORRECT_PER_STAR, DAYTIME_TIERS, Engine, TRACKS, label,
   type AnswerResult, type RoundSummary, type Task, type Track,
 } from './engine';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
+import { confirmation } from './hints';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import { BADGE_NAMES, TIER_NAMES, statsFromProgress } from './stats';
 import { TIERS, type Tier } from './time';
@@ -35,7 +36,9 @@ const MARKUP = `
     <span class="round-label" data-ref="roundLabel"></span>
   </div>
   <main class="stage">
-    <div class="clock-wrap" data-ref="clock"></div>
+    <div class="clock-wrap" data-ref="clock">
+      <div class="daytime" data-ref="daytime" hidden>${afternoonScene()}<span>Es ist Nachmittag.</span></div>
+    </div>
     <p class="message" data-ref="message" aria-live="polite"></p>
     <div class="answers" data-ref="answers"></div>
     <button class="next" type="button" data-ref="next" hidden>Weiter</button>
@@ -59,8 +62,12 @@ interface RoundStats {
 }
 
 function practicedName(track: Track, tier: Tier): string {
-  return track === 'text' ? `${TIER_NAMES[tier]} in Worten` : TIER_NAMES[tier];
+  if (track === 'text') return `${TIER_NAMES[tier]} in Worten`;
+  if (track === 'daytime') return `${TIER_NAMES[tier]} am Nachmittag`;
+  return TIER_NAMES[tier];
 }
+
+const TRACK_NAMES: Record<Track, string> = { digital: 'Zahl', text: 'Text', daytime: 'Nachmittag' };
 
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
@@ -82,6 +89,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     back: ref<HTMLButtonElement>('back'),
     stars: ref('stars'),
     trophies: ref('trophies'),
+    daytime: ref('daytime'),
     round: ref('round'),
     roundFill: ref('roundFill'),
     roundLabel: ref('roundLabel'),
@@ -138,8 +146,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     ui.round.setAttribute('aria-label', `${points} von ${target} Punkten bis zum Pokal`);
   }
 
-  function answerLabel(t: Task['time']): string {
-    return task.track === 'text' ? formatSpokenCapitalized(t) : label(task.track, t);
+  function answerLabel(option: Task['options'][number]): string {
+    return task.track === 'text' ? formatSpokenCapitalized(option.time) : label(task.track, option.time, option.afternoon);
   }
 
   // --- task flow -------------------------------------------------------------
@@ -160,11 +168,13 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     clock.setFocus(example ? (task.time.minute === 0 ? 'hour' : 'minute') : null, task.time);
 
     ui.answers.classList.toggle('text-answers', task.track === 'text');
+    // The daytime context stays visible for the whole task.
+    ui.daytime.hidden = task.track !== 'daytime';
     buttons = task.options.map((option, i) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'answer';
-      b.textContent = answerLabel(option.time);
+      b.textContent = answerLabel(option);
       b.addEventListener('click', () => onAnswer(i));
       return b;
     });
@@ -199,7 +209,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       engine.answer(task, index, false);
       saveProgress(engine.progress);
       buttons[index].classList.add('correct');
-      setMessage(`Genau! Es ist ${label(task.track, task.time)}.`, 'good');
+      setMessage(`Genau! ${confirmation(task.track, task.time)}`, 'good');
       sound.correct();
       later(() => whenNoDialog(nextTask), CORRECT_DELAY_MS);
       return;
@@ -213,12 +223,11 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     if (result.unlocked.length) {
       pendingToast = `Neu: ${result.unlocked.map((u) => practicedName(u.track, u.tier)).join(', ')}!`;
     }
-    round.secured.push(...result.secured.map((s) => BADGE_NAMES[s.track][s.tier]));
+    round.secured.push(...result.secured.flatMap((s) => BADGE_NAMES[s.track][s.tier] ?? []));
 
     buttons[result.correctIndex].classList.add('correct');
-    const it = label(task.track, task.time);
     if (result.ok) {
-      setMessage(helpUsed ? `Gemeinsam geschafft! Es ist ${it}.` : `Richtig! Es ist ${it}.`, 'good');
+      setMessage(`${helpUsed ? 'Gemeinsam geschafft!' : 'Richtig!'} ${confirmation(task.track, task.time)}`, 'good');
       if (result.streak) {
         const n = result.streak <= 12 ? capitalize(numberWord(result.streak)) : String(result.streak);
         showToast(`${n} hintereinander geschafft!`);
@@ -394,7 +403,12 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     helpUsed = true;
     clock.setHelpers({ minuteLabels: true, quarters: true });
     clock.setFocus('hour', task.time);
-    const rule = task.track === 'text' ? ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.' : '';
+    const rule =
+      task.track === 'text'
+        ? ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.'
+        : task.track === 'daytime'
+          ? ' Es ist Nachmittag: Nach zwölf Uhr mittags zählen wir weiter, aus 3 Uhr wird 15 Uhr.'
+          : '';
     setMessage(
       `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`,
       'explain',
@@ -414,15 +428,15 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   ui.parents.addEventListener('click', showParents);
 
   function showParents(): void {
-    const rows = (['digital', 'text'] as const)
-      .map((track) => {
+    const rows = TRACKS.map((track) => {
         const cells = TIERS.map((tier) => {
+          if (track === 'daytime' && !DAYTIME_TIERS.includes(tier)) return '<td class="locked"></td>';
           const s = engine.tierState(track, tier);
           const rate = s.window.length ? `${s.window.filter((a) => a.ok).length}/${s.window.length}` : '–';
           const status = s.secure ? 'sicher' : s.ready ? 'gelernt' : s.unlocked ? `übt ${rate}` : '–';
           return `<td class="${s.unlocked ? '' : 'locked'}">${status}</td>`;
         }).join('');
-        return `<tr><th>${track === 'digital' ? 'Zahl' : 'Text'}</th>${cells}</tr>`;
+        return `<tr><th>${TRACK_NAMES[track]}</th>${cells}</tr>`;
       })
       .join('');
     const header = TIERS.map((t) => `<th title="${TIER_NAMES[t]}">S${t}</th>`).join('');

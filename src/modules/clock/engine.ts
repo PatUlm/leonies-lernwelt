@@ -1,17 +1,32 @@
-import { buildOptions, type AnswerOption } from './distractors';
+import { buildDaytimeOptions, buildOptions, type AnswerOption } from './distractors';
 import { formatSpoken } from './german';
 import { explainExample, hintFor, type HintFocus } from './hints';
 import {
-  TIER_MINUTES, TIERS, formatDigital, pick, tierOf, timeKey, wrapHour,
+  TIER_MINUTES, TIERS, formatDaytime, formatDigital, pick, tierOf, timeKey,
   type ClockTime, type Rng, type Tier,
 } from './time';
 
-export type Track = 'digital' | 'text';
+/**
+ * digital: read the clock as "3:45"; text: "Viertel vor vier";
+ * daytime: with the context "Es ist Nachmittag" as "15:45 Uhr".
+ */
+export type Track = 'digital' | 'text' | 'daytime';
+export const TRACKS: readonly Track[] = ['digital', 'text', 'daytime'];
+/** Tracks mixed into the clock reading once unlocked; each steers its own share. */
+export type SideTrack = Exclude<Track, 'digital'>;
+export const SIDE_TRACKS: readonly SideTrack[] = ['text', 'daytime'];
 
 /** Share of tasks from the newest tier, raised or lowered per block of 4. */
 export const NEWEST_SHARES = [0.15, 0.3, 0.45, 0.6] as const;
-/** Share of text tasks among all tasks once text is unlocked. */
-export const TEXT_SHARES = [0.1, 0.2, 0.3] as const;
+/** Share of a side track among all tasks once unlocked, raised or lowered per block of 4. */
+export const SIDE_TRACK_SHARES: Record<SideTrack, readonly number[]> = {
+  text: [0.1, 0.2, 0.3],
+  daytime: [0.1, 0.2],
+};
+/** Daytime track, first version: afternoon full and half hours. */
+export const DAYTIME_TIERS: readonly Tier[] = [1, 2];
+/** Clock hours of the afternoon tasks: 13 to 18 Uhr. */
+export const AFTERNOON_HOURS: readonly number[] = [1, 2, 3, 4, 5, 6];
 /** Share of tasks from tiers below the second newest (easy repetition). */
 export const EASY_SHARE = 0.12;
 export const WINDOW = 8;
@@ -24,8 +39,8 @@ export const EXAMPLES_PER_TIER = 2;
 export const RECENT_SPAN = 4;
 /** Points for an independent correct answer, by tier. */
 export const TIER_POINTS: Record<Tier, number> = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30, 6: 40 };
-/** Extra points for answering in words. */
-export const TEXT_BONUS = 5;
+/** Extra points for side-track tasks (in words, afternoon). */
+export const SIDE_TRACK_BONUS = 5;
 /** Points for a correct answer after using help (about half, no text bonus). */
 export const HELP_POINTS: Record<Tier, number> = { 1: 5, 2: 5, 3: 10, 4: 10, 5: 15, 6: 20 };
 export const CORRECT_PER_STAR = 5;
@@ -95,8 +110,7 @@ export interface Progress {
   points: number;
   correctTotal: number;
   tracks: Record<Track, TierState[]>;
-  textBlock: boolean[];
-  textStep: number;
+  sideShares: Record<SideTrack, { block: boolean[]; step: number }>;
   reviewQueue: ReviewItem[];
   forced: ForcedTask[];
   recent: string[];
@@ -145,6 +159,8 @@ export interface AnswerResult {
   roundComplete: RoundSummary | null;
 }
 
+const ALL_HOURS: readonly number[] = Array.from({ length: 12 }, (_, i) => i + 1);
+
 function freshTier(unlocked: boolean): TierState {
   return {
     unlocked, attempts: 0, window: [], block: [], step: 0,
@@ -164,9 +180,9 @@ export function freshProgress(now: number): Progress {
     tracks: {
       digital: TIERS.map((t) => freshTier(t === 1)),
       text: TIERS.map(() => freshTier(false)),
+      daytime: TIERS.map(() => freshTier(false)),
     },
-    textBlock: [],
-    textStep: 0,
+    sideShares: { text: { block: [], step: 0 }, daytime: { block: [], step: 0 } },
     reviewQueue: [],
     forced: [{ type: 'example', track: 'digital', tier: 1 }, { type: 'example', track: 'digital', tier: 1 }],
     recent: [],
@@ -178,8 +194,11 @@ export function freshProgress(now: number): Progress {
   };
 }
 
-export function label(track: Track, t: ClockTime): string {
-  return track === 'text' ? formatSpoken(t) : formatDigital(t);
+/** Answer text of a time; `afternoon` only matters for the daytime track. */
+export function label(track: Track, t: ClockTime, afternoon = track === 'daytime'): string {
+  if (track === 'text') return formatSpoken(t);
+  if (track === 'daytime') return formatDaytime(t, afternoon);
+  return formatDigital(t);
 }
 
 export class Engine {
@@ -275,7 +294,7 @@ export class Engine {
     this.recordAttempt(task, state, ok);
     if (state.secure && !wasSecure) result.secured.push({ track: task.track, tier: task.tier });
     if (ok) {
-      this.award(result, TIER_POINTS[task.tier] + (task.track === 'text' ? TEXT_BONUS : 0));
+      this.award(result, TIER_POINTS[task.tier] + (task.track === 'digital' ? 0 : SIDE_TRACK_BONUS));
       p.correctTotal += 1;
       result.starEarned = p.correctTotal % CORRECT_PER_STAR === 0;
       p.wrongStreak = 0;
@@ -293,7 +312,7 @@ export class Engine {
       }
     }
 
-    if (task.track === 'text') this.steerTextShare(ok);
+    if (task.track !== 'digital') this.steerSideShare(task.track, ok);
     result.unlocked = this.updateUnlocks();
     this.countRound(result, ok);
     return result;
@@ -321,11 +340,20 @@ export class Engine {
 
   /** Target for a new round: ROUND_TARGET_FACTOR × expected points per task, rounded to 10. */
   roundTarget(): number {
-    const textShare = this.unlockedTiers('text').length ? TEXT_SHARES[this.progress.textStep] : 0;
+    const sides = this.activeSideShares();
+    const sideTotal = sides.reduce((sum, [, share]) => sum + share, 0);
     const expected =
-      (1 - textShare) * this.expectedPoints('digital') +
-      (textShare ? textShare * (this.expectedPoints('text') + TEXT_BONUS) : 0);
+      (1 - sideTotal) * this.expectedPoints('digital') +
+      sides.reduce((sum, [track, share]) => sum + share * (this.expectedPoints(track) + SIDE_TRACK_BONUS), 0);
     return Math.max(MIN_ROUND_TARGET, Math.round((ROUND_TARGET_FACTOR * expected) / 10) * 10);
+  }
+
+  /** Unlocked side tracks with their current share of all tasks. */
+  private activeSideShares(): [SideTrack, number][] {
+    return SIDE_TRACKS.filter((t) => this.unlockedTiers(t).length).map((t) => [
+      t,
+      SIDE_TRACK_SHARES[t][this.progress.sideShares[t].step],
+    ]);
   }
 
   private expectedPoints(track: Track): number {
@@ -380,8 +408,12 @@ export class Engine {
   }
 
   private chooseTrack(): Track {
-    if (this.unlockedTiers('text').length === 0) return 'digital';
-    return this.rng() < TEXT_SHARES[this.progress.textStep] ? 'text' : 'digital';
+    let r = this.rng();
+    for (const [track, share] of this.activeSideShares()) {
+      if (r < share) return track;
+      r -= share;
+    }
+    return 'digital';
   }
 
   private chooseTier(track: Track): Tier {
@@ -418,21 +450,25 @@ export class Engine {
     }
     const recentHours = state.window.slice(-3).map((a) => a.hour);
     const recent = this.progress.recent;
+    const hours = track === 'daytime' ? AFTERNOON_HOURS : ALL_HOURS;
 
     let fallback: ClockTime | null = null;
     for (let i = 0; i < 60; i++) {
-      const t = { hour: 1 + Math.floor(this.rng() * 12), minute: pick(minuteChoices, this.rng) };
+      const t = { hour: pick(hours, this.rng), minute: pick(minuteChoices, this.rng) };
       if (recent.includes(timeKey(t))) continue;
       fallback ??= t;
       if (!recentHours.includes(t.hour)) return t;
     }
-    return fallback ?? { hour: wrapHour(1 + Math.floor(this.rng() * 12)), minute: pick(minutes, this.rng) };
+    return fallback ?? { hour: pick(hours, this.rng), minute: pick(minutes, this.rng) };
   }
 
   private makeTask(track: Track, tier: Tier, kind: TaskKind, time: ClockTime): Task {
     const state = this.tierState(track, tier);
     const advanced = state.step >= 2 || state.ready;
-    const options = buildOptions(time, { tier, advanced }, this.rng);
+    const options =
+      track === 'daytime'
+        ? buildDaytimeOptions(time, advanced, this.rng)
+        : buildOptions(time, { tier, advanced }, this.rng);
     const correctIndex = options.findIndex((o) => o.kind === 'correct');
     const introPhase = kind !== 'review' && state.step === 0 && !state.ready;
     return {
@@ -470,18 +506,18 @@ export class Engine {
     }
   }
 
-  private steerTextShare(ok: boolean): void {
-    const p = this.progress;
-    p.textBlock.push(ok);
-    if (p.textBlock.length < BLOCK) return;
-    const good = p.textBlock.filter(Boolean).length;
-    // Only one novelty at a time: no more text while a new clock tier is being introduced.
+  private steerSideShare(track: SideTrack, ok: boolean): void {
+    const side = this.progress.sideShares[track];
+    side.block.push(ok);
+    if (side.block.length < BLOCK) return;
+    const good = side.block.filter(Boolean).length;
+    // Only one novelty at a time: no more side tasks while a new clock tier is being introduced.
     const digital = this.unlockedTiers('digital');
     const newestDigital = this.tierState('digital', digital[digital.length - 1]);
     const introducing = digital.length > 1 && newestDigital.step === 0 && !newestDigital.ready;
-    if (good >= 3 && !introducing) p.textStep = Math.min(p.textStep + 1, TEXT_SHARES.length - 1);
-    else if (good <= 1) p.textStep = Math.max(p.textStep - 1, 0);
-    p.textBlock = [];
+    if (good >= 3 && !introducing) side.step = Math.min(side.step + 1, SIDE_TRACK_SHARES[track].length - 1);
+    else if (good <= 1) side.step = Math.max(side.step - 1, 0);
+    side.block = [];
   }
 
   private updateUnlocks(): { track: Track; tier: Tier }[] {
@@ -495,7 +531,7 @@ export class Engine {
       for (let i = 0; i < EXAMPLES_PER_TIER; i++) p.forced.push({ type: 'example', track, tier });
     };
 
-    for (const track of ['digital', 'text'] as const) {
+    for (const track of TRACKS) {
       for (const tier of TIERS) {
         const s = this.tierState(track, tier);
         if (s.unlocked && !s.ready && isReady(tier, s)) {
@@ -511,6 +547,13 @@ export class Engine {
       const digital = this.tierState('digital', tier);
       const prevText = tier > 1 ? this.tierState('text', (tier - 1) as Tier) : null;
       if (digital.secure && (!prevText || prevText.ready)) unlock('text', tier);
+    }
+    // Afternoon times once half hours are read securely, one daytime tier after the other.
+    if (this.tierState('digital', 2).secure) {
+      for (const tier of DAYTIME_TIERS) {
+        const prev = tier > 1 ? this.tierState('daytime', (tier - 1) as Tier) : null;
+        if (!prev || prev.ready) unlock('daytime', tier);
+      }
     }
     return unlocked;
   }

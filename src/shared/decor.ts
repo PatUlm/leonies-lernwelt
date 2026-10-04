@@ -32,6 +32,21 @@ export function medal(): string {
   return `<svg viewBox="0 0 100 120" aria-hidden="true"><path d="M30 4h18l10 40H40ZM70 4H52L42 44h18Z" fill="#60a5fa"/><path d="M48 4h4l-2 40Z" fill="#f472b6"/><circle cx="50" cy="76" r="38" fill="#fbbf24" stroke="#d97706" stroke-width="5"/><circle cx="50" cy="76" r="26" fill="#fcd34d"/><path d="M50 58l6 12 13 2-9 9 2 13-12-6-12 6 2-13-9-9 13-2Z" fill="#fff7d6"/></svg>`;
 }
 
+/** Afternoon on the playground: sun, swing and grass (context for afternoon times). */
+export function afternoonScene(): string {
+  return `<svg viewBox="0 0 120 80" aria-hidden="true">
+    <rect x="0" y="0" width="120" height="80" rx="14" fill="#dbeafe"/>
+    <g stroke="#f59e0b" stroke-width="4" stroke-linecap="round">
+      <path d="M30 6v6M30 42v6M10 27h6M44 27h6M16 13l4 4M40 37l4 4M44 13l-4 4M20 37l-4 4"/>
+    </g>
+    <circle cx="30" cy="27" r="11" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/>
+    <path d="M0 62q30-8 60-2t60-2v8a14 14 0 0 1-14 14H14A14 14 0 0 1 0 66Z" fill="#86efac"/>
+    <path d="M66 70 78 22h22l12 48" fill="none" stroke="#b45309" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M84 24v26M95 24v26" stroke="#57534e" stroke-width="2.5"/>
+    <rect x="80" y="49" width="19" height="6" rx="3" fill="#ef4444"/>
+  </svg>`;
+}
+
 /** Decorative sky layer behind the content: clouds, twinkling stars and sweets at the edges. */
 export function skyLayer(variant: 'dashboard' | 'game'): string {
   const twinkle = (x: string, y: string, size: number, delay: number) =>

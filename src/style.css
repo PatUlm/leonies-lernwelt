@@ -666,6 +666,57 @@ a.area-card:active {
   flex-shrink: 1;
 }
 
+.clock-wrap {
+  position: relative;
+}
+
+/* Daytime context ("Es ist Nachmittag"): beside the clock in landscape, above it in portrait. */
+.daytime {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 20px;
+  background: var(--card);
+  border: 4px solid #fde68a;
+  box-shadow: 0 4px 0 #fcd34d;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  z-index: 2;
+}
+
+.daytime svg {
+  display: block;
+  width: 120px;
+  height: auto;
+}
+
+@media (orientation: landscape) {
+  .daytime {
+    right: calc(100% + 24px);
+    top: 8%;
+    width: 170px;
+  }
+}
+
+@media (orientation: portrait) {
+  .daytime {
+    left: 50%;
+    bottom: calc(100% + 6px);
+    transform: translateX(-50%);
+    flex-direction: row;
+    padding: 4px 16px 4px 4px;
+    white-space: nowrap;
+  }
+
+  .daytime svg {
+    width: 64px;
+  }
+}
+
 .clock {
   width: 100%;
   height: 100%;

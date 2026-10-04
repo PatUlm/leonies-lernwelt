@@ -1,5 +1,5 @@
 import { SUGGESTION_PRIORITY, type ModuleStats, type Suggestion } from '../types';
-import { Engine, SESSION_GAP_MS, type Progress, type Track } from './engine';
+import { Engine, SESSION_GAP_MS, TRACKS, type Progress, type Track } from './engine';
 import { TIERS, type Tier } from './time';
 
 export const TIER_NAMES: Record<Tier, string> = {
@@ -11,7 +11,7 @@ export const TIER_NAMES: Record<Tier, string> = {
   6: 'einzelne Minuten',
 };
 
-export const BADGE_NAMES: Record<Track, Record<Tier, string>> = {
+export const BADGE_NAMES: Record<Track, Partial<Record<Tier, string>>> = {
   digital: {
     1: 'Volle Stunden erkennst du schon sicher.',
     2: 'Halbe Stunden erkennst du schon sicher.',
@@ -28,6 +28,10 @@ export const BADGE_NAMES: Record<Track, Record<Tier, string>> = {
     5: '„fünf nach“ und „fünf vor“ sagst du schon sicher.',
     6: 'Einzelne Minuten in Worten sagst du schon sicher!',
   },
+  daytime: {
+    1: 'Volle Stunden am Nachmittag (13 bis 18 Uhr) kennst du schon sicher.',
+    2: 'Halbe Stunden am Nachmittag kennst du schon sicher.',
+  },
 };
 
 /** Days without practice after which the clock is suggested for a refresh. */
@@ -35,8 +39,8 @@ export const REFRESH_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
 
 /** Learning badges for all secure tiers. */
 export function clockBadges(engine: Engine): string[] {
-  return (['digital', 'text'] as const).flatMap((track) =>
-    TIERS.filter((t) => engine.tierState(track, t).secure).map((t) => BADGE_NAMES[track][t]),
+  return TRACKS.flatMap((track) =>
+    TIERS.filter((t) => engine.tierState(track, t).secure).flatMap((t) => BADGE_NAMES[track][t] ?? []),
   );
 }
 
@@ -52,7 +56,7 @@ function suggestionFor(engine: Engine, now: number): Suggestion {
     return { priority: reviewDue, label: 'Bekanntes wieder üben' };
   }
   if (now - lastAnswered >= REFRESH_AFTER_MS) return { priority: refresh, label: 'Uhr auffrischen' };
-  const untried = (['digital', 'text'] as const).some((track) =>
+  const untried = TRACKS.some((track) =>
     TIERS.some((t) => {
       const s = engine.tierState(track, t);
       return s.unlocked && s.attempts === 0;

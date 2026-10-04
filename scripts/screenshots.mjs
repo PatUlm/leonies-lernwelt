@@ -9,9 +9,9 @@ const LANDSCAPE = { width: 1180, height: 820 };
 const PORTRAIT = { width: 820, height: 1180 };
 
 /** Runs inside the page: plays simulated sessions with the real engine and stores the progress. */
-async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, nearTrophy = false }) {
+async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, daytimeHeavy = false, nearTrophy = false }) {
   await page.evaluate(
-    async ({ tasks, accuracy, seed, textHeavy, nearTrophy }) => {
+    async ({ tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy }) => {
       const { Engine, freshProgress, SESSION_GAP_MS } = await import('/src/modules/clock/engine.ts');
       let a = seed >>> 0;
       const rng = () => {
@@ -34,12 +34,13 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, ne
       p.forced = [];
       p.reviewQueue = [];
       p.lastActive = Date.now();
-      if (textHeavy) p.textStep = 2;
+      if (textHeavy) p.sideShares.text.step = 2;
+      if (daytimeHeavy) p.sideShares.daytime.step = 1;
       if (nearTrophy) p.round.points = p.round.target - 5;
       else p.round.points = Math.round((p.round.target * 0.45) / 5) * 5;
       localStorage.setItem('lernwelt.uhr.progress.v1', JSON.stringify(p));
     },
-    { tasks, accuracy, seed, textHeavy, nearTrophy },
+    { tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy },
   );
 }
 
@@ -54,6 +55,7 @@ async function openClock(page, predicate, attempts = 40) {
 }
 
 const isDigitalQuestion = () => document.querySelector('.message')?.textContent?.includes('Wie spät ist es?');
+const isDaytimeQuestion = () => !document.querySelector('.daytime')?.hidden && document.querySelector('.answer.suggested') === null;
 const isTextQuestion = () => document.querySelector('.message')?.textContent?.includes('Wie sagt man?');
 
 const browser = await chromium.launch();
@@ -101,6 +103,15 @@ async function context(viewport, reducedMotion = 'reduce') {
   await seedProgress(page, { tasks: 700, accuracy: 0.95, seed: 3, textHeavy: true });
   await openClock(page, isTextQuestion, 80);
   await page.screenshot({ path: `${OUT}/clock-text.png` });
+  await ctx.close();
+}
+
+// Afternoon times: context beside the clock (landscape) and above it (portrait).
+for (const [name, viewport] of [['clock-afternoon', LANDSCAPE], ['clock-afternoon-portrait', PORTRAIT]]) {
+  const { ctx, page } = await context(viewport);
+  await seedProgress(page, { tasks: 400, accuracy: 0.95, seed: 5, daytimeHeavy: true });
+  await openClock(page, isDaytimeQuestion, 120);
+  await page.screenshot({ path: `${OUT}/${name}.png` });
   await ctx.close();
 }
 

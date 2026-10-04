@@ -1,11 +1,13 @@
 import { TIER_MINUTES, TIERS, pick, sameTime, wrapHour, type ClockTime, type Rng, type Tier } from './time';
 
 /** Which misconception an answer option represents. */
-export type OptionKind = 'correct' | 'hour' | 'minute' | 'otherHour' | 'easy';
+export type OptionKind = 'correct' | 'hour' | 'minute' | 'otherHour' | 'easy' | 'morning';
 
 export interface AnswerOption {
   time: ClockTime;
   kind: OptionKind;
+  /** Daytime track: shown as afternoon time (15:45) instead of 3:45. */
+  afternoon?: boolean;
 }
 
 export interface DistractorContext {
@@ -91,4 +93,23 @@ export function buildOptions(correct: ClockTime, ctx: DistractorContext, rng: Rn
   while (options.length < 3) add(otherHour(correct, rng), 'otherHour');
 
   return shuffle(options, rng);
+}
+
+/**
+ * Daytime track (context "Es ist Nachmittag"): the same clock reading before
+ * noon is always one distractor, so the child has to use the context. Early on
+ * the third option is clearly off (+3 hours), later it is the next hour.
+ */
+export function buildDaytimeOptions(correct: ClockTime, advanced: boolean, rng: Rng): AnswerOption[] {
+  const offset = advanced ? 1 : 3;
+  // Afternoon distractors stay within 13 and 23 Uhr.
+  const hour = correct.hour + offset <= 11 ? correct.hour + offset : correct.hour - offset;
+  return shuffle(
+    [
+      { time: correct, kind: 'correct', afternoon: true },
+      { time: correct, kind: 'morning', afternoon: false },
+      { time: { hour, minute: correct.minute }, kind: advanced ? 'hour' : 'otherHour', afternoon: true },
+    ],
+    rng,
+  );
 }

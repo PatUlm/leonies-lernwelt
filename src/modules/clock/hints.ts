@@ -1,6 +1,17 @@
 import type { AnswerOption } from './distractors';
+import type { Track } from './engine';
 import { capitalize, formatSpoken, formatSpokenCapitalized } from './german';
-import { formatDigital, wrapHour, type ClockTime } from './time';
+import { formatDaytime, formatDigital, wrapHour, type ClockTime } from './time';
+
+const AFTERNOON_RULE = 'Nach zwölf Uhr mittags zählen wir weiter: dreizehn, vierzehn, fünfzehn …';
+
+/** What the clock shows, as confirmed after a correct answer. */
+export function confirmation(track: Track, t: ClockTime): string {
+  if (track === 'daytime') {
+    return `${formatSpokenCapitalized(t)} am Nachmittag. Das schreiben wir ${formatDaytime(t, true)}.`;
+  }
+  return `Es ist ${track === 'text' ? formatSpoken(t) : formatDigital(t)}.`;
+}
 
 /** Which part of the clock a hint is about; the clock highlights it. */
 export type HintFocus = 'hour' | 'minute';
@@ -36,8 +47,15 @@ function hourHandSentence(t: ClockTime, chosenHour: number): string {
 }
 
 /** Exactly one hint for a wrong answer, matching the misconception behind it. */
-export function hintFor(track: 'digital' | 'text', t: ClockTime, chosen: AnswerOption): Hint {
+export function hintFor(track: Track, t: ClockTime, chosen: AnswerOption): Hint {
   const hourWrong = chosen.time.hour !== t.hour;
+  if (track === 'daytime') {
+    const afternoon = formatDaytime(t, true);
+    if (chosen.kind === 'morning') {
+      return { text: `Es ist Nachmittag. ${AFTERNOON_RULE} Darum ist es ${afternoon}.`, focus: 'hour' };
+    }
+    return { text: `${hourHandSentence(t, chosen.time.hour)} Am Nachmittag sind das ${afternoon}.`, focus: 'hour' };
+  }
   if (track === 'text' && hourWrong && t.minute >= 30) {
     const lead = t.minute === 30 ? 'Bei „halb“' : 'Bei „vor“';
     return {
@@ -50,10 +68,17 @@ export function hintFor(track: 'digital' | 'text', t: ClockTime, chosen: AnswerO
 }
 
 /** Explanation for a guided example (not scored). */
-export function explainExample(track: 'digital' | 'text', t: ClockTime): string {
+export function explainExample(track: Track, t: ClockTime): string {
   const { hour, minute } = t;
   const next = wrapHour(hour + 1);
   const digital = formatDigital(t);
+  if (track === 'daytime') {
+    const hand =
+      minute === 0
+        ? `Der kurze Zeiger zeigt auf die ${hour}.`
+        : `Der kurze Zeiger ist zwischen der ${hour} und der ${next}.`;
+    return `Es ist Nachmittag. ${AFTERNOON_RULE} ${hand} ${formatSpokenCapitalized(t)} am Nachmittag – das schreiben wir ${formatDaytime(t, true)}.`;
+  }
   if (track === 'text') {
     const spoken = formatSpoken(t);
     if (minute === 0) return `Bei einer vollen Stunde sagt man „Uhr“: ${digital} ist „${spoken}“.`;

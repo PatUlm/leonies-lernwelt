@@ -54,6 +54,11 @@ export function timeKey(t: ClockTime): string {
   return `${t.hour}:${t.minute}`;
 }
 
+/** "15:45 Uhr" in the afternoon, "3:45 Uhr" otherwise (daytime track). */
+export function formatDaytime(t: ClockTime, afternoon: boolean): string {
+  return `${afternoon ? t.hour + 12 : t.hour}:${String(t.minute).padStart(2, '0')} Uhr`;
+}
+
 /** "3:05" – 12-hour notation, 12:00 instead of 0:00. */
 export function formatDigital(t: ClockTime): string {
   return `${t.hour}:${String(t.minute).padStart(2, '0')}`;
