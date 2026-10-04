@@ -7,7 +7,7 @@ Runbook für das Ausrollen auf **netcup1**. Für die Entwicklung reicht `npm run
 
 | Was | Wert |
 |-----|------|
-| Domain | `lernwelt.nieda.de` (öffentlich); `clock.nieda.de` leitet dauerhaft dorthin um |
+| Domain | `lernwelt.nieda.de` (öffentlich) |
 | Server | `netcup1` (SSH-Host aus `~/.ssh/config`) |
 | Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite) |
 | Reverse-Proxy | Traefik im Docker-Netz `proxy-manager`, TLS via Certresolver `production` |
