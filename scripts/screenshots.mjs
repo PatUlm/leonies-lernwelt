@@ -28,7 +28,8 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, da
         engine.touch(now);
         const t = engine.nextTask();
         const ok = t.kind === 'example' || rng() < accuracy;
-        engine.answer(t, ok ? t.correctIndex : t.options.findIndex((o) => o.kind !== 'correct'), false);
+        if (t.mode === 'choice') engine.answer(t, ok ? t.correctIndex : t.options.findIndex((o) => o.kind !== 'correct'), false, 3000);
+        else engine.answerTime(t, ok ? t.time : { hour: (t.time.hour % 12) + 1, minute: t.time.minute }, false, 3000);
       }
       const p = engine.progress;
       p.forced = [];
@@ -37,10 +38,20 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, da
       // Leave the last text / afternoon tier unfinished, so those tasks come often.
       const learn = (track) => { const t = p.tracks[track].filter((x) => x.unlocked).at(-1); if (t) { t.ready = false; t.mastery = 0; } };
       if (textHeavy) learn('text');
-      if (daytimeHeavy) learn('daytime');
-      if (nearTrophy) p.round.points = p.round.target - 5;
+      if (daytimeHeavy) {
+        // Afternoon tasks with their picture: make sure the daytime track is open.
+        p.tracks.daytime[0].unlocked = true;
+        learn('daytime');
+      }
+      if (nearTrophy) {
+        p.round.points = p.round.target - 5;
+        // Only choice tasks, so the script can answer them by tapping.
+        for (const track of ['set', 'input', 'halb']) for (const t of p.tracks[track]) t.unlocked = false;
+      }
       else p.round.points = Math.round((p.round.target * 0.45) / 5) * 5;
       localStorage.setItem('lernwelt.uhr.progress.v1', JSON.stringify(p));
+      // Skip "Wer lernt hier?": play on this device.
+      localStorage.setItem('lernwelt.account.v1', JSON.stringify({ local: true }));
     },
     { tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy },
   );
@@ -50,13 +61,18 @@ async function openClock(page, predicate, attempts = 40) {
   for (let i = 0; i < attempts; i++) {
     await page.goto(`${BASE}/#/`);
     await page.goto(`${BASE}/#/mathe/uhr`);
-    await page.waitForSelector('.answer');
+    await page.waitForSelector('.answers > *');
     if (await page.evaluate(predicate)) return;
   }
   throw new Error('wanted task did not come up');
 }
 
-const isDigitalQuestion = () => document.querySelector('.message')?.textContent?.includes('Wie spät ist es?');
+const isDigitalQuestion = () =>
+  document.querySelector('.message')?.textContent?.includes('Wie spät ist es?') &&
+  document.querySelector('.answers.mode-choice .answer') !== null &&
+  document.querySelector('.daytime')?.hidden;
+const isSetTask = () => document.querySelector('.clock.settable') !== null;
+const isInputTask = () => document.querySelector('.keypad') !== null;
 const isDaytimeQuestion = () => !document.querySelector('.daytime')?.hidden && document.querySelector('.answer.suggested') === null;
 const isTextQuestion = () => document.querySelector('.message')?.textContent?.includes('Wie sagt man?');
 
@@ -67,6 +83,7 @@ async function context(viewport, reducedMotion = 'reduce') {
   const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion, locale: 'de-DE' });
   const page = await ctx.newPage();
   await page.goto(BASE);
+  await page.waitForLoadState('networkidle');
   return { ctx, page };
 }
 
@@ -114,6 +131,29 @@ for (const [name, viewport] of [['phone-portrait', { width: 390, height: 844 }],
   await seedProgress(page, { tasks: 300, accuracy: 0.92, seed: 9 });
   await openClock(page, isDigitalQuestion);
   await page.screenshot({ path: `${OUT}/${name}.png` });
+  await ctx.close();
+}
+
+// Setting the hands and typing the time (tablet landscape).
+{
+  const { ctx, page } = await context(LANDSCAPE);
+  await seedProgress(page, { tasks: 500, accuracy: 0.97, seed: 21 });
+  await openClock(page, isSetTask, 150);
+  await page.screenshot({ path: `${OUT}/clock-set.png` });
+  await openClock(page, isInputTask, 150);
+  for (const d of '1') await page.click(`.key-digit[aria-label="${d}"]`);
+  await page.screenshot({ path: `${OUT}/clock-input.png` });
+  await ctx.close();
+}
+
+// Sign-in: "Wer lernt hier?" (fresh device, no seed).
+{
+  const { ctx, page } = await context(PORTRAIT);
+  await page.goto(`${BASE}/#/`);
+  await page.waitForSelector('.login');
+  await page.fill('[data-ref="name"]', 'Leonie');
+  for (const d of '12') await page.click(`.key-digit[aria-label="${d}"]`);
+  await page.screenshot({ path: `${OUT}/login.png` });
   await ctx.close();
 }
 

@@ -9,13 +9,15 @@ Runbook für das Ausrollen auf **netcup1**. Für die Entwicklung reicht `npm run
 |-----|------|
 | Domain | `lernwelt.nieda.de` (öffentlich) |
 | Server | `netcup1` (SSH-Host aus `~/.ssh/config`) |
-| Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite) |
+| Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite) und `lernwelt_api` (Node, Port 8081, Pfad `/api`) |
+| Daten | Docker-Volume `lernwelt_data` (Profile als JSON-Dateien), in Terraform mit `prevent_destroy` geschützt |
 | Reverse-Proxy | Traefik im Docker-Netz `proxy-manager`, TLS via Certresolver `production` |
 | Verwaltung | Terraform (`terraform/main.tf`), State im S3-Bucket (`terraform/backend.hcl`) |
 
 ## Mechanik
 
-Es gibt **keine Container-Registry**. `bin/release.sh` baut das Image mit
+Es gibt **keine Container-Registry**. `bin/release.sh` baut beide Images (`lernwelt` und
+`lernwelt-api`, Dockerfile-Targets `web` und `api`) mit
 `DOCKER_HOST=ssh://netcup1` direkt auf dem Server (nur der per `.dockerignore`
 gefilterte Build-Kontext geht über SSH; `DOCKER_BUILDKIT=0`, weil buildx über `ssh://`
 eine SSH-Verbindungsflut auslöst). Der Build führt `npm test` aus und bricht bei roten
@@ -79,3 +81,13 @@ an; den alten vorher mit `task plan` prüfen. Ein neuer State-Key braucht
 
 Der Lernfortschritt liegt im Browser (`localStorage`) und ist an die Domain gebunden.
 Ein Domainwechsel startet auf dem Tablet bei null.
+
+## Spielstände sichern
+
+Die Profile liegen im Volume `lernwelt_data`. Sicherung auf den Rechner:
+
+```bash
+DOCKER_HOST=ssh://netcup1 docker run --rm -v lernwelt_data:/data alpine tar -C /data -cz . > lernwelt-data-$(date +%F).tar.gz
+```
+
+Zurückspielen: Container `lernwelt_api` stoppen, Archiv mit `tar -xz` ins Volume entpacken, Container starten.

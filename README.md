@@ -93,25 +93,58 @@ Sobald eine Stufe geschafft ist, kommen dieselben Uhrzeiten auch **in Worten**: 
 drei“. Diese Aufgaben sind eingestreut und bringen 5 Bonuspunkte. Ein Lautsprecher-Knopf
 liest die Antworten vor.
 
+Später kommt als Zusatzlektion, wie man es in vielen Regionen sagt: **„fünf vor halb vier“**
+(3:25), „fünf nach halb vier“ (3:35), „zehn vor halb vier“ (3:20) und „zehn nach halb vier“
+(3:40) – jeweils mit zwei erklärten Beispielen: „Bis halb vier fehlen noch fünf Minuten.“
+
 <p align="center">
   <img src="docs/screenshots/clock-text.png" alt="Uhrzeiten in Worten: drei Antworten wie 'Fünfundzwanzig vor zehn'" width="360">
   &nbsp;
   <img src="docs/screenshots/trophy.png" alt="Pokal am Ende eines Durchgangs" width="360">
 </p>
 
-### Nachmittagszeiten
+### Zeiger stellen und Uhrzeit eintippen
 
-Eine Zeigeruhr sieht um 3 Uhr morgens genauso aus wie um 3 Uhr nachmittags. Sobald halbe
-Stunden geschafft sind, steht deshalb bei manchen Aufgaben neben der Uhr **„Es ist
-Nachmittag.“** – mit Sonne und Schaukel. Dann ist die Antwort **15:00 Uhr**, nicht 3:00 Uhr:
-„Nach zwölf Uhr mittags zählen wir weiter: dreizehn, vierzehn, fünfzehn …“ Geübt werden
-zuerst volle und halbe Stunden zwischen 13 und 18 Uhr; die Morgen-Uhrzeit ist dabei immer
-eine der falschen Antworten. Nach einer richtigen Antwort heißt es zum Beispiel: „Halb
-vier am Nachmittag. Das schreiben wir 15:30 Uhr.“ Morgen, Abend und weitere Minuten folgen.
+Zuschauen ist leichter als selbst machen – deshalb gibt es zwei weitere Arten zu üben:
+
+- **Zeiger stellen:** Die Uhrzeit wird vorgegeben, als „12:30“ oder in Worten („Viertel vor
+  elf“). Beide Zeiger haben einen Griff zum Ziehen. Wie bei einer echten Uhr läuft der kurze
+  Zeiger mit, wenn man den langen über die 12 zieht. Die Zeiger rasten passend zur Stufe ein
+  – erst auf volle Stunden, später auf halbe, Viertel, Fünfer und einzelne Minuten.
+- **Uhrzeit eintippen:** Die Uhr wird gezeigt, die Uhrzeit wird über eine große
+  Zifferntastatur eingetippt, z. B. „11:23“. Ohne Tageszeit sind 11:23 und 23:23 beide
+  richtig – die App zeigt dann, wie man es üblicherweise schreibt.
+
+Beides kommt nacheinander dazu, sobald die jeweilige Stufe beim Ablesen sitzt, und bringt
+10 Bonuspunkte. Nach einem Fehler gibt es wieder genau einen Hinweis, etwa „Der lange Zeiger
+gehört auf die 9“ oder „Zähle vom Zwölferstrich: zwanzig, einundzwanzig, zweiundzwanzig …“.
 
 <p align="center">
-  <img src="docs/screenshots/clock-afternoon.png" alt="Uhr mit dem Hinweis 'Es ist Nachmittag' und den Antworten 19:00 Uhr, 18:00 Uhr und 6:00 Uhr" width="720">
+  <img src="docs/screenshots/clock-set.png" alt="Zeiger stellen: Uhr mit Griffen an beiden Zeigern und der Aufgabe 'Stelle die Uhr auf …'" width="360">
+  &nbsp;
+  <img src="docs/screenshots/clock-input.png" alt="Uhrzeit eintippen: Uhr mit Zifferntastatur" width="360">
 </p>
+
+### Tageszeiten
+
+Eine Zeigeruhr sieht um 3 Uhr morgens genauso aus wie um 3 Uhr nachmittags. Sobald halbe
+Stunden geschafft sind, steht deshalb bei manchen Aufgaben neben der Uhr, welche Tageszeit
+es ist – mit Bild: zuerst **„Es ist Nachmittag.“** (13 bis 18 Uhr), später auch
+**Vormittag**, **Abend**, **Mittag** und **„kurz nach Mitternacht“**. Dann ist die Antwort
+zum Beispiel **21:30 Uhr – halb zehn am Abend** oder **0:15 Uhr – Viertel nach zwölf in der
+Nacht**. In etwa jeder zweiten Aufgabe ist dieselbe Uhr in der anderen Tageshälfte eine der
+falschen Antworten – so lernt das Kind, auf die Tageszeit zu achten: „Nach zwölf Uhr mittags
+zählen wir weiter: dreizehn, vierzehn, fünfzehn …“
+
+<p align="center">
+  <img src="docs/screenshots/clock-afternoon.png" alt="Uhr mit dem Hinweis 'Es ist Nachmittag' und Antworten im 24-Stunden-Format" width="720">
+</p>
+
+### Erst sagen, dann aufdecken
+
+Bei Uhrzeiten, die schon sicher sitzen, sind die Antworten ab und zu erst einmal verdeckt:
+„Sag die Uhrzeit laut. Dann tippe auf ‚Aufdecken‘.“ Selbst erinnern festigt mehr als
+Wiedererkennen. Im Elternbereich lässt sich das abschalten.
 
 ### Durchgänge, Pokale, Sterne und Abzeichen
 
@@ -141,13 +174,35 @@ vier am Nachmittag. Das schreiben wir 15:30 Uhr.“ Morgen, Abend und weitere Mi
   <img src="docs/screenshots/clock-hint.png" alt="Erklärung nach einer falschen Antwort, mit Minutenzahlen und markiertem Zeigerweg" width="720">
 </p>
 
+### Spielstand: „Wer lernt hier?“
+
+Beim ersten Start fragt die App nach einem **Namen und einer PIN aus vier Ziffern**. Damit
+liegt der Spielstand auf dem Server und ist auf jedem Gerät da – auf dem Tablet zu Hause
+genauso wie auf dem Handy unterwegs. Wer schon geübt hat, nimmt seinen Stand beim Anlegen
+des Profils mit.
+
+- Gespeichert wird nur der Lernstand (Stufen, Punkte, Sterne, Pokale) – keine weiteren
+  Daten. Die PIN liegt nur als Hash auf dem Server.
+- Nach fünf falschen PINs ist das Profil für 15 Minuten gesperrt; so lässt sich die PIN
+  nicht durchprobieren.
+- Die App funktioniert auch offline; Änderungen werden hochgeladen, sobald wieder Internet
+  da ist. Spielt jemand auf zwei Geräten, gewinnt die spätere Änderung.
+- Wer das nicht möchte: „Ohne Anmeldung spielen“ – dann bleibt alles nur auf dem Gerät.
+
+<p align="center">
+  <img src="docs/screenshots/login.png" alt="Anmeldung 'Wer lernt hier?' mit Name und PIN-Tastatur" width="360">
+</p>
+
 ### Für Eltern
 
-- Auf der **Startseite** sieht man alle Pokale, Sterne und Abzeichen und die Lernbereiche.
-- Das **Zahnrad** im Uhr-Modul öffnet den Elternbereich: Stand jeder Stufe, Töne an/aus
-  und „Fortschritt löschen“ (drei Sekunden gedrückt halten).
-- Der Fortschritt bleibt **nur auf dem Gerät** gespeichert (im Browser). Es werden keine
-  Daten verschickt. Wer im Browser die Websitedaten löscht, fängt wieder von vorne an.
+- Auf der **Startseite** sieht man alle Pokale, Sterne und Abzeichen und die Lernbereiche,
+  unten das Profil, ob der Spielstand gespeichert ist, und die **Version** der App.
+- Das **Zahnrad** im Uhr-Modul öffnet den Elternbereich: Stand jeder Stufe und Spur,
+  Töne an/aus, „Erst sagen, dann aufdecken“ an/aus und „Fortschritt löschen“ (drei
+  Sekunden gedrückt halten).
+- **Updates:** Die installierte App sucht beim Start, alle 30 Minuten und beim Zurückkehren
+  nach einer neuen Version und lädt sie, sobald gerade keine Übung läuft. Ein Tipp auf die
+  Versionsnummer sucht sofort.
 - Tipp: Kurze Übungsrunden von fünf bis zehn Minuten wirken besser als lange.
 
 <p align="center">
@@ -156,9 +211,8 @@ vier am Nachmittag. Das schreiben wir 15:30 Uhr.“ Morgen, Abend und weitere Mi
 
 ## Ideen für später
 
-- Zeiger selbst stellen: die Uhrzeit wird genannt, das Kind zieht den Minutenzeiger.
-- „Fünf vor halb vier“ und andere regionale Formulierungen als Zusatzlektion.
-- Weitere Module neben der Uhr.
+Gesammelt im [Backlog](BACKLOG.md) – zum Beispiel Zeitspannen („Wie lange noch?“), weitere
+Module und eine Taschengeld-Idee.
 
 ---
 
@@ -170,7 +224,10 @@ Für alle, die mitbauen möchten.
 - Die Lernlogik (Stufen, Freischaltung, Anteile, Wiederholungen, Punkte) steckt in
   [`src/modules/clock/engine.ts`](src/modules/clock/engine.ts) und ist mit **Vitest**
   getestet.
-- Fortschritt liegt im `localStorage` des Browsers.
+- Fortschritt liegt im `localStorage` des Browsers und wird mit dem eigenen kleinen
+  **API-Server** ([`server/src`](server/src), Node ohne Framework, JSON-Dateien) synchronisiert.
+  Profile: Name + 4-stellige PIN (scrypt), Geräte-Token, Rate-Limits.
+- Installierbar als **PWA** (Vollbild, offline, automatische Updates).
 - Die Schrift [Fredoka](https://fonts.google.com/specimen/Fredoka) ist eingebettet
   (kein Abruf bei Google).
 - Neue Module implementieren `LearningModule` aus
@@ -179,6 +236,7 @@ Für alle, die mitbauen möchten.
 
 ```bash
 npm install
+npm run api        # API auf :8081 (Daten in .data/), der Dev-Server leitet /api dorthin
 npm run dev        # http://localhost:5173, im WLAN auch vom Tablet erreichbar
 npm test           # Unit-Tests
 npm run build      # statische Seite in dist/
