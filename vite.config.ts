@@ -5,8 +5,8 @@ export default defineConfig({
   // Relative paths so the build runs from any sub-path (e.g. GitHub Pages).
   base: './',
   server: {
-    // `npm run api` serves the API locally on 8081.
-    proxy: { '/api': 'http://127.0.0.1:8081' },
+    // `npm run api` serves the API locally on 8081; the UI tests start their own (API_URL).
+    proxy: { '/api': process.env.API_URL ?? 'http://127.0.0.1:8081' },
   },
   define: {
     // Release tag from bin/release.sh (Docker build arg), shown in the app.

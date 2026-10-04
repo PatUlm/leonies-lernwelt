@@ -4,3 +4,5 @@ dist/
 *.sock
 .data/
 tmp/
+test-results/
+playwright-report/
