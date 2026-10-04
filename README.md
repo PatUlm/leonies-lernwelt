@@ -1,9 +1,9 @@
-# Leonis Lernwelt
+# Leonies Lernwelt
 
 Eine kleine Lern-App für Kinder im Grundschulalter, gemacht für das Tablet. Sie läuft
 einfach im Browser – ohne Installation, ohne Konto, ohne Werbung.
 
-Das erste Modul heißt **„Die Uhr“**: Leoni (8) lernt damit, die Zeigeruhr zu lesen.
+Das erste Modul heißt **„Die Uhr“**: Leonie (8) lernt damit, die Zeigeruhr zu lesen.
 Weitere Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
