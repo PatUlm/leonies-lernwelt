@@ -39,6 +39,25 @@ describe('clock suggestion', () => {
     expect(stats.suggestion.label).toBe('Uhr auffrischen');
   });
 
+  it('does not count opening without answering as practice', () => {
+    const engine = new Engine(freshProgress(T0), seeded(3));
+    play(engine, 2 + 10, T0);
+    const later = T0 + REFRESH_AFTER_MS + SESSION_GAP_MS;
+    engine.touch(later);
+    engine.nextTask(); // shown, never answered
+    expect(statsFromProgress(engine.progress, later).suggestion.label).toBe('Uhr auffrischen');
+  });
+
+  it('suggests reviews only once they are due', () => {
+    const engine = new Engine(freshProgress(T0), seeded(4));
+    play(engine, 2 + 10, T0);
+    const p = engine.progress;
+    p.reviewQueue = [{ track: 'digital', hour: 3, minute: 0, dueAt: p.taskCounter + 4 }];
+    expect(statsFromProgress(p, T0).suggestion.priority).not.toBe(SUGGESTION_PRIORITY.reviewDue);
+    p.reviewQueue[0].dueAt = p.taskCounter + 1;
+    expect(statsFromProgress(p, T0).suggestion.priority).toBe(SUGGESTION_PRIORITY.reviewDue);
+  });
+
   it('counts secure clock tiers as goals', () => {
     const stats = statsFromProgress(freshProgress(T0), T0);
     expect(stats.goals).toEqual({ done: 0, total: 6, label: '0 von 6 Stufen sicher' });

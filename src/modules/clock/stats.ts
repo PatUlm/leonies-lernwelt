@@ -1,5 +1,5 @@
 import { SUGGESTION_PRIORITY, type ModuleStats, type Suggestion } from '../types';
-import { Engine, type Progress, type Track } from './engine';
+import { Engine, SESSION_GAP_MS, type Progress, type Track } from './engine';
 import { TIERS, type Tier } from './time';
 
 export const TIER_NAMES: Record<Tier, string> = {
@@ -43,10 +43,15 @@ export function clockBadges(engine: Engine): string[] {
 function suggestionFor(engine: Engine, now: number): Suggestion {
   const p = engine.progress;
   const { continueRound, reviewDue, refresh, discover, practice } = SUGGESTION_PRIORITY;
-  if (p.taskCounter === 0) return { priority: practice, label: 'Uhr entdecken' };
+  const lastAnswered = p.lastAnswered;
+  if (lastAnswered === null) return { priority: practice, label: 'Uhr entdecken' };
   if (p.round.tasks > 0) return { priority: continueRound, label: 'Durchgang fortsetzen' };
-  if (p.reviewQueue.length > 0) return { priority: reviewDue, label: 'Bekanntes wieder üben' };
-  if (now - p.lastActive >= REFRESH_AFTER_MS) return { priority: refresh, label: 'Uhr auffrischen' };
+  // A new session makes all queued reviews due within the first tasks.
+  const newSession = now - p.lastActive > SESSION_GAP_MS;
+  if (p.reviewQueue.some((r) => newSession || r.dueAt <= p.taskCounter + 1)) {
+    return { priority: reviewDue, label: 'Bekanntes wieder üben' };
+  }
+  if (now - lastAnswered >= REFRESH_AFTER_MS) return { priority: refresh, label: 'Uhr auffrischen' };
   const untried = (['digital', 'text'] as const).some((track) =>
     TIERS.some((t) => {
       const s = engine.tierState(track, t);
@@ -60,7 +65,7 @@ function suggestionFor(engine: Engine, now: number): Suggestion {
 export function statsFromProgress(progress: Progress, now: number): ModuleStats {
   const engine = new Engine(progress);
   const p = engine.progress;
-  const started = p.taskCounter > 0;
+  const started = p.lastAnswered !== null;
   const digital = engine.unlockedTiers('digital');
   const newest = digital[digital.length - 1];
   const secure = TIERS.filter((t) => engine.tierState('digital', t).secure).length;
@@ -72,7 +77,7 @@ export function statsFromProgress(progress: Progress, now: number): ModuleStats 
     goals: { done: secure, total: TIERS.length, label: `${secure} von ${TIERS.length} Stufen sicher` },
     round: p.round.tasks > 0 ? { points: p.round.points, target: p.round.target } : null,
     started,
-    lastPlayed: started ? p.lastActive : null,
+    lastPlayed: p.lastAnswered,
     suggestion: suggestionFor(engine, now),
   };
 }

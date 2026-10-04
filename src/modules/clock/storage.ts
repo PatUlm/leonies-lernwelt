@@ -5,8 +5,12 @@ const KEY = 'uhr.progress.v1';
 
 export function loadProgress(now: number): Progress {
   const stored = readJson<Progress>(KEY);
-  // Fields added later get their defaults.
-  if (stored?.version === 1 && stored.tracks?.digital?.length === 6) return { ...freshProgress(now), ...stored };
+  if (stored?.version === 1 && stored.tracks?.digital?.length === 6) {
+    // Fields added later get their defaults.
+    const progress = { ...freshProgress(now), ...stored };
+    if (stored.lastAnswered === undefined && stored.taskCounter > 0) progress.lastAnswered = stored.lastActive;
+    return progress;
+  }
   return freshProgress(now);
 }
 

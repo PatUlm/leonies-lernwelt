@@ -89,6 +89,8 @@ export interface Progress {
   version: 1;
   session: number;
   lastActive: number;
+  /** When the last task was answered; opening without answering does not count. */
+  lastAnswered: number | null;
   taskCounter: number;
   points: number;
   correctTotal: number;
@@ -155,6 +157,7 @@ export function freshProgress(now: number): Progress {
     version: 1,
     session: 1,
     lastActive: now,
+    lastAnswered: null,
     taskCounter: 0,
     points: 0,
     correctTotal: 0,
@@ -237,6 +240,7 @@ export class Engine {
     if (this.current?.id !== task.id) throw new Error('answer for a task that is not current');
     this.current = null;
     const p = this.progress;
+    p.lastAnswered = p.lastActive;
     if (this.currentSource === 'forced') p.forced.shift();
     else if (this.currentSource) p.reviewQueue = p.reviewQueue.filter((r) => r !== this.currentSource);
     this.currentSource = null;

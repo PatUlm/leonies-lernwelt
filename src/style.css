@@ -343,10 +343,16 @@ a.area-card:active {
   gap: 12px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .areas-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+.area-card:focus-visible,
+.area-page .module-tile:focus-visible {
+  outline: 4px solid var(--hour);
+  outline-offset: 3px;
 }
 
 .area-card.small {
@@ -403,6 +409,7 @@ a.area-card:active {
 }
 
 .status-soon {
+  white-space: normal;
   background: #e7e2da;
   color: #57534e;
   font-size: 13px;
