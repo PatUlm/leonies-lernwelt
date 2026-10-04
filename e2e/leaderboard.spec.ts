@@ -3,7 +3,8 @@ import { nextTaskShown, openClock, startDevice } from './helpers';
 
 test('points played in the clock show up in the weekly leaderboard', async ({ page }, testInfo) => {
   // One API serves the whole run: each project and repetition needs its own profile.
-  const name = `Lea ${testInfo.project.name} ${testInfo.repeatEachIndex + 1}`;
+  const project = testInfo.config.projects.findIndex((p) => p.name === testInfo.project.name);
+  const name = `Lea ${project + 1}-${testInfo.repeatEachIndex + 1}`;
   await startDevice(page, { forced: [], profile: name });
   await openClock(page);
 

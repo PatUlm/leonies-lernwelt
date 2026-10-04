@@ -22,10 +22,13 @@ export default defineConfig({
     { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 820, height: 1180 } } },
     // Wide landscape: where the time-of-day card once ended up far from the question.
     { name: 'pc', use: { ...devices['Desktop Chrome'], viewport: { width: 1900, height: 1000 } } },
+    // Small phone held sideways: the narrowest answer column.
+    { name: 'phone-landscape', use: { ...devices['Desktop Chrome'], viewport: { width: 667, height: 375 } } },
   ],
   webServer: [
     {
-      command: `rm -rf .data/e2e && DATA_DIR=.data/e2e PORT=${API_PORT} node server/src/main.ts`,
+      // Every test run signs up a profile per project and repetition.
+      command: `rm -rf .data/e2e && DATA_DIR=.data/e2e PORT=${API_PORT} SIGNUPS_PER_CLIENT=100 node server/src/main.ts`,
       url: `http://127.0.0.1:${API_PORT}/api/health`,
       reuseExistingServer: false,
     },

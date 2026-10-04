@@ -20,6 +20,12 @@ test('the time of day stands right above the answers, through the feedback, and 
   expect(box.x).toBeGreaterThanOrEqual(answers.x);
   expect(text.x - (box.x + box.width)).toBeLessThan(30);
 
+  // "15:00 Uhr" fits into its button and the buttons into the screen.
+  const overflow = await page.locator('.answer').evaluateAll((buttons) =>
+    buttons.filter((b) => b.scrollWidth > b.clientWidth || b.getBoundingClientRect().right > window.innerWidth).map((b) => b.textContent),
+  );
+  expect(overflow).toEqual([]);
+
   await page.locator('[data-ref="speak"]').click();
   const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
   expect(spoken.join(' ').match(/Es ist Nachmittag\./g)).toHaveLength(1);

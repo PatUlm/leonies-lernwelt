@@ -8,6 +8,8 @@ export interface AppOptions {
   store: ProfileStore;
   /** Upper bound for profiles, so an open sign-up cannot fill the disk. */
   maxProfiles?: number;
+  /** Sign-ups per client and hour (raised for the UI tests only). */
+  signupsPerClient?: number;
   /** Largest accepted request body (saved progress included). */
   maxBodyBytes?: number;
   now?: () => number;
@@ -104,7 +106,7 @@ export function createApp(options: AppOptions) {
   const now = options.now ?? Date.now;
   const profileFailures = new FailureLimiter(LOGIN_FAILURES_PER_PROFILE, QUARTER_HOUR, now);
   const clientFailures = new FailureLimiter(LOGIN_FAILURES_PER_CLIENT, HOUR, now);
-  const signups = new FailureLimiter(SIGNUPS_PER_CLIENT, HOUR, now);
+  const signups = new FailureLimiter(options.signupsPerClient ?? SIGNUPS_PER_CLIENT, HOUR, now);
   const loginQueue = serial();
   const signupQueue = serial();
 
