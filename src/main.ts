@@ -3,6 +3,7 @@ import './style.css';
 import { AREAS } from './areas';
 import { APP_NAME } from './config';
 import { Sound } from './shared/sound';
+import { listenForInstallPrompt } from './shared/install';
 import { loadSettings, saveSettings } from './shared/storage';
 import { renderArea, renderDashboard } from './views';
 
@@ -15,6 +16,7 @@ document.title = APP_NAME;
 
 // Ask the browser not to evict the progress when storage runs low.
 void navigator.storage?.persist?.().catch(() => false);
+listenForInstallPrompt();
 
 /** Routes: #/ (dashboard), #/<area>, #/<area>/<module>. */
 function route(): void {
@@ -33,7 +35,7 @@ function route(): void {
 
   const area = AREAS.find((a) => a.id === areaId && a.modules.length);
   if (!area) {
-    renderDashboard(app);
+    cleanup = renderDashboard(app);
     return;
   }
   const module = area.modules.find((m) => m.id === moduleId);

@@ -2,6 +2,7 @@ import { AREAS, collectModules, pickRecommendation, type Area, type ModuleEntry 
 import { APP_NAME, CHILD_NAME } from './config';
 import { STATUS_ICONS, wrappedCandy } from './shared/candy';
 import { medal, plainStar, skyLayer, trophy } from './shared/decor';
+import { canInstall, onInstallChange, promptInstall } from './shared/install';
 
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -61,7 +62,8 @@ function areaTitle(area: Area): string {
     : escapeHtml(area.title);
 }
 
-export function renderDashboard(app: HTMLElement): void {
+/** Renders the dashboard; returns a cleanup function. */
+export function renderDashboard(app: HTMLElement): () => void {
   const entries = collectModules();
   const recommended = pickRecommendation(entries);
   const available = AREAS.filter((a) => a.modules.length);
@@ -103,7 +105,18 @@ export function renderDashboard(app: HTMLElement): void {
              <div class="areas-grid">${upcoming.map(smallCard).join('')}</div></section>`
         : ''
     }
-    ${badgeList(entries, 'Deine Abzeichen')}`;
+    ${badgeList(entries, 'Deine Abzeichen')}
+    <section class="install" hidden>
+      <span class="install-icon" aria-hidden="true">📲</span>
+      <span class="install-text">Die Lernwelt als App auf den Startbildschirm legen – dann öffnet sie im Vollbild.</span>
+      <button type="button" class="btn primary install-button">Installieren</button>
+    </section>`;
+
+  const install = app.querySelector<HTMLElement>('.install')!;
+  const update = () => (install.hidden = !canInstall());
+  install.querySelector('button')!.addEventListener('click', () => void promptInstall());
+  update();
+  return onInstallChange(update);
 }
 
 /** Six (or as many as there are goals) small sweets, filled per goal reached. */

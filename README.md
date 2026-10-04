@@ -30,8 +30,12 @@ vielen Wiederholungen statt mit Prüfungen:
 
 Gemacht für das Tablet, läuft aber genauso auf dem Handy – im Hoch- und im Querformat. Die Uhr
 nimmt immer den Platz ein, der übrig bleibt; auf dem Handy quer stehen Uhr und Antworten
-nebeneinander. Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ – dann startet die App
-im Vollbild.
+nebeneinander.
+
+**Als App installieren:** Auf Android-Tablets und -Handys erscheint auf der Startseite der Knopf
+„Installieren“ (sonst im Chrome-Menü „App installieren“). Danach liegt Leonies Lernwelt mit
+eigenem Icon auf dem Startbildschirm, öffnet im Vollbild ohne Adressleiste und funktioniert
+auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 
 <p align="center">
   <img src="docs/screenshots/phone-portrait.png" alt="Handy im Hochformat: Uhr oben, drei Antworten darunter" height="420">
@@ -144,8 +148,6 @@ vier am Nachmittag. Das schreiben wir 15:30 Uhr.“ Morgen, Abend und weitere Mi
   und „Fortschritt löschen“ (drei Sekunden gedrückt halten).
 - Der Fortschritt bleibt **nur auf dem Gerät** gespeichert (im Browser). Es werden keine
   Daten verschickt. Wer im Browser die Websitedaten löscht, fängt wieder von vorne an.
-- Tipp: Die Seite über das Browser-Menü „Zum Startbildschirm hinzufügen“ – dann startet sie
-  wie eine App im Vollbild.
 - Tipp: Kurze Übungsrunden von fünf bis zehn Minuten wirken besser als lange.
 
 <p align="center">

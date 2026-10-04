@@ -14,7 +14,9 @@
     "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
-    "vitest": "^5.0.3"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.3",
+    "workbox-window": "^7.4.1"
   },
   "dependencies": {
     "@fontsource-variable/fredoka": "^5.3.0"

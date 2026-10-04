@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="0.6" stop-color="#f9a8d4"/>
+      <stop offset="1" stop-color="#fde68a"/>
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed background: safe for maskable icons (content stays in the inner 80 %). -->
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <g transform="translate(256 266)">
+    <circle r="150" fill="#fff" stroke="#1e3a5f" stroke-width="18"/>
+    <g stroke="#1e3a5f" stroke-width="10" stroke-linecap="round">
+      <line y1="-128" y2="-108"/><line y1="-128" y2="-108" transform="rotate(90)"/>
+      <line y1="-128" y2="-108" transform="rotate(180)"/><line y1="-128" y2="-108" transform="rotate(270)"/>
+    </g>
+    <g stroke="#1e3a5f" stroke-width="6" stroke-linecap="round">
+      <line y1="-128" y2="-116" transform="rotate(30)"/><line y1="-128" y2="-116" transform="rotate(60)"/>
+      <line y1="-128" y2="-116" transform="rotate(120)"/><line y1="-128" y2="-116" transform="rotate(150)"/>
+      <line y1="-128" y2="-116" transform="rotate(210)"/><line y1="-128" y2="-116" transform="rotate(240)"/>
+      <line y1="-128" y2="-116" transform="rotate(300)"/><line y1="-128" y2="-116" transform="rotate(330)"/>
+    </g>
+    <line y2="-100" stroke="#f97316" stroke-width="16" stroke-linecap="round" transform="rotate(270)"/>
+    <line y2="-66" stroke="#2563eb" stroke-width="26" stroke-linecap="round" transform="rotate(105)"/>
+    <circle r="16" fill="#1e3a5f"/>
+  </g>
+  <path d="M396 92l13 30 33 3-25 21 8 32-29-17-29 17 8-32-25-21 33-3Z" fill="#fcd34d" stroke="#f59e0b" stroke-width="6" stroke-linejoin="round"/>
+</svg>
