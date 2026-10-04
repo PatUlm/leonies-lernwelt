@@ -50,6 +50,13 @@ export class ProfileStore {
     return (await readdir(this.dir)).filter((f) => f.endsWith('.json')).length;
   }
 
+  /** All profiles with their ids (one could vanish while reading: it is left out). */
+  async list(): Promise<{ id: string; profile: Profile }[]> {
+    const ids = (await readdir(this.dir)).filter((f) => /^[0-9a-f]{64}\.json$/.test(f)).map((f) => f.slice(0, -5));
+    const profiles = await Promise.all(ids.map(async (id) => ({ id, profile: await this.get(id) })));
+    return profiles.filter((p): p is { id: string; profile: Profile } => p.profile !== null);
+  }
+
   /** Runs read-modify-write for one profile without interleaving. */
   update<T>(id: string, fn: (current: Profile | null) => Promise<{ next: Profile | null; result: T }>): Promise<T> {
     const previous = this.queue.get(id) ?? Promise.resolve();

@@ -107,6 +107,7 @@ export function statsFromProgress(progress: Progress, now: number): ModuleStats 
   return {
     stars: engine.stars,
     trophies: p.trophies,
+    weekPoints: engine.weekPoints(now),
     badges: clockBadges(engine),
     level: started ? `Stufe ${newest} von 6: ${TIER_NAMES[newest]}` : 'Noch nicht gestartet',
     goals: { done: secure, total: TIERS.length, label: `${secure} von ${TIERS.length} Stufen sicher` },

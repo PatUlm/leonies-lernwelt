@@ -87,6 +87,14 @@ function progressView(p: Profile) {
   return { name: p.name, revision: p.revision, updatedAt: p.updatedAt, data: p.data };
 }
 
+/** Points the app reported for `week` with its last upload; 0 for any other week. */
+function weekPoints(p: Profile, week: string): number {
+  const score = (p.data as { score?: { week?: unknown; points?: unknown } } | null)?.score;
+  const points = score?.points;
+  if (score?.week !== week || typeof points !== 'number' || !Number.isFinite(points)) return 0;
+  return Math.max(0, Math.floor(points));
+}
+
 export function createApp(options: AppOptions) {
   const { store } = options;
   const maxProfiles = options.maxProfiles ?? 200;
@@ -204,6 +212,30 @@ export function createApp(options: AppOptions) {
     });
   }
 
+  /**
+   * Places 1–3 of a week (shared places on a tie: 1, 1, 3) and the caller's own
+   * place. The week comes from the app ("2026-09-28", its Monday), so the server
+   * needs no calendar of its own.
+   */
+  async function leaderboard(req: IncomingMessage) {
+    const { id } = await authenticate(req);
+    const week = new URL(req.url ?? '/', 'http://localhost').searchParams.get('week') ?? '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new HttpError(400, 'invalid_week');
+    const rows = (await store.list())
+      .map(({ id: pid, profile }) => ({ name: profile.name, points: weekPoints(profile, week), me: pid === id }))
+      .filter((r) => r.points > 0)
+      .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'de'));
+    const ranked = rows.map((r) => ({ ...r, rank: rows.findIndex((x) => x.points === r.points) + 1 }));
+    const own = ranked.find((r) => r.me);
+    return {
+      status: 200,
+      body: {
+        top: ranked.filter((r) => r.rank <= 3),
+        me: { rank: own?.rank ?? null, points: own?.points ?? 0 },
+      },
+    };
+  }
+
   async function logout(req: IncomingMessage) {
     const { id, tokenHash } = await authenticate(req);
     return store.update(id, async (profile) => {
@@ -218,6 +250,7 @@ export function createApp(options: AppOptions) {
     'POST /api/login': login,
     'GET /api/progress': getProgress,
     'PUT /api/progress': putProgress,
+    'GET /api/leaderboard': leaderboard,
     'POST /api/logout': logout,
     'GET /api/health': async () => ({ status: 200, body: { ok: true } }),
   };

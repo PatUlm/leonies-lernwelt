@@ -28,11 +28,32 @@ interface SyncState {
 
 export type SyncStatus = 'none' | 'local' | 'saved' | 'pending' | 'offline';
 
-/** What the app stores on the server (opaque to it). */
+/** Points of one week; `week` is its Monday ("2026-09-28"), see weekKey. */
+export interface WeekScore {
+  week: string;
+  points: number;
+}
+
+/** What the app stores on the server (opaque to it, except `score` for the leaderboard). */
 interface SyncedData {
   entries: Record<string, unknown>;
   /** When these entries were last changed on a device. */
   changedAt: number;
+  score?: WeekScore;
+}
+
+export interface LeaderboardRow {
+  rank: number;
+  name: string;
+  points: number;
+  me: boolean;
+}
+
+export interface Leaderboard {
+  /** Places 1–3; on a tie several profiles share a place (1, 1, 3). */
+  top: LeaderboardRow[];
+  /** Own place, null without points this week. */
+  me: { rank: number | null; points: number };
 }
 
 interface ServerProgress {
@@ -74,6 +95,7 @@ export class SyncClient {
   /** Server data that arrived while an exercise was running. */
   private deferred: ServerProgress | null = null;
   private canApply: () => boolean = () => true;
+  private score: (() => WeekScore) | null = null;
   private readonly statusListeners = new Set<(s: SyncStatus) => void>();
   private readonly remoteListeners = new Set<() => void>();
   private readonly fetchFn: typeof fetch;
@@ -89,6 +111,11 @@ export class SyncClient {
    */
   setApplyGuard(canApply: () => boolean): void {
     this.canApply = canApply;
+  }
+
+  /** The week's points, uploaded with the progress for the leaderboard. */
+  setScoreSource(score: () => WeekScore): void {
+    this.score = score;
   }
 
   // --- state ---------------------------------------------------------------
@@ -286,7 +313,7 @@ export class SyncClient {
     const state = this.state();
     if (!account || !state.dirty) return;
     const gen = this.generation;
-    const data: SyncedData = { entries: syncedEntries(), changedAt: state.updatedAt };
+    const data: SyncedData = { entries: syncedEntries(), changedAt: state.updatedAt, score: this.score?.() };
     let uploaded = false;
     try {
       const r = (await this.request('PUT', '/progress', { baseRevision: state.revision, data }, account.token)) as unknown as {
@@ -307,6 +334,18 @@ export class SyncClient {
       this.emitStatus();
     }
     if (uploaded && this.state().dirty) this.schedulePush();
+  }
+
+  /** Places 1–3 and the own place of `week`; null when signed out or offline. */
+  async leaderboard(week: string): Promise<Leaderboard | null> {
+    const account = this.account();
+    if (!account) return null;
+    try {
+      const r = await this.request('GET', `/leaderboard?week=${encodeURIComponent(week)}`, undefined, account.token);
+      return r as unknown as Leaderboard;
+    } catch {
+      return null;
+    }
   }
 
   /** `adopt`: take over the server revision even if it is older (fresh sign-in). */

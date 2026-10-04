@@ -40,6 +40,8 @@ export interface Suggestion {
 export interface ModuleStats {
   stars: number;
   trophies: number;
+  /** Points earned in the current week (leaderboard). */
+  weekPoints: number;
   /** Learning badges, phrased for the child. */
   badges: string[];
   /** Short progress line for the tile. */

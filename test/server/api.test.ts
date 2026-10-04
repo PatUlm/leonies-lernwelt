@@ -170,3 +170,46 @@ describe('progress', () => {
     expect((await call('PUT', '/api/progress', { baseRevision: 0, data: huge }, t)).status).toBe(413);
   });
 });
+
+describe('leaderboard', () => {
+  const WEEK = '2026-09-28';
+
+  async function player(name: string, score?: { week: string; points: unknown }): Promise<string> {
+    const t = (await call('POST', '/api/profiles', { name, pin: '1234' })).body.token;
+    if (score) await call('PUT', '/api/progress', { baseRevision: 0, data: { entries: {}, changedAt: 1, score } }, t);
+    return t;
+  }
+
+  it('lists places 1–3 of the week with shared places on a tie', async () => {
+    const anna = await player('Anna', { week: WEEK, points: 50 });
+    await player('Ben', { week: WEEK, points: 80 });
+    await player('Carla', { week: WEEK, points: 50 });
+    await player('Dora', { week: WEEK, points: 20 });
+    const r = await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, anna);
+    expect(r.status).toBe(200);
+    expect(r.body.top).toEqual([
+      { rank: 1, name: 'Ben', points: 80, me: false },
+      { rank: 2, name: 'Anna', points: 50, me: true },
+      { rank: 2, name: 'Carla', points: 50, me: false },
+    ]);
+    expect(r.body.me).toEqual({ rank: 2, points: 50 });
+  });
+
+  it('gives the own place outside the top 3 and leaves out other weeks and bad scores', async () => {
+    await player('Anna', { week: WEEK, points: 90 });
+    await player('Ben', { week: '2026-09-21', points: 500 });
+    await player('Carla', { week: WEEK, points: '999' });
+    const dora = await player('Dora', { week: WEEK, points: 10 });
+    const r = await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, dora);
+    expect(r.body.top.map((x: { name: string }) => x.name)).toEqual(['Anna', 'Dora']);
+    expect(r.body.me).toEqual({ rank: 2, points: 10 });
+    const emil = await player('Emil');
+    expect((await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, emil)).body.me).toEqual({ rank: null, points: 0 });
+  });
+
+  it('needs a token and a valid week', async () => {
+    const t = await player('Anna');
+    expect((await call('GET', `/api/leaderboard?week=${WEEK}`)).status).toBe(401);
+    expect((await call('GET', '/api/leaderboard?week=soon', undefined, t)).status).toBe(400);
+  });
+});

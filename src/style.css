@@ -113,6 +113,7 @@ button {
 .areas,
 .areas-more,
 .rewards,
+.leaderboard,
 .modules,
 .badges,
 .topbar,
@@ -208,6 +209,61 @@ button {
 .reward-label {
   color: var(--ink-soft);
   font-size: 16px;
+}
+
+.leaderboard h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.leaderboard ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border-radius: 14px;
+  border: 3px solid transparent;
+  padding: 6px 14px;
+  font-size: 20px;
+  box-shadow: 0 2px 0 var(--line);
+}
+
+.lb-row.me {
+  border-color: var(--candy-soft);
+}
+
+.lb-cup svg {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+
+.lb-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.lb-points {
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.lb-own {
+  margin: 8px 0 0;
+  padding: 0 4px;
+  color: var(--ink-soft);
+  font-size: 18px;
 }
 
 .modules {

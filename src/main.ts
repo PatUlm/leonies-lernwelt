@@ -1,6 +1,6 @@
 import '@fontsource-variable/fredoka';
 import './style.css';
-import { AREAS } from './areas';
+import { AREAS, collectModules } from './areas';
 import { appTitle } from './config';
 import { Sound } from './shared/sound';
 import { renderLogin } from './login';
@@ -8,6 +8,7 @@ import { listenForInstallPrompt } from './shared/install';
 import { loadSettings, saveSettings } from './shared/storage';
 import { sync } from './shared/sync';
 import { reloadIfPending, setupUpdates } from './shared/update';
+import { weekKey } from './shared/week';
 import { renderArea, renderDashboard } from './views';
 
 const app = document.getElementById('app')!;
@@ -24,6 +25,10 @@ let inModule = false;
 setupUpdates(() => !inModule);
 // A running exercise keeps its own state; server data waits until it is left.
 sync.setApplyGuard(() => !inModule);
+sync.setScoreSource(() => ({
+  week: weekKey(Date.now()),
+  points: collectModules().reduce((n, e) => n + e.stats.weekPoints, 0),
+}));
 
 // Progress from the server replaces the local one: show it (only outside exercises).
 sync.onRemoteData(() => {

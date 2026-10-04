@@ -1,11 +1,12 @@
 import { AREAS, collectModules, pickRecommendation, type Area, type ModuleEntry } from './areas';
 import { appTitle } from './config';
 import { STATUS_ICONS, wrappedCandy } from './shared/candy';
-import { medal, plainStar, skyLayer, trophy } from './shared/decor';
+import { TROPHY_BRONZE, TROPHY_GOLD, TROPHY_SILVER, medal, plainStar, skyLayer, trophy } from './shared/decor';
 import { escapeHtml } from './shared/html';
 import { canInstall, onInstallChange, promptInstall } from './shared/install';
-import { sync, type SyncStatus } from './shared/sync';
+import { sync, type Leaderboard, type SyncStatus } from './shared/sync';
 import { APP_VERSION, checkForUpdate } from './shared/update';
+import { weekKey } from './shared/week';
 
 const TITLE_COLORS = ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
 
@@ -37,6 +38,28 @@ function rewardsRow(entries: ModuleEntry[], compact = false): string {
       <div class="reward"><span class="reward-icon">${plainStar('#fbbf24')}</span><span class="reward-count">${sum((e) => e.stats.stars)}</span><span class="reward-label">Sterne</span></div>
       <div class="reward"><span class="reward-icon">${medal()}</span><span class="reward-count">${badges}</span><span class="reward-label">Abzeichen</span></div>
     </section>`;
+}
+
+const PLACE_TROPHIES = [TROPHY_GOLD, TROPHY_SILVER, TROPHY_BRONZE];
+
+/** Places 1–3 with gold, silver and bronze trophies, then the own points. */
+function leaderboardHtml(board: Leaderboard): string {
+  const rows = board.top
+    .map((r) => `
+      <li class="lb-row${r.me ? ' me' : ''}" aria-label="Platz ${r.rank}">
+        <span class="lb-cup">${trophy(PLACE_TROPHIES[r.rank - 1])}</span>
+        <span class="lb-name">${escapeHtml(r.name)}</span>
+        <span class="lb-points">${plural(r.points, 'Punkt', 'Punkte')}</span>
+      </li>`)
+    .join('');
+  const { rank, points } = board.me;
+  let own = '';
+  if (!rank) own = 'Du hast diese Woche noch keine Punkte.';
+  else if (rank > 3) own = `Du: ${plural(points, 'Punkt', 'Punkte')} · Platz ${rank}`;
+  return `
+    <h2>Bestenliste dieser Woche</h2>
+    ${rows ? `<ol>${rows}</ol>` : ''}
+    ${own ? `<p class="lb-own">${escapeHtml(own)}</p>` : ''}`;
 }
 
 function badgeList(entries: ModuleEntry[], heading: string): string {
@@ -106,6 +129,7 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
       <p class="greeting">Hallo${account ? ` ${escapeHtml(account.name)}` : ''}! Was möchtest du heute üben?</p>
     </header>
     ${rewardsRow(entries)}
+    <section class="leaderboard" aria-label="Bestenliste" hidden></section>
     <nav class="areas" aria-label="Lernbereiche">${available.map(bigCard).join('')}</nav>
     ${
       upcoming.length
@@ -130,6 +154,22 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
   const update = () => (install.hidden = !canInstall());
   install.querySelector('button')!.addEventListener('click', () => void promptInstall());
   update();
+
+  // Upload pending points first, so the own entry is up to date. The second push
+  // covers changes saved while an earlier upload was already on its way.
+  if (account) {
+    const board = app.querySelector<HTMLElement>('.leaderboard')!;
+    void sync
+      .push()
+      .then(() => sync.push())
+      .catch(() => undefined)
+      .then(() => sync.leaderboard(weekKey(Date.now())))
+      .then((data) => {
+        if (!data) return;
+        board.innerHTML = leaderboardHtml(data);
+        board.hidden = false;
+      });
+  }
 
   const syncText = app.querySelector<HTMLElement>('[data-ref="sync"]')!;
   const showSync = (s: SyncStatus) => (syncText.textContent = SYNC_TEXT[s]);

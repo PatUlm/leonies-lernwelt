@@ -24,8 +24,15 @@ export function cupcake(): string {
   return `<svg viewBox="0 0 100 110" aria-hidden="true"><path d="M18 58h64l-9 46H27Z" fill="#fb923c"/><path d="M30 60l4 42M46 60v42M60 60l-3 42M72 60l-5 42" stroke="#fdba74" stroke-width="4"/><path d="M12 60c-6-18 12-26 18-22 0-16 20-24 30-12 10-10 32-2 28 14 10 0 12 14 0 20Z" fill="#fbcfe8"/><circle cx="52" cy="18" r="8" fill="#ef4444"/><g fill="#60a5fa"><rect x="30" y="44" width="8" height="3" rx="1.5" transform="rotate(30 34 45)"/><rect x="58" y="36" width="8" height="3" rx="1.5" transform="rotate(-20 62 37)"/></g><g fill="#facc15"><rect x="44" y="50" width="8" height="3" rx="1.5"/><rect x="70" y="48" width="8" height="3" rx="1.5" transform="rotate(50 74 49)"/></g></svg>`;
 }
 
-export function trophy(): string {
-  return `<svg viewBox="0 0 120 130" aria-hidden="true"><path d="M30 14c-30 0-26 40 6 42M90 14c30 0 26 40-6 42" fill="none" stroke="#f59e0b" stroke-width="9"/><path d="M28 8h64v28c0 22-14 36-32 36S28 58 28 36Z" fill="#fbbf24" stroke="#d97706" stroke-width="4"/><path d="M42 18v18c0 8 4 14 10 18" fill="none" stroke="#fef3c7" stroke-width="6" stroke-linecap="round"/><rect x="52" y="70" width="16" height="22" fill="#f59e0b"/><rect x="34" y="92" width="52" height="14" rx="4" fill="#d97706"/><rect x="26" y="106" width="68" height="18" rx="5" fill="#92400e"/><path d="M60 26l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1Z" fill="#fff7d6"/></svg>`;
+/** Colours of a trophy: handles and stem, cup, rim and plinth, shine, base, star. */
+type TrophyColors = [string, string, string, string, string, string];
+
+export const TROPHY_GOLD: TrophyColors = ['#f59e0b', '#fbbf24', '#d97706', '#fef3c7', '#92400e', '#fff7d6'];
+export const TROPHY_SILVER: TrophyColors = ['#94a3b8', '#cbd5e1', '#64748b', '#f1f5f9', '#334155', '#f8fafc'];
+export const TROPHY_BRONZE: TrophyColors = ['#c2410c', '#e08a4f', '#9a3412', '#fde3cf', '#5c2a0e', '#fff1e6'];
+
+export function trophy([handle, cup, rim, shine, base, star]: TrophyColors = TROPHY_GOLD): string {
+  return `<svg viewBox="0 0 120 130" aria-hidden="true"><path d="M30 14c-30 0-26 40 6 42M90 14c30 0 26 40-6 42" fill="none" stroke="${handle}" stroke-width="9"/><path d="M28 8h64v28c0 22-14 36-32 36S28 58 28 36Z" fill="${cup}" stroke="${rim}" stroke-width="4"/><path d="M42 18v18c0 8 4 14 10 18" fill="none" stroke="${shine}" stroke-width="6" stroke-linecap="round"/><rect x="52" y="70" width="16" height="22" fill="${handle}"/><rect x="34" y="92" width="52" height="14" rx="4" fill="${rim}"/><rect x="26" y="106" width="68" height="18" rx="5" fill="${base}"/><path d="M60 26l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1Z" fill="${star}"/></svg>`;
 }
 
 export function medal(): string {
