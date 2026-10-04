@@ -35,10 +35,9 @@ const MARKUP = `
     <span class="round-goal">${trophy()}</span>
     <span class="round-label" data-ref="roundLabel"></span>
   </div>
-  <main class="stage">
-    <div class="clock-wrap" data-ref="clock">
-      <div class="daytime" data-ref="daytime" hidden>${afternoonScene()}<span>Es ist Nachmittag.</span></div>
-    </div>
+  <main class="stage" data-ref="stage">
+    <div class="daytime" data-ref="daytime" hidden>${afternoonScene()}<span>Es ist Nachmittag.</span></div>
+    <div class="clock-wrap" data-ref="clock"></div>
     <p class="message" data-ref="message" aria-live="polite"></p>
     <div class="answers" data-ref="answers"></div>
     <button class="next" type="button" data-ref="next" hidden>Weiter</button>
@@ -90,6 +89,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     stars: ref('stars'),
     trophies: ref('trophies'),
     daytime: ref('daytime'),
+    stage: ref('stage'),
     round: ref('round'),
     roundFill: ref('roundFill'),
     roundLabel: ref('roundLabel'),
@@ -170,6 +170,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     ui.answers.classList.toggle('text-answers', task.track === 'text');
     // The daytime context stays visible for the whole task.
     ui.daytime.hidden = task.track !== 'daytime';
+    ui.stage.classList.toggle('with-context', task.track === 'daytime');
     buttons = task.options.map((option, i) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -418,7 +419,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   ui.speak.hidden = !canSpeak();
   ui.speak.addEventListener('click', () => {
     if (phase === 'question' && task.kind !== 'example') {
-      const parts = [ui.message.textContent ?? '', ...buttons.map((b) => b.textContent ?? '')];
+      const context = task.track === 'daytime' ? 'Es ist Nachmittag. ' : '';
+      const parts = [context + (ui.message.textContent ?? ''), ...buttons.map((b) => b.textContent ?? '')];
       speak(parts, (i) => buttons.forEach((b, j) => b.classList.toggle('speaking', j === i - 1)));
     } else {
       speak([ui.message.textContent ?? '']);

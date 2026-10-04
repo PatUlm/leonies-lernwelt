@@ -106,8 +106,8 @@ async function context(viewport, reducedMotion = 'reduce') {
   await ctx.close();
 }
 
-// Afternoon times: context beside the clock (landscape) and above it (portrait).
-for (const [name, viewport] of [['clock-afternoon', LANDSCAPE], ['clock-afternoon-portrait', PORTRAIT]]) {
+// Afternoon times: context beside the clock.
+for (const [name, viewport] of [['clock-afternoon', LANDSCAPE]]) {
   const { ctx, page } = await context(viewport);
   await seedProgress(page, { tasks: 400, accuracy: 0.95, seed: 5, daytimeHeavy: true });
   await openClock(page, isDaytimeQuestion, 120);

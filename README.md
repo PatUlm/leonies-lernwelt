@@ -77,6 +77,20 @@ liest die Antworten vor.
   <img src="docs/screenshots/trophy.png" alt="Pokal am Ende eines Durchgangs" width="360">
 </p>
 
+### Nachmittagszeiten
+
+Eine Zeigeruhr sieht um 3 Uhr morgens genauso aus wie um 3 Uhr nachmittags. Sobald halbe
+Stunden sicher sitzen, steht deshalb bei manchen Aufgaben neben der Uhr **„Es ist
+Nachmittag.“** – mit Sonne und Schaukel. Dann ist die Antwort **15:00 Uhr**, nicht 3:00 Uhr:
+„Nach zwölf Uhr mittags zählen wir weiter: dreizehn, vierzehn, fünfzehn …“ Geübt werden
+zuerst volle und halbe Stunden zwischen 13 und 18 Uhr; die Morgen-Uhrzeit ist dabei immer
+eine der falschen Antworten. Nach einer richtigen Antwort heißt es zum Beispiel: „Halb
+vier am Nachmittag. Das schreiben wir 15:30 Uhr.“ Morgen, Abend und weitere Minuten folgen.
+
+<p align="center">
+  <img src="docs/screenshots/clock-afternoon.png" alt="Uhr mit dem Hinweis 'Es ist Nachmittag' und den Antworten 19:00 Uhr, 18:00 Uhr und 6:00 Uhr" width="720">
+</p>
+
 ### Durchgänge, Pokale, Sterne und Abzeichen
 
 - Ein **Durchgang** endet, wenn der Punkte-Balken voll ist. Das Ziel passt sich dem
