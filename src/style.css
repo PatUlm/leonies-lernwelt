@@ -537,7 +537,8 @@ a.area-card:active {
 .clock-game {
   height: 100dvh;
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -556,6 +557,7 @@ a.area-card:active {
   font-weight: 800;
   align-items: center;
   flex: 1;
+  min-width: 0;
 }
 
 .score > span {
@@ -573,6 +575,7 @@ a.area-card:active {
 .tools {
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .tool {
@@ -650,6 +653,7 @@ a.area-card:active {
 }
 
 .stage {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -657,14 +661,15 @@ a.area-card:active {
   gap: 10px;
   padding: 6px 16px max(16px, env(safe-area-inset-bottom));
   min-height: 0;
-  --clock-size: min(92vw, calc(100dvh - 320px), 680px);
 }
 
+/* The clock takes whatever height is left; the SVG keeps its circle centred. */
 .clock-wrap {
-  width: var(--clock-size);
-  min-width: 220px;
-  aspect-ratio: 1;
-  flex-shrink: 1;
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 140px;
+  max-width: 680px;
+  max-height: 680px;
 }
 
 /* Daytime context ("Es ist Nachmittag"): beside the clock in landscape, above it in portrait. */
@@ -687,11 +692,12 @@ a.area-card:active {
   height: auto;
 }
 
+/* Landscape: in the free space left of the clock. */
 @media (orientation: landscape) {
   .daytime {
     position: absolute;
-    top: 12%;
-    right: calc(50% + var(--clock-size) / 2 + 24px);
+    top: 8%;
+    left: max(24px, env(safe-area-inset-left));
     width: 170px;
     flex-direction: column;
     padding: 10px;
@@ -702,7 +708,7 @@ a.area-card:active {
   }
 }
 
-/* Portrait: in the layout flow, the clock shrinks a little to make room. */
+/* Portrait: in the layout flow above the clock, which shrinks to make room. */
 @media (orientation: portrait) {
   .daytime {
     flex-direction: row;
@@ -712,10 +718,6 @@ a.area-card:active {
 
   .daytime svg {
     width: 64px;
-  }
-
-  .stage.with-context {
-    --clock-size: min(92vw, calc(100dvh - 400px), 680px);
   }
 }
 
@@ -871,6 +873,12 @@ a.area-card:active {
 .text-answers .answer {
   font-size: clamp(22px, 3vw, 27px);
   min-height: 64px;
+}
+
+/* "15:30 Uhr" is longer than "3:30" and has to stay on one line. */
+.daytime-answers .answer {
+  font-size: clamp(19px, 5.2vw, 34px);
+  white-space: nowrap;
 }
 
 .answer:active:not(:disabled) {
@@ -1185,6 +1193,292 @@ a.area-card:active {
 .setting input {
   width: 26px;
   height: 26px;
+}
+
+/* ---------- phones ---------- */
+
+/* Phones: the sweets at the bottom edge would sit behind the answer buttons. */
+@media (max-width: 600px), (orientation: landscape) and (max-height: 500px) {
+  .clock-game .sky .bob {
+    display: none;
+  }
+}
+
+/* Phone portrait: compact bars and controls; the clock gets the remaining height. */
+@media (max-width: 600px) {
+  .topbar {
+    gap: 6px;
+    padding: max(8px, env(safe-area-inset-top)) 10px 2px;
+  }
+
+  .tool {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .back {
+    font-size: 30px;
+  }
+
+  .tools {
+    gap: 6px;
+  }
+
+  .score {
+    gap: 10px;
+    font-size: 18px;
+  }
+
+  .score-icon svg {
+    height: 24px;
+  }
+
+  .round {
+    width: calc(100% - 24px);
+    margin-top: 4px;
+  }
+
+  .round-track {
+    height: 18px;
+  }
+
+  .round-goal svg {
+    height: 28px;
+  }
+
+  .round-label {
+    font-size: 14px;
+  }
+
+  .stage {
+    gap: 8px;
+    padding: 4px 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .message {
+    min-height: 2.4em;
+    font-size: 17px;
+  }
+
+  .message.question {
+    font-size: 21px;
+  }
+
+  .message.good {
+    font-size: 19px;
+  }
+
+  .answers {
+    gap: 8px;
+  }
+
+  .answer {
+    min-height: 56px;
+    padding: 6px;
+    font-size: 26px;
+  }
+
+  .text-answers .answer {
+    min-height: 48px;
+    font-size: 20px;
+  }
+
+  .next {
+    min-width: 180px;
+    min-height: 52px;
+    font-size: 22px;
+  }
+
+  .daytime {
+    font-size: 17px;
+  }
+
+  .daytime svg {
+    width: 52px;
+  }
+}
+
+/*
+ * Phone landscape: too short to stack clock and answers. Two columns: the clock
+ * on the left, everything else on the right; .stage dissolves into the grid.
+ */
+@media (orientation: landscape) and (max-height: 500px) {
+  .clock-game {
+    grid-template-columns: minmax(0, 42%) minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    column-gap: 14px;
+    padding: max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .topbar {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    padding: 0;
+    gap: 6px;
+  }
+
+  .tool {
+    width: 42px;
+    height: 42px;
+    font-size: 19px;
+  }
+
+  .back {
+    font-size: 28px;
+  }
+
+  .tools {
+    gap: 6px;
+  }
+
+  .score {
+    gap: 10px;
+    font-size: 17px;
+  }
+
+  .score-icon svg {
+    height: 22px;
+  }
+
+  .round {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    width: 100%;
+    margin: 6px 0 0;
+  }
+
+  .round-track {
+    height: 16px;
+  }
+
+  .round-goal svg {
+    height: 24px;
+  }
+
+  .round-label {
+    grid-column: auto;
+    grid-row: 1;
+    font-size: 13px;
+  }
+
+  .stage {
+    display: contents;
+  }
+
+  .clock-wrap {
+    grid-column: 1;
+    grid-row: 1 / 6;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-width: none;
+    max-height: none;
+  }
+
+  .stage.with-context .clock-wrap {
+    grid-row: 2 / 6;
+  }
+
+  .daytime {
+    grid-column: 1;
+    grid-row: 1;
+    position: static;
+    justify-self: center;
+    width: auto;
+    flex-direction: row;
+    padding: 2px 12px 2px 2px;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .daytime svg {
+    width: 44px;
+  }
+
+  .message {
+    grid-column: 2;
+    grid-row: 4;
+    min-height: 0;
+    margin-bottom: 6px;
+    justify-content: flex-start;
+    text-align: left;
+    font-size: 15px;
+  }
+
+  .message.question {
+    font-size: 19px;
+  }
+
+  .message.good {
+    font-size: 17px;
+  }
+
+  .next {
+    grid-column: 3;
+    grid-row: 4;
+    align-self: center;
+    position: static;
+    transform: none;
+    width: auto;
+    min-width: 0;
+    min-height: 44px;
+    margin-bottom: 6px;
+    padding: 0 18px;
+    font-size: 19px;
+  }
+
+  .answers {
+    grid-column: 2 / 4;
+    grid-row: 5;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .answer {
+    min-height: 50px;
+    padding: 4px;
+    font-size: 23px;
+  }
+
+  .answers.text-answers {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .text-answers .answer {
+    min-height: 46px;
+    font-size: 17px;
+  }
+
+  .dialog {
+    padding: 14px 18px 12px;
+    font-size: 16px;
+  }
+
+  .dialog h2 {
+    margin: 2px 0 6px;
+    font-size: 22px;
+  }
+
+  .dialog-actions {
+    margin-top: 10px;
+  }
+
+  .btn {
+    min-height: 46px;
+    font-size: 18px;
+  }
+
+  .trophy svg {
+    width: 72px;
+  }
+
+  .toast {
+    top: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

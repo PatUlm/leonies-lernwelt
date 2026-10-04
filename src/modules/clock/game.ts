@@ -168,6 +168,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     clock.setFocus(example ? (task.time.minute === 0 ? 'hour' : 'minute') : null, task.time);
 
     ui.answers.classList.toggle('text-answers', task.track === 'text');
+    ui.answers.classList.toggle('daytime-answers', task.track === 'daytime');
     // The daytime context stays visible for the whole task.
     ui.daytime.hidden = task.track !== 'daytime';
     ui.stage.classList.toggle('with-context', task.track === 'daytime');
