@@ -1,4 +1,4 @@
-import { contextConfirmation, hour24, type DayContext } from './daytime';
+import { SUFFIX, contextConfirmation, hour24, type DayContext } from './daytime';
 import type { AnswerOption } from './distractors';
 import type { Track } from './engine';
 import { capitalize, formatSpoken, formatSpokenCapitalized, numberWord } from './german';
@@ -28,7 +28,7 @@ function spokenFor(track: Track, t: ClockTime): string {
 /** What the clock shows, as confirmed after a correct answer. */
 export function confirmation(task: TaskInfo): string {
   const { track, time } = task;
-  if (track === 'daytime' && task.context) return contextConfirmation(task.context, time);
+  if (task.context) return contextConfirmation(task.context, time);
   if (track === 'text' || track === 'halb') return `Es ist ${spokenFor(track, time)}.`;
   return `Es ist ${formatDigital(time)}.`;
 }
@@ -125,6 +125,70 @@ export function inputHint(target: ClockTime, typedHour: number): Hint {
   return { text: countingSentence(target.minute), focus: 'minute' };
 }
 
+/** From the clock hour to the 24-hour value: "Am Abend zählen wir nach zwölf weiter: 9 + 12 = 21." */
+function towards24(context: DayContext, hour: number): string {
+  switch (context) {
+    case 'afternoon':
+      return `Am Nachmittag zählen wir nach zwölf weiter: ${hour} + 12 = ${hour + 12}.`;
+    case 'evening':
+      return `Am Abend zählen wir nach zwölf weiter: ${hour} + 12 = ${hour + 12}.`;
+    case 'forenoon':
+      return `Am Vormittag zählen wir nicht weiter: ${hour} bleibt ${hour}.`;
+    case 'noon':
+      return 'Am Mittag ist es zwölf: 12 bleibt 12.';
+    case 'night':
+      return 'Nach Mitternacht beginnt der Tag wieder bei null: Aus 12 wird 0.';
+  }
+}
+
+/** From the 24-hour value back to the clock: "21 Uhr ist 9 Uhr am Abend. Rechne zwölf weniger: 21 − 12 = 9." */
+function towardsClock(context: DayContext, hour: number): string {
+  const h24 = hour24(context, hour);
+  switch (context) {
+    case 'afternoon':
+    case 'evening':
+      return `${h24} Uhr ist ${hour} Uhr ${SUFFIX[context]}. Rechne zwölf weniger: ${h24} − 12 = ${hour}.`;
+    case 'forenoon':
+      return `${h24} Uhr ist am Vormittag: Die Stunde bleibt ${hour}.`;
+    case 'noon':
+      return '12 Uhr ist Mittag: Die Stunde bleibt 12.';
+    case 'night':
+      return '0 Uhr ist Mitternacht: Auf der Uhr ist das die 12.';
+  }
+}
+
+/** Setting the hands for "21:30": minutes first, then the converted hour. */
+export function daySetHint(target: ClockTime, context: DayContext, set: ClockTime): Hint {
+  if (set.minute !== target.minute) return setHint(target, set);
+  return { text: `${towardsClock(context, target.hour)} Stelle den kurzen Zeiger ${hourPlace(target)}.`, focus: 'hour' };
+}
+
+/** Typing "21:30" for the clock with a time of day: read right but not converted, or misread. */
+export function dayInputHint(target: ClockTime, context: DayContext, typed: { hour: number; minute: number }): Hint {
+  const hourRead = (typed.hour % 12 || 12) === target.hour;
+  if (hourRead && typed.hour !== hour24(context, target.hour)) {
+    const praise = typed.minute === target.minute ? 'Du hast die Uhr richtig abgelesen. ' : '';
+    return { text: `${praise}${towards24(context, target.hour)}`, focus: 'hour' };
+  }
+  return inputHint(target, typed.hour);
+}
+
+/** The general rule of a time of day, for the help button: no hour of the task given away. */
+export function contextRule(context: DayContext): string {
+  switch (context) {
+    case 'afternoon':
+      return 'Am Nachmittag zählen wir nach zwölf weiter: aus 3 Uhr wird 15 Uhr.';
+    case 'evening':
+      return 'Am Abend zählen wir nach zwölf weiter: aus 7 Uhr wird 19 Uhr.';
+    case 'forenoon':
+      return 'Am Vormittag bleibt die Stunde, wie sie auf der Uhr steht.';
+    case 'noon':
+      return 'Am Mittag bleibt die 12 eine 12.';
+    case 'night':
+      return 'Nach Mitternacht beginnt der Tag wieder bei null: aus 12 wird 0.';
+  }
+}
+
 /** Explanation for a guided example (not scored). */
 export function explainExample(task: TaskInfo): string {
   const { track, time: t } = task;
@@ -135,6 +199,14 @@ export function explainExample(task: TaskInfo): string {
     const h24 = hour24(task.context, hour);
     const rule = h24 >= 13 ? ` ${AFTERNOON_RULE}` : h24 === 0 ? ' Nach Mitternacht beginnt der Tag wieder bei null.' : '';
     return `Das Bild zeigt die Tageszeit.${rule} ${contextConfirmation(task.context, t)}`;
+  }
+  if (track === 'daySet' && task.context) {
+    return `${towardsClock(task.context, hour)} Zieh den langen Zeiger ${minutePlace(minute)} und den kurzen Zeiger ${hourPlace(t)}. Dann tippe auf „Fertig“.`;
+  }
+  if (track === 'dayInput' && task.context) {
+    const written = `${hour24(task.context, hour)}:${String(minute).padStart(2, '0')}`;
+    const digits = [...written.replace(':', '')].join(' ');
+    return `Die Uhr zeigt ${formatSpoken(t)}. Das Bild zeigt die Tageszeit. ${towards24(task.context, hour)} Tippe ${digits} – das ist ${written}.`;
   }
   if (track === 'set') {
     return `Zieh den langen Zeiger ${minutePlace(minute)} und den kurzen Zeiger ${hourPlace(t)}. Dann tippe auf „Fertig“.`;

@@ -53,6 +53,16 @@ export const BADGE_NAMES: Record<Track, Partial<Record<Tier, string>>> = {
     4: '„zehn vor halb“ und „zehn nach halb“ sagst du schon sicher.',
     5: '„fünf vor halb“ und „fünf nach halb“ sagst du schon sicher.',
   },
+  daySet: {
+    1: 'Volle Stunden wie 21:00 stellst du schon sicher ein.',
+    2: 'Halbe Stunden wie 21:30 stellst du schon sicher ein.',
+    3: 'Viertelstunden wie 21:45 stellst du schon sicher ein.',
+  },
+  dayInput: {
+    1: 'Volle Stunden mit Tageszeit tippst du schon sicher ein.',
+    2: 'Halbe Stunden mit Tageszeit tippst du schon sicher ein.',
+    3: 'Viertelstunden mit Tageszeit tippst du schon sicher ein.',
+  },
 };
 
 /** Days without practice after which the clock is suggested for a refresh. */

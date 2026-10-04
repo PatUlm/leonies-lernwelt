@@ -136,6 +136,19 @@ Nacht**. In etwa jeder zweiten Aufgabe ist dieselbe Uhr in der anderen Tageshäl
 falschen Antworten – so lernt das Kind, auf die Tageszeit zu achten: „Nach zwölf Uhr mittags
 zählen wir weiter: dreizehn, vierzehn, fünfzehn …“
 
+Danach wird selbst umgerechnet, in beide Richtungen (je volle, halbe und Viertelstunden,
+15 Bonuspunkte):
+
+- **Zeiger stellen nach 24-Stunden-Zeit:** „Stelle die Uhr auf 21:30.“ Erst zurückrechnen
+  (21 − 12 = 9), dann halb zehn stellen. Die Tageszeit verrät die App hier erst in den
+  Beispielen, auf Hilfe und nach der Antwort.
+- **Eintippen mit Tageszeit:** Die Uhr zeigt halb zehn, daneben „Es ist Abend.“ – richtig ist
+  nur 21:30. Bei 9:30 heißt es: „Du hast die Uhr richtig abgelesen. Am Abend zählen wir nach
+  zwölf weiter: 9 + 12 = 21.“
+
+Nachmittag und Abend kommen dabei häufiger dran, Vormittag, Mittag und Mitternacht bleiben
+als Gegenprobe, damit „zwölf dazu“ nicht zur Gewohnheit wird.
+
 <p align="center">
   <img src="docs/screenshots/clock-afternoon.png" alt="Uhr mit dem Hinweis 'Es ist Nachmittag' und Antworten im 24-Stunden-Format" width="720">
 </p>

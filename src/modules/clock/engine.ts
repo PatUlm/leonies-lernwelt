@@ -1,7 +1,9 @@
 import { CONTEXT_HOURS, hour24, type DayContext } from './daytime';
 import { buildDaytimeOptions, buildOptions, type AnswerOption } from './distractors';
 import { formatSpoken } from './german';
-import { explainExample, hintFor, inputHint, setHint, type Hint, type HintFocus } from './hints';
+import {
+  dayInputHint, daySetHint, explainExample, hintFor, inputHint, setHint, type Hint, type HintFocus,
+} from './hints';
 import {
   TIER_MINUTES, TIERS, formatDaytime, formatDigital, pick, tierOf, timeKey,
   type ClockTime, type Rng, type Tier,
@@ -11,18 +13,22 @@ import {
  * digital: read the clock, choose "3:45"; text: choose "Viertel vor vier";
  * daytime: with a context ("Es ist Abend") choose "21:45 Uhr";
  * set: set the hands for a given time; input: type the time shown;
- * halb: choose the regional "fünf vor halb vier".
+ * halb: choose the regional "fünf vor halb vier";
+ * daySet: set the hands for "21:30" (21 → 9); dayInput: with a context type "21:30".
  */
-export type Track = 'digital' | 'text' | 'daytime' | 'set' | 'input' | 'halb';
-export const TRACKS: readonly Track[] = ['digital', 'text', 'daytime', 'set', 'input', 'halb'];
+export type Track = 'digital' | 'text' | 'daytime' | 'set' | 'input' | 'halb' | 'daySet' | 'dayInput';
+export const TRACKS: readonly Track[] = ['digital', 'text', 'daytime', 'set', 'input', 'halb', 'daySet', 'dayInput'];
 /** Tracks mixed into the clock reading once unlocked, in the order they are introduced. */
 export type SideTrack = Exclude<Track, 'digital'>;
-export const SIDE_TRACKS: readonly SideTrack[] = ['text', 'set', 'input', 'daytime', 'halb'];
+export const SIDE_TRACKS: readonly SideTrack[] = ['text', 'set', 'input', 'daytime', 'halb', 'daySet', 'dayInput'];
+/** Tracks with a time of day: the 24-hour value depends on it. */
+export const DAY_TRACKS: readonly Track[] = ['daytime', 'daySet', 'dayInput'];
 /** How a task is answered. */
 export type TaskMode = 'choice' | 'set' | 'input';
 
 export function modeOf(track: Track): TaskMode {
-  return track === 'set' ? 'set' : track === 'input' ? 'input' : 'choice';
+  if (track === 'set' || track === 'daySet') return 'set';
+  return track === 'input' || track === 'dayInput' ? 'input' : 'choice';
 }
 
 /**
@@ -39,13 +45,13 @@ export const READY_MASTERY = 60;
  * the way of answering or the time of day is new, so their tiers are ready sooner.
  */
 export const READY_MASTERY_BY_TRACK: Record<Track, number> = {
-  digital: READY_MASTERY, text: 40, daytime: 40, set: 40, input: 40, halb: 40,
+  digital: READY_MASTERY, text: 40, daytime: 40, set: 40, input: 40, halb: 40, daySet: 40, dayInput: 40,
 };
 export const SECURE_MASTERY = 100;
 export const MAX_MASTERY = 120;
 /** Correct answers faster than this count as fluent. No timer is ever shown. */
 export const FAST_ANSWER_MS: Record<Track, number> = {
-  digital: 6000, text: 8000, daytime: 8000, set: 15000, input: 12000, halb: 8000,
+  digital: 6000, text: 8000, daytime: 8000, set: 15000, input: 12000, halb: 8000, daySet: 18000, dayInput: 15000,
 };
 /** Share of the newest tier, growing with its mastery from MIN to MAX. */
 export const NEWEST_SHARE_MIN = 0.4;
@@ -65,6 +71,8 @@ export const SIDE_TRACK_SHARES: Record<SideTrack, { learning: number; practised:
   input: { learning: 0.3, practised: 0.1 },
   daytime: { learning: 0.25, practised: 0.1 },
   halb: { learning: 0.2, practised: 0.06 },
+  daySet: { learning: 0.25, practised: 0.08 },
+  dayInput: { learning: 0.25, practised: 0.08 },
 };
 /** Side tracks together take at most this; more once several are mastered. */
 export const MAX_SIDE_SHARE = 0.4;
@@ -72,7 +80,7 @@ export const MAX_SIDE_SHARE_PRACTISED = 0.5;
 /** Tiers that exist in a track (all others stay locked). */
 export const TRACK_TIERS: Record<Track, readonly Tier[]> = {
   digital: TIERS, text: TIERS, set: TIERS, input: TIERS,
-  daytime: [1, 2, 3],
+  daytime: [1, 2, 3], daySet: [1, 2, 3], dayInput: [1, 2, 3],
   halb: [4, 5],
 };
 /** Share of tasks from tiers below the second newest (easy repetition). */
@@ -86,8 +94,10 @@ export const EXAMPLES_PER_TIER = 2;
 export const RECENT_SPAN = 4;
 /** Points for an independent correct answer, by tier. */
 export const TIER_POINTS: Record<Tier, number> = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30, 6: 40 };
-/** Extra points by track: more for setting the hands and typing the time. */
-export const TRACK_BONUS: Record<Track, number> = { digital: 0, text: 5, daytime: 5, halb: 5, set: 10, input: 10 };
+/** Extra points by track: more for setting the hands and typing the time, most when converting too. */
+export const TRACK_BONUS: Record<Track, number> = {
+  digital: 0, text: 5, daytime: 5, halb: 5, set: 10, input: 10, daySet: 15, dayInput: 15,
+};
 /** Points for a correct answer after using help (about half, no bonus). */
 export const HELP_POINTS: Record<Tier, number> = { 1: 5, 2: 5, 3: 10, 4: 10, 5: 15, 6: 20 };
 /** Share of tasks from secure tiers where the child first says the time aloud. */
@@ -190,10 +200,13 @@ export interface Task {
   kind: TaskKind;
   mode: TaskMode;
   time: ClockTime;
-  /** Daytime track: the time of day shown next to the clock. */
+  /**
+   * Time of day (daytime tracks). Shown next to the clock, except when setting
+   * the hands from "21:30": there it would give the conversion away.
+   */
   context?: DayContext;
-  /** Setting the hands: the time is given as "12:30" or in words. */
-  prompt?: 'digital' | 'text';
+  /** Setting the hands: the time is given as "12:30", in words or as "21:30" (daySet). */
+  prompt?: 'digital' | 'text' | 'daytime';
   /** Choices (choice mode only). */
   options: AnswerOption[];
   correctIndex: number;
@@ -318,6 +331,22 @@ export class Engine {
     return contexts;
   }
 
+  /**
+   * Time of day for a task. Setting and typing with 24-hour times favour the
+   * afternoon and evening, where the hour changes; the others stay as contrast,
+   * so adding twelve never becomes a habit. Noon and night have only the 12:
+   * they are left out while all their times of this tier were just shown.
+   */
+  private chooseContext(track: Track, tier: Tier): DayContext {
+    const recent = this.progress.recent;
+    const fresh = (c: DayContext) =>
+      CONTEXT_HOURS[c].some((hour) => trackMinutes(track, tier).some((minute) => !recent.includes(timeKey({ hour, minute }))));
+    const reached = this.dayContexts();
+    const contexts = reached.filter(fresh).length ? reached.filter(fresh) : reached;
+    if (track === 'daytime') return pick(contexts, this.rng);
+    return pick(contexts.flatMap((c) => (c === 'afternoon' || c === 'evening' ? [c, c] : [c])), this.rng);
+  }
+
   /** Call on app start and before each task; opens a new session after a long pause. */
   touch(now: number): boolean {
     const p = this.progress;
@@ -355,13 +384,22 @@ export class Engine {
 
   /**
    * Set and input mode. Typed times without a time-of-day context are right in
-   * either half of the day (11:23 and 23:23 show the same clock).
+   * either half of the day (11:23 and 23:23 show the same clock); with a
+   * context only the 24-hour time counts (21:30 in the evening, not 9:30).
    */
   answerTime(task: Task, given: GivenTime, helped: boolean, elapsedMs = Infinity): AnswerResult {
     const hour12 = given.hour % 12 || 12;
-    const ok = hour12 === task.time.hour && given.minute === task.time.minute;
+    const hourOk = task.track === 'dayInput' && task.context
+      ? given.hour === hour24(task.context, task.time.hour)
+      : hour12 === task.time.hour;
+    const ok = hourOk && given.minute === task.time.minute;
     let hint: Hint | null = null;
-    if (!ok) hint = task.mode === 'set' ? setHint(task.time, { hour: hour12, minute: given.minute }) : inputHint(task.time, given.hour);
+    if (!ok) {
+      const set = { hour: hour12, minute: given.minute };
+      if (task.track === 'daySet' && task.context) hint = daySetHint(task.time, task.context, set);
+      else if (task.track === 'dayInput' && task.context) hint = dayInputHint(task.time, task.context, given);
+      else hint = task.mode === 'set' ? setHint(task.time, set) : inputHint(task.time, given.hour);
+    }
     return this.settle(task, ok, hint, helped, elapsedMs);
   }
 
@@ -629,7 +667,7 @@ export class Engine {
   ): Task {
     const state = this.tierState(track, tier);
     const mode = modeOf(track);
-    const context = track === 'daytime' ? (given?.context ?? pick(this.dayContexts(), this.rng)) : undefined;
+    const context = DAY_TRACKS.includes(track) ? (given?.context ?? this.chooseContext(track, tier)) : undefined;
     const time = given?.time ?? this.chooseTime(track, tier, context);
     const advanced = state.mastery >= READY_MASTERY / 2 || state.ready;
     let options: AnswerOption[] = [];
@@ -638,8 +676,11 @@ export class Engine {
         ? buildDaytimeOptions(time, hour24(context, time.hour), advanced, this.rng)
         : buildOptions(time, { tier, advanced }, this.rng);
     }
-    // Setting the hands: the time in words once that text tier is mastered.
-    const prompt = mode === 'set' ? (this.tierState('text', tier).ready && this.rng() < 0.5 ? 'text' : 'digital') : undefined;
+    // Setting the hands: the time in words once that text tier is mastered;
+    // always "21:30" when converting, words would skip the conversion.
+    let prompt: Task['prompt'];
+    if (track === 'daySet') prompt = 'daytime';
+    else if (mode === 'set') prompt = this.tierState('text', tier).ready && this.rng() < 0.5 ? 'text' : 'digital';
     // Minute numbers help with the first answers of the 10- and 5-minute tiers.
     const introPhase = kind !== 'review' && state.mastery < 2 * MASTERY_CORRECT && !state.ready;
     const sayFirst =
@@ -712,6 +753,9 @@ export class Engine {
       daytime: (tier) => ready('digital', tier === 3 ? 3 : 2),
       // "zehn vor halb" needs "halb" to be secure; "fünf vor halb" the 5-minute words.
       halb: (tier) => ready('text', tier) && (tier === 5 || this.tierState('text', 2).secure),
+      // Converting needs the time of day and the way of answering; typing is the hardest, so it comes last.
+      daySet: (tier) => ready('daytime', tier) && ready('set', tier),
+      dayInput: (tier) => ready('daySet', tier) && ready('input', tier),
     };
     for (const track of SIDE_TRACKS) {
       for (const tier of TRACK_TIERS[track]) {

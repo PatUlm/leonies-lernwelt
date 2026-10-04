@@ -7,14 +7,14 @@ import { canSpeak, speak, stopSpeaking } from '../../shared/speech';
 import { Stopwatch } from '../../shared/stopwatch';
 import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
-import { contextSentence, type DayContext } from './daytime';
+import { contextSentence, hour24, type DayContext } from './daytime';
 import {
   CORRECT_PER_STAR, Engine, MASTERY_CORRECT, MASTERY_FAST_BONUS, MASTERY_WRONG, MIN_DISTINCT_HOURS,
   READY_MASTERY_BY_TRACK, SECURE_MASTERY, TRACK_TIERS, TRACKS, label, setStep,
   type AnswerResult, type GivenTime, type RoundSummary, type Task, type Track,
 } from './engine';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
-import { confirmation } from './hints';
+import { confirmation, contextRule } from './hints';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import { BADGE_NAMES, TIER_NAMES, statsFromProgress } from './stats';
 import { TIERS, formatDigital, wrapHour, type ClockTime, type Tier } from './time';
@@ -86,6 +86,10 @@ function practicedName(track: Track, tier: Tier): string {
       return `Uhrzeit eintippen: ${TIER_NAMES[tier]}`;
     case 'halb':
       return tier === 4 ? '„zehn vor halb“' : '„fünf vor halb“';
+    case 'daySet':
+      return `Zeiger stellen nach 24-Stunden-Zeit: ${TIER_NAMES[tier]}`;
+    case 'dayInput':
+      return `Eintippen mit Tageszeit: ${TIER_NAMES[tier]}`;
     default:
       return TIER_NAMES[tier];
   }
@@ -98,6 +102,8 @@ const TRACK_NAMES: Record<Track, string> = {
   set: 'Zeiger stellen',
   input: 'Eintippen',
   halb: 'vor/nach halb',
+  daySet: 'Zeiger nach 24 h',
+  dayInput: 'Eintippen mit Tageszeit',
 };
 
 function plural(n: number, one: string, many: string): string {
@@ -203,7 +209,23 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   /** How the target time is given when setting the hands. */
   function targetText(): string {
-    return task.prompt === 'text' ? `„${formatSpokenCapitalized(task.time)}“` : formatDigital(task.time);
+    if (task.prompt === 'text') return `„${formatSpokenCapitalized(task.time)}“`;
+    if (task.prompt === 'daytime' && task.context) return written24(task);
+    return formatDigital(task.time);
+  }
+
+  /** "21:30": the 24-hour time of a task with a time of day. */
+  function written24(t: Task): string {
+    return `${hour24(t.context!, t.time.hour)}:${String(t.time.minute).padStart(2, '0')}`;
+  }
+
+  /** Shows the time of day next to the clock (setting from "21:30" only in examples, on help and afterwards). */
+  function showContext(): void {
+    if (!task.context) return;
+    ui.daytime.hidden = false;
+    ui.stage.classList.add('with-context');
+    ui.scene.innerHTML = SCENES[task.context]();
+    ui.sceneText.textContent = contextSentence(task.context, task.time);
   }
 
   // --- task flow -------------------------------------------------------------
@@ -230,12 +252,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     clock.setFocus(example && task.mode === 'choice' ? (task.time.minute === 0 ? 'hour' : 'minute') : null, task.time);
 
     // The time-of-day context stays visible for the whole task.
-    ui.daytime.hidden = !task.context;
-    ui.stage.classList.toggle('with-context', Boolean(task.context));
-    if (task.context) {
-      ui.scene.innerHTML = SCENES[task.context]();
-      ui.sceneText.textContent = contextSentence(task.context, task.time);
-    }
+    ui.daytime.hidden = true;
+    ui.stage.classList.remove('with-context');
+    if (task.track !== 'daySet' || example) showContext();
     ui.answers.className = `answers mode-${task.mode}`;
     ui.answers.classList.toggle('text-answers', task.track === 'text' || task.track === 'halb');
     ui.answers.classList.toggle('daytime-answers', task.track === 'daytime');
@@ -413,8 +432,10 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
     if (result.ok) {
       const lead = task.kind === 'example' ? 'Genau!' : helpUsed ? 'Gemeinsam geschafft!' : 'Richtig!';
+      showContext();
       // 23:23 for a clock without time of day is right too; show the usual way.
-      const written = typedTime && typedTime.hour !== task.time.hour ? ` Hier schreiben wir ${formatDigital(task.time)}.` : '';
+      const written =
+        task.track === 'input' && typedTime && typedTime.hour !== task.time.hour ? ` Hier schreiben wir ${formatDigital(task.time)}.` : '';
       setMessage(`${lead} ${confirmation(task)}${written}`, 'good');
       if (result.streak) {
         const n = result.streak <= 12 ? capitalize(numberWord(result.streak)) : String(result.streak);
@@ -431,7 +452,10 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       later(() => whenNoDialog(() => afterAnswer(result)), delay);
       return;
     }
-    const shown = task.mode === 'input' ? ` Richtig ist ${formatDigital(task.time)}.` : '';
+    showContext();
+    let shown = '';
+    if (task.track === 'dayInput' && task.context) shown = ` Richtig ist ${written24(task)}.`;
+    else if (task.mode === 'input') shown = ` Richtig ist ${formatDigital(task.time)}.`;
     setMessage(`Schauen wir zusammen. ${result.hint ?? ''}${shown}`, 'explain');
     clock.setFocus(result.hintFocus ?? null, task.time);
     if (result.hintFocus === 'minute') clock.setHelpers({ minuteLabels: true, quarters: false });
@@ -598,9 +622,14 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     if (task.track === 'text') rule = ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.';
     if (task.track === 'halb') rule = ' Bei „vor halb“ und „nach halb“ sagt man schon die nächste Stunde.';
     if (task.track === 'daytime') rule = ' Nach zwölf Uhr mittags zählen wir weiter: aus 3 Uhr wird 15 Uhr.';
+    if (task.track === 'dayInput' && task.context) rule = ` ${contextRule(task.context)}`;
+    if (task.track === 'daySet') {
+      showContext();
+      rule = ' Ist die Stunde größer als 12, rechne zwölf weniger: aus 15 Uhr wird 3 Uhr. 0 Uhr ist die 12.';
+    }
     if (task.mode === 'set') {
       setMessage(
-        `Stelle die Uhr auf ${targetText()}: Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen Zeiger zur Stunde. Die kleinen Zahlen außen zeigen die Minuten.`,
+        `Stelle die Uhr auf ${targetText()}:${rule} Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen Zeiger zur Stunde. Die kleinen Zahlen außen zeigen die Minuten.`,
         'explain',
       );
       return;
@@ -613,7 +642,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   ui.speak.hidden = !canSpeak();
   ui.speak.addEventListener('click', () => {
-    const context = task.context ? `${contextSentence(task.context, task.time)} ` : '';
+    const context = task.context && !ui.daytime.hidden ? `${contextSentence(task.context, task.time)} ` : '';
     if (phase === 'question' && task.mode === 'choice' && buttons.length && task.kind !== 'example') {
       const parts = [context + (ui.message.textContent ?? ''), ...buttons.map((b) => b.textContent ?? '')];
       // Listening is not answering time.

@@ -43,7 +43,7 @@ export function contextSentence(context: DayContext, t: ClockTime): string {
   }
 }
 
-const SUFFIX: Record<DayContext, string> = {
+export const SUFFIX: Record<DayContext, string> = {
   afternoon: 'am Nachmittag',
   forenoon: 'am Vormittag',
   evening: 'am Abend',
