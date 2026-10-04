@@ -4,6 +4,7 @@ import { Engine, SESSION_GAP_MS, freshProgress } from '../src/modules/clock/engi
 import { REFRESH_AFTER_MS, statsFromProgress } from '../src/modules/clock/stats';
 import { SUGGESTION_PRIORITY, type ModuleStats } from '../src/modules/types';
 import { seeded } from './rng';
+import { answerTask } from './clock/answer';
 
 const T0 = 1_700_000_000_000;
 
@@ -11,7 +12,7 @@ function play(engine: Engine, tasks: number, now: number): void {
   for (let i = 0; i < tasks; i++) {
     engine.touch(now);
     const t = engine.nextTask();
-    engine.answer(t, t.correctIndex, false);
+    answerTask(engine, t, true, false);
   }
 }
 

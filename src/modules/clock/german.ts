@@ -26,13 +26,24 @@ function minutesPhrase(m: number): string {
   return m === 1 ? 'eine Minute' : `${numberWord(m)} Minuten`;
 }
 
+/** Minutes said relative to the half hour in the "halb" style ("fünf vor halb vier"). */
+const HALF_STYLE: Record<number, string> = {
+  20: 'zehn vor halb', 25: 'fünf vor halb', 35: 'fünf nach halb', 40: 'zehn nach halb',
+};
+
+export interface SpokenOptions {
+  /** Say :20, :25, :35 and :40 relative to the half hour (regional, e.g. "fünf vor halb vier"). */
+  half?: boolean;
+}
+
 /**
  * Colloquial German reading, e.g. "Viertel nach drei", "halb vier", "zehn vor drei".
- * One canonical phrase per time, so distinct times never share a phrase.
+ * One canonical phrase per time and style, so distinct times never share a phrase.
  */
-export function formatSpoken(t: ClockTime): string {
+export function formatSpoken(t: ClockTime, opts: SpokenOptions = {}): string {
   const { hour, minute } = t;
   const next = wrapHour(hour + 1);
+  if (opts.half && minute in HALF_STYLE) return `${HALF_STYLE[minute]} ${numberWord(next)}`;
   if (minute === 0) return `${hour === 1 ? 'ein' : numberWord(hour)} Uhr`;
   if (minute === 30) return `halb ${numberWord(next)}`;
   if (minute < 30) return `${minutesPhrase(minute)} nach ${numberWord(hour)}`;
@@ -44,6 +55,6 @@ export function capitalize(s: string): string {
 }
 
 /** Same as formatSpoken, first letter upper-cased for buttons and sentences. */
-export function formatSpokenCapitalized(t: ClockTime): string {
-  return capitalize(formatSpoken(t));
+export function formatSpokenCapitalized(t: ClockTime, opts: SpokenOptions = {}): string {
+  return capitalize(formatSpoken(t, opts));
 }

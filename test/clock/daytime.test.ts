@@ -1,123 +1,98 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { contextConfirmation, hour24 } from '../../src/modules/clock/daytime';
 import { buildDaytimeOptions } from '../../src/modules/clock/distractors';
-import { AFTERNOON_HOURS, Engine, SESSION_GAP_MS, freshProgress, label, type Task } from '../../src/modules/clock/engine';
-import { confirmation, hintFor } from '../../src/modules/clock/hints';
-import { loadProgress } from '../../src/modules/clock/storage';
+import { Engine, freshProgress, label, type Task } from '../../src/modules/clock/engine';
+import { hintFor } from '../../src/modules/clock/hints';
 import { formatDaytime } from '../../src/modules/clock/time';
 import { seeded } from '../rng';
+import { answerTask } from './answer';
 
 const T0 = 1_700_000_000_000;
 
-describe('afternoon formatting', () => {
-  it('writes afternoon times in 24-hour notation', () => {
-    expect(formatDaytime({ hour: 3, minute: 45 }, true)).toBe('15:45 Uhr');
-    expect(formatDaytime({ hour: 3, minute: 45 }, false)).toBe('3:45 Uhr');
-    expect(label('daytime', { hour: 6, minute: 0 })).toBe('18:00 Uhr');
+describe('time-of-day formatting', () => {
+  it('writes the hour in 24-hour notation by context', () => {
+    expect(formatDaytime({ hour: 3, minute: 45 }, 15)).toBe('15:45 Uhr');
+    expect(hour24('afternoon', 3)).toBe(15);
+    expect(hour24('forenoon', 9)).toBe(9);
+    expect(hour24('evening', 9)).toBe(21);
+    expect(hour24('noon', 12)).toBe(12);
+    expect(hour24('night', 12)).toBe(0);
+    expect(label('daytime', { hour: 6, minute: 0 }, 18)).toBe('18:00 Uhr');
   });
 
-  it('confirms with the spoken and the written form', () => {
-    expect(confirmation('daytime', { hour: 3, minute: 45 })).toBe(
-      'Viertel vor vier am Nachmittag. Das schreiben wir 15:45 Uhr.',
-    );
+  it('confirms with the written and the spoken form', () => {
+    expect(contextConfirmation('forenoon', { hour: 9, minute: 30 })).toBe('9:30 Uhr – halb zehn am Vormittag.');
+    expect(contextConfirmation('evening', { hour: 9, minute: 30 })).toBe('21:30 Uhr – halb zehn am Abend.');
+    expect(contextConfirmation('noon', { hour: 12, minute: 15 })).toBe('12:15 Uhr – Viertel nach zwölf am Mittag.');
+    expect(contextConfirmation('night', { hour: 12, minute: 15 })).toBe('0:15 Uhr – Viertel nach zwölf in der Nacht.');
+    expect(contextConfirmation('night', { hour: 12, minute: 0 })).toBe('0:00 Uhr – Mitternacht.');
   });
 });
 
 describe('buildDaytimeOptions', () => {
   const rng = seeded(5);
 
-  it('always offers the morning reading of the same clock as distractor', () => {
+  it('gives three distinct options, exactly one right, all within one day', () => {
     for (const advanced of [false, true]) {
-      for (const hour of AFTERNOON_HOURS) {
-        for (const minute of [0, 30]) {
-          const correct = { hour, minute };
-          const options = buildDaytimeOptions(correct, advanced, rng);
-          const labels = options.map((o) => label('daytime', o.time, o.afternoon));
+      for (const [hour, h24] of [[3, 15], [9, 9], [9, 21], [12, 12], [12, 0], [11, 11], [11, 23]]) {
+        for (const minute of [0, 15, 30, 45]) {
+          const options = buildDaytimeOptions({ hour, minute }, h24, advanced, rng);
+          const labels = options.map((o) => label('daytime', o.time, o.hour24));
           expect(new Set(labels).size).toBe(3);
-          expect(options.filter((o) => o.kind === 'correct')).toEqual([{ time: correct, kind: 'correct', afternoon: true }]);
-          expect(options.find((o) => o.kind === 'morning')).toEqual({ time: correct, kind: 'morning', afternoon: false });
-          for (const o of options.filter((x) => x.afternoon)) {
-            expect(o.time.hour + 12).toBeGreaterThanOrEqual(13);
-            expect(o.time.hour + 12).toBeLessThanOrEqual(23);
+          expect(options.filter((o) => o.kind === 'correct')).toHaveLength(1);
+          for (const o of options) {
+            expect(o.hour24).toBeGreaterThanOrEqual(0);
+            expect(o.hour24).toBeLessThanOrEqual(23);
+            expect(o.time.hour).toBe(o.hour24! % 12 || 12);
           }
         }
       }
     }
   });
 
-  it('uses a clearly different hour early and the next hour later', () => {
-    const early = buildDaytimeOptions({ hour: 3, minute: 0 }, false, rng).find((o) => o.kind === 'otherHour');
-    const late = buildDaytimeOptions({ hour: 3, minute: 0 }, true, rng).find((o) => o.kind === 'hour');
-    expect(early?.time.hour).toBe(6);
-    expect(late?.time.hour).toBe(4);
+  it('offers the other half of the day in about half of the tasks', () => {
+    let other = 0;
+    for (let i = 0; i < 400; i++) {
+      if (buildDaytimeOptions({ hour: 3, minute: 0 }, 15, false, rng).some((o) => o.kind === 'otherHalf')) other++;
+    }
+    expect(other).toBeGreaterThan(150);
+    expect(other).toBeLessThan(250);
   });
 
-  it('explains the afternoon counting when the morning time was chosen', () => {
-    const hint = hintFor('daytime', { hour: 3, minute: 0 }, { time: { hour: 3, minute: 0 }, kind: 'morning', afternoon: false });
-    expect(hint.text).toContain('Nachmittag');
+  it('explains the context when the other half of the day was chosen', () => {
+    const hint = hintFor(
+      { track: 'daytime', time: { hour: 3, minute: 0 }, context: 'afternoon' },
+      { time: { hour: 3, minute: 0 }, kind: 'otherHalf', hour24: 3 },
+    );
     expect(hint.text).toContain('15:00 Uhr');
+    expect(hint.text).toContain('dreizehn');
   });
 });
 
 describe('daytime track in the engine', () => {
-  function playUntil(engine: Engine, done: () => boolean, max = 1500): Task[] {
+  function playUntil(engine: Engine, done: () => boolean, max = 3000): Task[] {
     const tasks: Task[] = [];
-    let now = T0;
     for (let i = 0; i < max && !done(); i++) {
-      if (i % 10 === 0) now += SESSION_GAP_MS + 1;
-      engine.touch(now);
+      engine.touch(T0);
       const t = engine.nextTask();
       tasks.push(t);
-      engine.answer(t, t.correctIndex, false);
+      answerTask(engine, t, true, false, 3000);
     }
     return tasks;
   }
 
-  it('unlocks afternoon times only after half hours are mastered', () => {
+  it('unlocks the afternoon only after half hours are mastered', () => {
     const engine = new Engine(freshProgress(T0), seeded(6));
     playUntil(engine, () => engine.unlockedTiers('daytime').length > 0);
     expect(engine.tierState('digital', 2).ready).toBe(true);
     expect(engine.unlockedTiers('daytime')).toEqual([1]);
   });
 
-  it('shows afternoon tasks only between 13 and 18 Uhr, with full and half hours', () => {
+  it('starts with the afternoon and adds the other times of day step by step', () => {
     const engine = new Engine(freshProgress(T0), seeded(7));
-    const tasks = playUntil(engine, () => false, 900).filter((t) => t.track === 'daytime');
-    expect(tasks.length).toBeGreaterThan(0);
-    for (const t of tasks) {
-      expect(AFTERNOON_HOURS).toContain(t.time.hour);
-      expect([0, 30]).toContain(t.time.minute);
-    }
-    expect(engine.unlockedTiers('daytime')).toEqual([1, 2]);
-  });
-});
-
-describe('loading progress saved before the daytime track', () => {
-  const store = new Map<string, string>();
-  const original = globalThis.localStorage;
-  afterEach(() => {
-    store.clear();
-    Object.defineProperty(globalThis, 'localStorage', { value: original, configurable: true });
-  });
-
-  it('adds the daytime track and derives mastery points from the old state', () => {
-    Object.defineProperty(globalThis, 'localStorage', {
-      value: { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) },
-      configurable: true,
-    });
-    const legacy: Record<string, unknown> = { ...freshProgress(T0), textStep: 2, textBlock: [true], taskCounter: 5 };
-    delete legacy.lastAnswered;
-    const oldTier = (ready: boolean, secure: boolean, oks: number) => ({
-      unlocked: true, attempts: 8, block: [], step: 1, ready, readySession: null, secure, review: [],
-      window: Array.from({ length: oks }, (_, i) => ({ ok: true, hour: i + 1, minute: 0 })),
-    });
-    const digital = [oldTier(true, true, 8), oldTier(true, false, 8), oldTier(false, false, 3), ...freshProgress(T0).tracks.digital.slice(3)];
-    legacy.tracks = { digital, text: freshProgress(T0).tracks.text };
-    store.set('lernwelt.uhr.progress.v1', JSON.stringify(legacy));
-
-    const p = loadProgress(T0);
-    expect(p.tracks.digital.slice(0, 3).map((t) => t.mastery)).toEqual([100, 60, 30]);
-    expect(p.tracks.daytime).toHaveLength(6);
-    expect(p.lastAnswered).toBe(T0);
-    expect('textStep' in p).toBe(false);
+    const tasks = playUntil(engine, () => engine.dayContexts().length === 5).filter((t) => t.track === 'daytime');
+    expect(tasks.slice(0, 5).every((t) => t.context === 'afternoon')).toBe(true);
+    for (const t of tasks) expect(t.context).toBeDefined();
+    expect(engine.dayContexts()).toEqual(['afternoon', 'forenoon', 'evening', 'noon', 'night']);
   });
 });

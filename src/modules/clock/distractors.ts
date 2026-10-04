@@ -1,13 +1,14 @@
 import { TIER_MINUTES, TIERS, pick, sameTime, wrapHour, type ClockTime, type Rng, type Tier } from './time';
 
 /** Which misconception an answer option represents. */
-export type OptionKind = 'correct' | 'hour' | 'minute' | 'otherHour' | 'easy' | 'morning';
+/** 'otherHalf': the same clock in the other half of the day (3:00 instead of 15:00). */
+export type OptionKind = 'correct' | 'hour' | 'minute' | 'otherHour' | 'easy' | 'otherHalf';
 
 export interface AnswerOption {
   time: ClockTime;
   kind: OptionKind;
-  /** Daytime track: shown as afternoon time (15:45) instead of 3:45. */
-  afternoon?: boolean;
+  /** Daytime track: the hour in 24-hour notation (15 for 3 in the afternoon). */
+  hour24?: number;
 }
 
 export interface DistractorContext {
@@ -96,20 +97,31 @@ export function buildOptions(correct: ClockTime, ctx: DistractorContext, rng: Rn
 }
 
 /**
- * Daytime track (context "Es ist Nachmittag"): the same clock reading before
- * noon is always one distractor, so the child has to use the context. Early on
- * the third option is clearly off (+3 hours), later it is the next hour.
+ * Daytime track: the context ("Es ist Abend.") decides the half of the day. In
+ * about half of the tasks the same clock in the other half is a distractor, so
+ * the context has to be used; otherwise hour and minute mistakes are practised.
+ * Early on the remaining option is clearly off, later it is a close one.
  */
-export function buildDaytimeOptions(correct: ClockTime, advanced: boolean, rng: Rng): AnswerOption[] {
-  const offset = advanced ? 1 : 3;
-  // Afternoon distractors stay within 13 and 23 Uhr.
-  const hour = correct.hour + offset <= 11 ? correct.hour + offset : correct.hour - offset;
-  return shuffle(
-    [
-      { time: correct, kind: 'correct', afternoon: true },
-      { time: correct, kind: 'morning', afternoon: false },
-      { time: { hour, minute: correct.minute }, kind: advanced ? 'hour' : 'otherHour', afternoon: true },
-    ],
-    rng,
-  );
+export function buildDaytimeOptions(correct: ClockTime, correct24: number, advanced: boolean, rng: Rng): AnswerOption[] {
+  const at = (h24: number, minute: number): { time: ClockTime; hour24: number } => {
+    const hour24 = ((h24 % 24) + 24) % 24;
+    return { time: { hour: hour24 % 12 || 12, minute }, hour24 };
+  };
+  const options: AnswerOption[] = [{ time: correct, kind: 'correct', hour24: correct24 }];
+  const add = (o: AnswerOption) => {
+    if (options.length >= 3) return;
+    if (!options.some((x) => x.hour24 === o.hour24 && x.time.minute === o.time.minute)) options.push(o);
+  };
+  if (rng() < 0.5) add({ ...at(correct24 + 12, correct.minute), kind: 'otherHalf' });
+  // Next hour within the same half of the day (never across midnight or noon).
+  const step = correct24 % 12 === 11 ? -1 : 1;
+  add({ ...at(correct24 + step, correct.minute), kind: 'hour' });
+  for (let i = 0; options.length < 3 && i < 10; i++) {
+    if (advanced) {
+      const minute = correct.minute === 0 ? 30 : correct.minute === 30 ? 0 : 60 - correct.minute;
+      add({ ...at(correct24, minute), kind: 'minute' });
+    }
+    add({ ...at(correct24 + (step * (3 + i)), correct.minute), kind: 'otherHour' });
+  }
+  return shuffle(options, rng);
 }

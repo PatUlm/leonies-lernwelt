@@ -1240,6 +1240,143 @@ a.area-card:active {
   }
 }
 
+/* ---------- answer modes: set the hands, type the time, say first ---------- */
+
+.grip {
+  display: none;
+}
+
+.clock.settable .grip {
+  display: block;
+  cursor: grab;
+}
+
+.clock.settable.hour-only .grip-minute {
+  display: none;
+}
+
+.clock.settable {
+  touch-action: none;
+}
+
+.clock.dragging .grip {
+  cursor: grabbing;
+}
+
+.grip-hit {
+  fill: transparent;
+}
+
+.grip-knob {
+  fill: #fff;
+  stroke-width: 4;
+}
+
+.hour-grip .grip-knob,
+.grip-hour .grip-knob {
+  stroke: var(--hour);
+}
+
+.grip-minute .grip-knob {
+  stroke: var(--minute);
+}
+
+.clock.settable .grip-knob {
+  animation: grip-hint 1.6s ease-in-out infinite;
+}
+
+.clock.dragging .grip-knob {
+  animation: none;
+}
+
+@keyframes grip-hint {
+  50% {
+    r: 11;
+  }
+}
+
+.answers.mode-set,
+.answers.mode-reveal {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.check,
+.reveal {
+  min-width: 240px;
+  min-height: 64px;
+  padding: 0 28px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--good);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  box-shadow: 0 4px 0 #15803d;
+}
+
+.reveal {
+  background: var(--accent);
+  box-shadow: 0 4px 0 #b45309;
+}
+
+.check:disabled {
+  opacity: 0.5;
+}
+
+.answers.mode-input {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 10px;
+}
+
+.answers.mode-input .keypad {
+  max-width: 560px;
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(30px, 5vw, 40px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-field {
+  min-width: 2.2em;
+  padding: 4px 10px;
+  border-radius: 14px;
+  border: 3px solid #e2d8ca;
+  background: var(--card);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.time-field.active {
+  border-color: var(--hour);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .check,
+  .reveal {
+    min-width: 0;
+    width: 100%;
+    min-height: 48px;
+    font-size: 21px;
+  }
+
+  .time-display {
+    font-size: 26px;
+  }
+
+  .answers.mode-input .key {
+    min-height: 42px;
+    font-size: 22px;
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {

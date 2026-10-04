@@ -70,6 +70,16 @@ function clientKey(req: IncomingMessage): string {
   return (typeof real === 'string' && real) || req.socket.remoteAddress || 'unknown';
 }
 
+/** Runs async jobs strictly one after another. */
+function serial(): <T>(job: () => Promise<T>) => Promise<T> {
+  let tail: Promise<unknown> = Promise.resolve();
+  return (job) => {
+    const run = tail.then(job, job);
+    tail = run.catch(() => undefined);
+    return run;
+  };
+}
+
 function bearer(req: IncomingMessage): string | null {
   const header = req.headers.authorization;
   return header?.startsWith('Bearer ') ? header.slice(7) : null;
@@ -87,6 +97,8 @@ export function createApp(options: AppOptions) {
   const profileFailures = new FailureLimiter(LOGIN_FAILURES_PER_PROFILE, QUARTER_HOUR, now);
   const clientFailures = new FailureLimiter(LOGIN_FAILURES_PER_CLIENT, HOUR, now);
   const signups = new FailureLimiter(SIGNUPS_PER_CLIENT, HOUR, now);
+  const loginQueue = serial();
+  const signupQueue = serial();
 
   function blocked(...waits: number[]): void {
     const wait = Math.max(...waits);
@@ -115,21 +127,26 @@ export function createApp(options: AppOptions) {
 
   async function signup(req: IncomingMessage) {
     const client = clientKey(req);
-    blocked(signups.retryAfter(client));
     const body = await readJson(req, 4096);
     const name = normalizeName(body.name);
     if (!name) throw new HttpError(400, 'invalid_name');
     if (!isValidPin(body.pin)) throw new HttpError(400, 'invalid_pin');
-    if ((await store.count()) >= maxProfiles) throw new HttpError(507, 'too_many_profiles');
+    const pin = body.pin;
     const id = profileId(name);
-    const pinHash = await hashPin(body.pin);
-    return store.update(id, async (current) => {
-      if (current) throw new HttpError(409, 'name_taken');
-      signups.fail(client); // counts sign-ups, not failures
-      const t = now();
-      const profile: Profile = { name, pinHash, createdAt: t, tokens: [], revision: 0, updatedAt: t, data: null };
-      const token = addToken(profile);
-      return { next: profile, result: { status: 201, body: { token: `${id}.${token}`, ...progressView(profile) } } };
+    // One sign-up at a time: the attempt limit and the profile cap cannot be raced.
+    return signupQueue(async () => {
+      blocked(signups.retryAfter(client));
+      signups.fail(client); // every attempt counts, before the costly PIN hash
+      if (await store.get(id)) throw new HttpError(409, 'name_taken');
+      if ((await store.count()) >= maxProfiles) throw new HttpError(507, 'too_many_profiles');
+      const pinHash = await hashPin(pin);
+      return store.update(id, async (current) => {
+        if (current) throw new HttpError(409, 'name_taken');
+        const t = now();
+        const profile: Profile = { name, pinHash, createdAt: t, tokens: [], revision: 0, updatedAt: t, data: null };
+        const token = addToken(profile);
+        return { next: profile, result: { status: 201, body: { token: `${id}.${token}`, ...progressView(profile) } } };
+      });
     });
   }
 
@@ -139,19 +156,22 @@ export function createApp(options: AppOptions) {
     const name = normalizeName(body.name);
     if (!name || !isValidPin(body.pin)) throw new HttpError(400, 'invalid_login');
     const id = profileId(name);
-    blocked(profileFailures.retryAfter(id), clientFailures.retryAfter(client));
     const pin = body.pin;
-    return store.update(id, async (profile) => {
-      const valid = await verifyPin(pin, profile?.pinHash ?? DUMMY_PIN_HASH);
-      if (!profile || !valid) {
-        profileFailures.fail(id);
-        clientFailures.fail(client);
-        // Same answer for unknown names and wrong PINs.
-        throw new HttpError(401, 'wrong_login');
-      }
-      profileFailures.reset(id);
-      const token = addToken(profile);
-      return { next: profile, result: { status: 200, body: { token: `${id}.${token}`, ...progressView(profile) } } };
+    // One login check at a time, so parallel guesses all see the current lock.
+    return loginQueue(async () => {
+      blocked(profileFailures.retryAfter(id), clientFailures.retryAfter(client));
+      return store.update(id, async (profile) => {
+        const valid = await verifyPin(pin, profile?.pinHash ?? DUMMY_PIN_HASH);
+        if (!profile || !valid) {
+          profileFailures.fail(id);
+          clientFailures.fail(client);
+          // Same answer for unknown names and wrong PINs.
+          throw new HttpError(401, 'wrong_login');
+        }
+        profileFailures.reset(id);
+        const token = addToken(profile);
+        return { next: profile, result: { status: 200, body: { token: `${id}.${token}`, ...progressView(profile) } } };
+      });
     });
   }
 

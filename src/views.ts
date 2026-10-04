@@ -143,7 +143,12 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
         `${account.name} abmelden? Der Spielstand bleibt auf dem Server und ist nach dem Anmelden wieder da.`,
       );
       if (!ok) return;
-      await sync.logout();
+      try {
+        await sync.logout();
+      } catch {
+        window.alert('Abmelden geht gerade nicht: Der Spielstand ist noch nicht auf dem Server gespeichert. Bitte mit Internet noch einmal versuchen.');
+        return;
+      }
     } else {
       sync.chooseAgain(); // "Wer lernt hier?" – what was played here moves into a new profile
     }

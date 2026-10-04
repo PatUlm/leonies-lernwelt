@@ -80,7 +80,12 @@ export interface Settings {
 }
 
 export function loadSettings(): Settings {
-  return { sound: true, sayFirst: true, ...readJson<Partial<Settings>>('settings.v1') };
+  // Settings may come from another device: only real booleans are taken over.
+  const stored = readJson<Record<string, unknown>>('settings.v1') ?? {};
+  return {
+    sound: typeof stored.sound === 'boolean' ? stored.sound : true,
+    sayFirst: typeof stored.sayFirst === 'boolean' ? stored.sayFirst : true,
+  };
 }
 
 export function saveSettings(s: Settings): void {

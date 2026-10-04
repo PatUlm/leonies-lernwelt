@@ -4,12 +4,9 @@ import {
 } from '../../src/modules/clock/engine';
 import { timeKey } from '../../src/modules/clock/time';
 import { seeded } from '../rng';
+import { answerTask } from './answer';
 
 const T0 = 1_700_000_000_000;
-
-function wrongIndex(task: Task): number {
-  return task.options.findIndex((o) => o.kind !== 'correct');
-}
 
 /** Plays `tasks` tasks; a new session starts every `perSession` tasks. */
 function play(
@@ -24,7 +21,7 @@ function play(
     const task = engine.nextTask();
     seen.push(task);
     const ok = task.kind === 'example' || rng() < accuracy;
-    engine.answer(task, ok ? task.correctIndex : wrongIndex(task), false, elapsedMs);
+    answerTask(engine, task, ok, false, elapsedMs);
   }
   return seen;
 }
@@ -33,7 +30,7 @@ describe('Engine', () => {
   it('starts with two guided examples of full hours', () => {
     const engine = new Engine(freshProgress(T0), seeded(1));
     const first = engine.nextTask();
-    engine.answer(first, first.correctIndex, false);
+    answerTask(engine, first, true, false);
     const second = engine.nextTask();
     expect([first.kind, second.kind]).toEqual(['example', 'example']);
     expect(first.tier).toBe(1);
@@ -43,7 +40,7 @@ describe('Engine', () => {
   it('does not score guided examples', () => {
     const engine = new Engine(freshProgress(T0), seeded(1));
     const task = engine.nextTask();
-    const result = engine.answer(task, task.correctIndex, false);
+    const result = answerTask(engine, task, true, false);
     expect(result.scored).toBe(false);
     expect(engine.progress.points).toBe(0);
   });
@@ -75,9 +72,9 @@ describe('Engine', () => {
     const engine = new Engine(freshProgress(T0), seeded(4));
     play(engine, 2 + 6, 1, seeded(5), 1000, 10_000);
     const next = [engine.nextTask()];
-    engine.answer(next[0], next[0].correctIndex, false);
+    answerTask(engine, next[0], true, false);
     next.push(engine.nextTask());
-    engine.answer(next[1], next[1].correctIndex, false);
+    answerTask(engine, next[1], true, false);
     expect(next.map((t) => [t.kind, t.tier])).toEqual([['example', 2], ['example', 2]]);
 
     // Before tier 3 arrives, most clock tasks are half hours.
@@ -123,7 +120,7 @@ describe('Engine', () => {
     for (let i = 0; i < 3; i++) {
       const t = engine.nextTask();
       expect(t.warmup).toBe(true);
-      engine.answer(t, t.correctIndex, true);
+      answerTask(engine, t, true, true);
     }
     expect(engine.progress.warmup).toBe(0);
   });
@@ -146,10 +143,10 @@ describe('Engine', () => {
     play(engine, 2, 1, seeded(16));
     for (let i = 0; i < 2; i++) {
       const t = engine.nextTask();
-      engine.answer(t, wrongIndex(t), false);
+      answerTask(engine, t, false);
     }
     const a = engine.nextTask();
-    engine.answer(a, a.correctIndex, false);
+    answerTask(engine, a, true, false);
     const b = engine.nextTask();
     expect([a.kind, b.kind]).toEqual(['example', 'easy']);
   });
@@ -160,7 +157,7 @@ describe('Engine', () => {
     const results = [];
     for (let i = 0; i < 4; i++) {
       const t = engine.nextTask();
-      results.push(engine.answer(t, t.kind === 'example' ? t.correctIndex : wrongIndex(t), false));
+      results.push(answerTask(engine, t, t.kind === 'example'));
     }
     expect(results.some((r) => r.offerPause)).toBe(true);
   });
@@ -169,7 +166,7 @@ describe('Engine', () => {
     const engine = new Engine(freshProgress(T0), seeded(19));
     play(engine, 2, 1, seeded(20));
     const t = engine.nextTask();
-    const r = engine.answer(t, t.correctIndex, true);
+    const r = answerTask(engine, t, true, true);
     expect(r.scored).toBe(false);
     expect(engine.progress.points).toBe(HELP_POINTS[1]);
     expect(engine.tierState('digital', 1).attempts).toBe(0);
@@ -185,7 +182,7 @@ describe('Engine', () => {
     const engine = new Engine(freshProgress(T0), seeded(23));
     play(engine, 2, 1, seeded(24));
     const wrong = engine.nextTask();
-    engine.answer(wrong, wrongIndex(wrong), false);
+    answerTask(engine, wrong, false);
     const later = play(engine, 8, 1, seeded(25), 1000);
     expect(later.some((t) => t.kind === 'review' && timeKey(t.time) === timeKey(wrong.time))).toBe(true);
   });
@@ -205,16 +202,16 @@ describe('persistence of queued tasks', () => {
     const engine = new Engine(freshProgress(T0), seeded(42));
     play(engine, 2, 1, seeded(43));
     const wrong = engine.nextTask();
-    engine.answer(wrong, wrongIndex(wrong), false);
+    answerTask(engine, wrong, false);
     let review: Task | undefined;
     for (let i = 0; i < 10 && !review; i++) {
       const t = engine.nextTask();
       if (t.kind === 'review') review = t;
-      else engine.answer(t, t.correctIndex, false);
+      else answerTask(engine, t, true, false);
     }
     expect(review).toBeDefined();
     expect(engine.progress.reviewQueue).toHaveLength(1);
-    engine.answer(review!, review!.correctIndex, false);
+    answerTask(engine, review!, true, false);
     expect(engine.progress.reviewQueue).toHaveLength(0);
   });
 });
@@ -248,7 +245,7 @@ describe('rounds', () => {
     let r = null;
     for (let i = 0; i < 40 && !r; i++) {
       const t = engine.nextTask();
-      r = engine.answer(t, t.correctIndex, false).roundComplete;
+      r = answerTask(engine, t, true, false).roundComplete;
     }
     expect(r?.target).toBe(100);
     expect(r?.points).toBeGreaterThanOrEqual(100);
@@ -260,11 +257,11 @@ describe('rounds', () => {
     const engine = new Engine(freshProgress(T0), seeded(32));
     play(engine, 2, 1, seeded(33));
     const a = engine.nextTask();
-    expect(engine.answer(a, wrongIndex(a), false).points).toBe(0);
+    expect(answerTask(engine, a, false).points).toBe(0);
     const b = engine.nextTask();
-    expect(engine.answer(b, b.correctIndex, true).points).toBe(HELP_POINTS[b.tier]);
+    expect(answerTask(engine, b, true, true).points).toBe(HELP_POINTS[b.tier]);
     const c = engine.nextTask();
-    expect(engine.answer(c, c.correctIndex, false).points).toBe(TIER_POINTS[c.tier]);
+    expect(answerTask(engine, c, true, false).points).toBe(TIER_POINTS[c.tier]);
     expect(engine.progress.round).toMatchObject({ correct: 1, tasks: 3 });
   });
 
@@ -286,7 +283,7 @@ describe('rounds', () => {
     const streaks = [];
     for (let i = 0; i < 6; i++) {
       const t = engine.nextTask();
-      streaks.push(engine.answer(t, t.correctIndex, false).streak);
+      streaks.push(answerTask(engine, t, true, false).streak);
     }
     expect(streaks).toEqual([null, null, 3, null, null, 6]);
   });

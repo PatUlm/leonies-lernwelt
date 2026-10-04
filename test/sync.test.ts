@@ -3,7 +3,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../server/src/app.ts';
 import { ProfileStore } from '../server/src/store.ts';
 import { readJson, writeJson } from '../src/shared/storage';
@@ -122,6 +122,78 @@ describe('SyncClient', () => {
     tablet.use();
     await tablet.client.pull();
     expect(readJson('uhr.progress.v1')).toEqual({ from: 'phone' });
+  });
+
+  it('refuses to sign out while changes are not on the server yet', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    tablet.online = false;
+    writeJson('uhr.progress.v1', { stars: 5 });
+    await expect(tablet.client.logout()).rejects.toMatchObject({ code: 'unsaved' });
+    expect(readJson('uhr.progress.v1')).toEqual({ stars: 5 });
+    expect(tablet.client.account()?.name).toBe('Leonie');
+  });
+
+  it('keeps server data back while an exercise is running', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    const phone = new Device(base);
+    phone.use();
+    await phone.client.login('Leonie', '1234');
+    writeJson('uhr.progress.v1', { from: 'phone' });
+    await phone.client.push();
+
+    tablet.use();
+    let inExercise = true;
+    tablet.client.setApplyGuard(() => !inExercise);
+    await tablet.client.pull();
+    expect(readJson('uhr.progress.v1')).toBeNull();
+    inExercise = false;
+    await tablet.client.applyDeferred();
+    expect(readJson('uhr.progress.v1')).toEqual({ from: 'phone' });
+  });
+
+  it('decides conflicts by when a change was made, not when it was uploaded', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const tablet = new Device(base);
+      await tablet.client.signup('Leonie', '1234');
+      const phone = new Device(base);
+      phone.use();
+      await phone.client.login('Leonie', '1234');
+
+      // The tablet plays first but is offline …
+      tablet.use();
+      tablet.online = false;
+      vi.setSystemTime(1_000_000);
+      writeJson('uhr.progress.v1', { from: 'tablet' });
+      await tablet.client.push();
+
+      // … the phone plays later and uploads.
+      phone.use();
+      vi.setSystemTime(2_000_000);
+      writeJson('uhr.progress.v1', { from: 'phone' });
+      await phone.client.push();
+
+      // The tablet's upload comes last, but its change is older: the phone wins.
+      tablet.use();
+      tablet.online = true;
+      vi.setSystemTime(3_000_000);
+      await tablet.client.push();
+      expect(readJson('uhr.progress.v1')).toEqual({ from: 'phone' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ignores the answer to a request that started before signing out', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    const pending = tablet.client.pull();
+    await tablet.client.logout();
+    await pending;
+    expect(tablet.client.account()).toBeNull();
+    expect(readJson('uhr.progress.v1')).toBeNull();
   });
 
   it('leaves no progress on the device after signing out', async () => {

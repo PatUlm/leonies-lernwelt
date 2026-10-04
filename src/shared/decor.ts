@@ -47,6 +47,56 @@ export function afternoonScene(): string {
   </svg>`;
 }
 
+/** Forenoon: sun climbing over a school house. */
+export function forenoonScene(): string {
+  return `<svg viewBox="0 0 120 80" aria-hidden="true">
+    <rect width="120" height="80" rx="14" fill="#e0f2fe"/>
+    <g stroke="#f59e0b" stroke-width="4" stroke-linecap="round"><path d="M22 34v-6M8 46h-6M36 46h6M12 36l-4-4M32 36l4-4"/></g>
+    <circle cx="22" cy="46" r="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/>
+    <path d="M0 62q30-6 60-1t60-1v6a14 14 0 0 1-14 14H14A14 14 0 0 1 0 66Z" fill="#86efac"/>
+    <path d="M62 64V38l20-14 20 14v26Z" fill="#fca5a5" stroke="#b91c1c" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="76" y="48" width="12" height="16" fill="#92400e"/>
+    <circle cx="82" cy="36" r="5" fill="#fff" stroke="#b91c1c" stroke-width="2"/>
+  </svg>`;
+}
+
+/** Evening: sunset sky, a moon and a lit window. */
+export function eveningScene(): string {
+  return `<svg viewBox="0 0 120 80" aria-hidden="true">
+    <defs><linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#fb923c"/></linearGradient></defs>
+    <rect width="120" height="80" rx="14" fill="url(#dusk)"/>
+    <path d="M30 12a10 10 0 1 0 8 16 12 12 0 0 1-8-16Z" fill="#fef3c7"/>
+    <circle cx="60" cy="72" r="16" fill="#f97316" opacity=".8"/>
+    <path d="M0 64q30-6 60-1t60-1v4a14 14 0 0 1-14 14H14A14 14 0 0 1 0 66Z" fill="#4c1d95"/>
+    <path d="M78 66V42l16-11 16 11v24Z" fill="#312e81"/>
+    <rect x="88" y="48" width="12" height="10" fill="#fde68a"/>
+  </svg>`;
+}
+
+/** Noon: sun high in the sky over a plate with lunch. */
+export function noonScene(): string {
+  return `<svg viewBox="0 0 120 80" aria-hidden="true">
+    <rect width="120" height="80" rx="14" fill="#bae6fd"/>
+    <g stroke="#f59e0b" stroke-width="4" stroke-linecap="round"><path d="M60 4v6M60 34v6M42 22h6M72 22h6M47 9l4 4M69 31l4 4M73 9l-4 4M51 31l-4 4"/></g>
+    <circle cx="60" cy="22" r="10" fill="#fcd34d" stroke="#f59e0b" stroke-width="3"/>
+    <ellipse cx="60" cy="64" rx="34" ry="10" fill="#fff" stroke="#94a3b8" stroke-width="3"/>
+    <ellipse cx="60" cy="61" rx="20" ry="5" fill="#fbbf24"/>
+    <circle cx="52" cy="58" r="4" fill="#22c55e"/><circle cx="66" cy="58" r="4" fill="#ef4444"/>
+  </svg>`;
+}
+
+/** Night: dark sky, moon and stars over a sleeping house. */
+export function nightScene(): string {
+  return `<svg viewBox="0 0 120 80" aria-hidden="true">
+    <rect width="120" height="80" rx="14" fill="#1e1b4b"/>
+    <path d="M86 10a14 14 0 1 0 11 22 17 17 0 0 1-11-22Z" fill="#fef9c3"/>
+    <g fill="#fde68a"><circle cx="20" cy="16" r="2"/><circle cx="44" cy="10" r="1.6"/><circle cx="62" cy="24" r="2"/><circle cx="30" cy="34" r="1.4"/></g>
+    <path d="M0 66q30-5 60-1t60-1v2a14 14 0 0 1-14 14H14A14 14 0 0 1 0 66Z" fill="#312e81"/>
+    <path d="M18 66V44l16-11 16 11v22Z" fill="#4338ca"/>
+    <rect x="28" y="50" width="12" height="9" fill="#1e1b4b"/>
+  </svg>`;
+}
+
 /** Decorative sky layer behind the content: clouds, twinkling stars and sweets at the edges. */
 export function skyLayer(variant: 'dashboard' | 'game'): string {
   const twinkle = (x: string, y: string, size: number, delay: number) =>

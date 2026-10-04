@@ -80,6 +80,30 @@ describe('profiles and login', () => {
     expect((await call('POST', '/api/login', { name: 'Leonie', pin: '1234' })).status).toBe(200);
   });
 
+  it('keeps the PIN lock with parallel guesses', async () => {
+    await call('POST', '/api/profiles', { name: 'Leonie', pin: '1234' });
+    const guesses = Array.from({ length: 8 }, (_, i) => call('POST', '/api/login', { name: 'Leonie', pin: `00${10 + i}` }));
+    const right = call('POST', '/api/login', { name: 'Leonie', pin: '1234' });
+    const results = await Promise.all([...guesses, right]);
+    expect(results.filter((r) => r.status === 401)).toHaveLength(5);
+    expect(results.at(-1)?.status).toBe(429);
+  });
+
+  it('cannot exceed the profile cap with parallel sign-ups', async () => {
+    await new Promise((resolve) => server.close(resolve));
+    await rm(dir, { recursive: true, force: true });
+    await start(2);
+    const names = ['Anna', 'Ben', 'Carla', 'Dora', 'Emil'];
+    await Promise.all(names.map((name) => call('POST', '/api/profiles', { name, pin: '1234' })));
+    expect(await readdir(dir)).toHaveLength(2);
+  });
+
+  it('counts every sign-up attempt, also for taken names', async () => {
+    await call('POST', '/api/profiles', { name: 'Leonie', pin: '1234' });
+    for (let i = 0; i < 4; i++) await call('POST', '/api/profiles', { name: 'Leonie', pin: '1234' });
+    expect((await call('POST', '/api/profiles', { name: 'Max', pin: '1234' })).status).toBe(429);
+  });
+
   it('stores only a hash of the PIN and of the device tokens', async () => {
     const r = await call('POST', '/api/profiles', { name: 'Leonie', pin: '1234' });
     const [file] = await readdir(dir);

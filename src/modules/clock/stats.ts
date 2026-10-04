@@ -31,6 +31,27 @@ export const BADGE_NAMES: Record<Track, Partial<Record<Tier, string>>> = {
   daytime: {
     1: 'Volle Stunden am Nachmittag (13 bis 18 Uhr) kennst du schon sicher.',
     2: 'Halbe Stunden am Nachmittag kennst du schon sicher.',
+    3: 'Viertelstunden zu jeder Tageszeit kennst du schon sicher.',
+  },
+  set: {
+    1: 'Volle Stunden stellst du schon sicher ein.',
+    2: 'Halbe Stunden stellst du schon sicher ein.',
+    3: 'Viertelstunden stellst du schon sicher ein.',
+    4: '10, 20, 40 und 50 Minuten stellst du schon sicher ein.',
+    5: 'Fünf-Minuten-Schritte stellst du schon sicher ein.',
+    6: 'Sogar einzelne Minuten stellst du schon sicher ein!',
+  },
+  input: {
+    1: 'Volle Stunden tippst du schon sicher ein.',
+    2: 'Halbe Stunden tippst du schon sicher ein.',
+    3: 'Viertelstunden tippst du schon sicher ein.',
+    4: '10, 20, 40 und 50 Minuten tippst du schon sicher ein.',
+    5: 'Fünf-Minuten-Schritte tippst du schon sicher ein.',
+    6: 'Sogar einzelne Minuten tippst du schon sicher ein!',
+  },
+  halb: {
+    4: '„zehn vor halb“ und „zehn nach halb“ sagst du schon sicher.',
+    5: '„fünf vor halb“ und „fünf nach halb“ sagst du schon sicher.',
   },
 };
 

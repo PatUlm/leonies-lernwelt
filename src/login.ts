@@ -102,6 +102,8 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
     }
     busy = true;
     keypad.setDisabled(true);
+    ref<HTMLButtonElement>('local').disabled = true;
+    ref<HTMLButtonElement>('switch').disabled = true;
     showError('');
     try {
       if (mode === 'login') await sync.login(nameInput.value, pin);
@@ -112,6 +114,8 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
       showError(errorText(err));
       busy = false;
       keypad.setDisabled(false);
+      ref<HTMLButtonElement>('local').disabled = false;
+      ref<HTMLButtonElement>('switch').disabled = false;
       render();
       return;
     }

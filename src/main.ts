@@ -24,6 +24,8 @@ listenForInstallPrompt();
 /** True while an exercise runs: then neither updates nor server data may interrupt. */
 let inModule = false;
 setupUpdates(() => !inModule);
+// A running exercise keeps its own state; server data waits until it is left.
+sync.setApplyGuard(() => !inModule);
 
 // Progress from the server replaces the local one: show it (only outside exercises).
 sync.onRemoteData(() => {
@@ -39,6 +41,7 @@ function route(): void {
   app.removeAttribute('style');
   window.scrollTo(0, 0);
   inModule = false;
+  void sync.applyDeferred();
 
   if (!sync.hasChosen()) {
     cleanup = renderLogin(app, () => {

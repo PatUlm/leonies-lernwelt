@@ -33,10 +33,37 @@ export function handAngles(t: ClockTime): { hour: number; minute: number } {
   };
 }
 
+/** Angle in degrees clockwise from 12 of a point relative to the centre. */
+function angleOf(x: number, y: number): number {
+  return ((Math.atan2(x, -y) * 180) / Math.PI + 360) % 360;
+}
+
+/** Hour after dragging the hour hand to `angle`, keeping the minutes. */
+export function hourFromAngle(angle: number, minute: number): number {
+  const h = Math.round((angle - minute / 2) / 30);
+  return ((h % 12) + 12) % 12 || 12;
+}
+
+/**
+ * Dragging the minute hand to `angle`. `total` is the unsnapped position in
+ * minutes since 12:00 (0–720); it runs on over the 12, so the hour hand moves
+ * along like on a real clock. The shown time snaps to `step` minutes.
+ */
+export function minuteDrag(total: number, angle: number, step: number): { total: number; time: ClockTime } {
+  const raw = angle / 6;
+  const delta = ((raw - (total % 60) + 90) % 60) - 30; // shortest way, −30 … +30
+  const next = (((total + delta) % 720) + 720) % 720;
+  const snapped = (Math.round(next / step) * step) % 720;
+  return { total: next, time: { hour: Math.floor(snapped / 60) || 12, minute: snapped % 60 } };
+}
+
 export class AnalogClock {
   readonly svg: SVGSVGElement;
   private readonly hourHand: SVGGElement;
   private readonly minuteHand: SVGGElement;
+  /** Setting the hands: current time, snap step and change listener. */
+  private setting: { time: ClockTime; total: number; step: number; onChange: (t: ClockTime) => void } | null = null;
+  private dragging: 'hour' | 'minute' | null = null;
   private readonly minuteLabels: SVGGElement;
   private readonly quarters: SVGGElement;
   private readonly focusLayer: SVGGElement;
@@ -83,7 +110,76 @@ export class AnalogClock {
     el('line', { x1: 0, y1: 10, x2: 0, y2: -46 }, this.hourHand);
     this.minuteHand = el('g', { class: 'hand minute-hand' }, this.svg);
     el('line', { x1: 0, y1: 14, x2: 0, y2: -78 }, this.minuteHand);
+    // Grips for setting the hands: a visible knob and a larger invisible touch area.
+    for (const [hand, y, name] of [[this.hourHand, -46, 'hour'], [this.minuteHand, -78, 'minute']] as const) {
+      const grip = el('g', { class: `grip grip-${name}`, 'data-hand': name }, hand);
+      el('circle', { cy: y, r: 24, class: 'grip-hit' }, grip);
+      el('circle', { cy: y, r: 9, class: 'grip-knob' }, grip);
+    }
     el('circle', { r: 5, class: 'clock-pin' }, this.svg);
+
+    this.svg.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    this.svg.addEventListener('pointermove', (e) => this.onPointerMove(e));
+    for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
+      this.svg.addEventListener(ev, () => {
+        this.dragging = null;
+        this.svg.classList.remove('dragging');
+      });
+    }
+  }
+
+  /** Lets the child set the hands, starting at `start`; minutes snap to `step`. */
+  enableSetting(start: ClockTime, step: number, onChange: (t: ClockTime) => void = () => {}): void {
+    this.setting = { time: { ...start }, total: (start.hour % 12) * 60 + start.minute, step, onChange };
+    this.svg.classList.add('settable');
+    // Full hours only: the minute hand stays on the 12.
+    this.svg.classList.toggle('hour-only', step >= 60);
+    this.setTime(start);
+  }
+
+  disableSetting(): void {
+    this.setting = null;
+    this.dragging = null;
+    this.svg.classList.remove('settable', 'hour-only', 'dragging');
+  }
+
+  /** The time the child has set. */
+  setTimeValue(): ClockTime | null {
+    return this.setting ? { ...this.setting.time } : null;
+  }
+
+  private onPointerDown(e: PointerEvent): void {
+    if (!this.setting) return;
+    const grip = (e.target as Element).closest<SVGGElement>('[data-hand]');
+    const hand = grip?.dataset.hand as 'hour' | 'minute' | undefined;
+    if (!hand || (hand === 'minute' && this.setting.step >= 60)) return;
+    e.preventDefault();
+    this.dragging = hand;
+    this.svg.classList.add('dragging');
+    this.svg.setPointerCapture(e.pointerId);
+    this.onPointerMove(e);
+  }
+
+  private onPointerMove(e: PointerEvent): void {
+    if (!this.setting || !this.dragging) return;
+    const matrix = this.svg.getScreenCTM();
+    if (!matrix) return;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
+    const angle = angleOf(p.x, p.y);
+    const prev = this.setting.time;
+    let next: ClockTime;
+    if (this.dragging === 'hour') {
+      next = { hour: hourFromAngle(angle, prev.minute), minute: prev.minute };
+      this.setting.total = (next.hour % 12) * 60 + next.minute;
+    } else {
+      const moved = minuteDrag(this.setting.total, angle, this.setting.step);
+      this.setting.total = moved.total;
+      next = moved.time;
+    }
+    if (next.hour === prev.hour && next.minute === prev.minute) return;
+    this.setting.time = next;
+    this.setTime(next);
+    this.setting.onChange(next);
   }
 
   setTime(t: ClockTime): void {

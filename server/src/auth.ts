@@ -49,6 +49,9 @@ export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
+/** Upper bound for keys a limiter remembers (memory stays bounded under attack). */
+const MAX_TRACKED_KEYS = 10_000;
+
 /**
  * Counts failed attempts per key (profile or client address) in a sliding
  * window; a key is blocked while it has `max` failures inside the window.
@@ -74,6 +77,20 @@ export class FailureLimiter {
 
   fail(key: string): void {
     this.failures.set(key, [...this.recent(key), this.now()]);
+    if (this.failures.size > MAX_TRACKED_KEYS / 10) this.sweep();
+  }
+
+  /** Drops expired entries; above the hard cap the oldest keys go first. */
+  private sweep(): void {
+    for (const key of [...this.failures.keys()]) this.recent(key);
+    for (const key of this.failures.keys()) {
+      if (this.failures.size <= MAX_TRACKED_KEYS) break;
+      this.failures.delete(key);
+    }
+  }
+
+  get size(): number {
+    return this.failures.size;
   }
 
   reset(key: string): void {
