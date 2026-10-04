@@ -9,23 +9,16 @@ import {
 } from './engine';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
 import { clearProgress, loadProgress, saveProgress } from './storage';
+import { BADGE_NAMES, TIER_NAMES, statsFromProgress } from './stats';
 import { TIERS, type Tier } from './time';
 
-const TIER_NAMES: Record<Tier, string> = {
-  1: 'volle Stunden',
-  2: 'halbe Stunden',
-  3: 'Viertelstunden',
-  4: '10, 20, 40 und 50 Minuten',
-  5: 'Fünf-Minuten-Schritte',
-  6: 'einzelne Minuten',
-};
 const CORRECT_DELAY_MS = 1300;
 const STAR_DELAY_MS = 900;
 
 const MARKUP = `
   ${skyLayer('game')}
   <header class="topbar">
-    <button class="tool back" type="button" data-ref="back" aria-label="Zurück zur Übersicht">‹</button>
+    <button class="tool back" type="button" data-ref="back">‹</button>
     <div class="score" aria-live="polite">
       <span class="stars" title="Sterne"><span class="score-icon">${plainStar('#fbbf24')}</span><span data-ref="stars">0</span></span>
       <span class="trophies" title="Pokale"><span class="score-icon">${trophy()}</span><span data-ref="trophies">0</span></span>
@@ -60,32 +53,6 @@ interface DialogAction {
   action: () => void;
 }
 
-const BADGE_NAMES: Record<Track, Record<Tier, string>> = {
-  digital: {
-    1: 'Volle Stunden erkennst du schon sicher.',
-    2: 'Halbe Stunden erkennst du schon sicher.',
-    3: 'Viertelstunden erkennst du schon sicher.',
-    4: '10, 20, 40 und 50 Minuten liest du schon sicher.',
-    5: 'Fünf-Minuten-Schritte liest du schon sicher.',
-    6: 'Sogar einzelne Minuten liest du schon sicher!',
-  },
-  text: {
-    1: '„… Uhr“ sagst du schon sicher.',
-    2: '„halb …“ sagst du schon sicher.',
-    3: '„Viertel nach“ und „Viertel vor“ sagst du schon sicher.',
-    4: '„zehn nach“ und „zwanzig vor“ sagst du schon sicher.',
-    5: '„fünf nach“ und „fünf vor“ sagst du schon sicher.',
-    6: 'Einzelne Minuten in Worten sagst du schon sicher!',
-  },
-};
-
-/** Learning badges for all secure tiers, for the dashboard. */
-export function clockBadges(engine: Engine): string[] {
-  return (['digital', 'text'] as const).flatMap((track) =>
-    TIERS.filter((t) => engine.tierState(track, t).secure).map((t) => BADGE_NAMES[track][t]),
-  );
-}
-
 interface RoundStats {
   starsAtStart: number;
   secured: string[];
@@ -95,21 +62,12 @@ function practicedName(track: Track, tier: Tier): string {
   return track === 'text' ? `${TIER_NAMES[tier]} in Worten` : TIER_NAMES[tier];
 }
 
-
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
 export function clockStats(): ModuleStats {
-  const engine = new Engine(loadProgress(Date.now()));
-  const digital = engine.unlockedTiers('digital');
-  const newest = digital[digital.length - 1];
-  return {
-    stars: engine.stars,
-    trophies: engine.progress.trophies,
-    badges: clockBadges(engine),
-    level: engine.progress.taskCounter === 0 ? 'Noch nicht gestartet' : `Stufe ${newest} von 6: ${TIER_NAMES[newest]}`,
-  };
+  return statsFromProgress(loadProgress(Date.now()), Date.now());
 }
 
 export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => void {
@@ -317,7 +275,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     showDialog(
       `<div class="trophy">${trophy()}</div><h2>${CHILD_NAME}, Durchgang geschafft!</h2>${lines.join('')}`,
       [
-        { label: 'Zur Übersicht', action: ctx.exit },
+        { label: ctx.exitLabel, action: ctx.exit },
         { label: 'Noch ein Durchgang', action: nextTask },
       ],
       nextTask,
@@ -421,6 +379,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   // --- tools -------------------------------------------------------------------
 
+  ui.back.setAttribute('aria-label', ctx.exitLabel);
   ui.back.addEventListener('click', ctx.exit);
 
   ui.next.addEventListener('click', () => {

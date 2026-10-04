@@ -3,8 +3,9 @@
 Eine kleine Lern-App für Kinder im Grundschulalter, gemacht für das Tablet. Sie läuft
 einfach im Browser – ohne Installation, ohne Konto, ohne Werbung.
 
-Das erste Modul heißt **„Die Uhr“**: Leonie (8) lernt damit, die Zeigeruhr zu lesen.
-Weitere Module folgen.
+Die Module sind nach Schulfächern sortiert – Leonies Idee: Jeder **Lernbereich** ist eine
+eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8) lernt damit, die
+Zeigeruhr zu lesen. Weitere Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
 
@@ -24,6 +25,25 @@ vielen Wiederholungen statt mit Prüfungen:
   **Zuckerstangen-Balken** bis zum **Pokal**.
 - Fehler kosten nichts. Die App erklärt in Ruhe, was die Zeiger zeigen, und bringt die
   Uhrzeit ein paar Aufgaben später noch einmal.
+
+## Lernbereiche
+
+| Bereich | Süßigkeit | Module |
+|---|---|---|
+| Mathe | Lolli | Die Uhr |
+| Deutsch | Bonbon | folgt |
+| Musik | Cupcake | folgt |
+| HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
+| Englisch | Schokolade | folgt |
+
+Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
+**„Hier weiter“** zeigt immer genau eine Empfehlung – zum Beispiel einen angefangenen
+Durchgang fortsetzen, Fehler von neulich wiederholen oder nach ein paar Tagen Pause
+auffrischen. Kleine Bonbons zeigen, wie viele Stufen eines Moduls schon sicher sitzen.
+
+<p align="center">
+  <img src="docs/screenshots/area.png" alt="Bereich Mathe mit dem Modul 'Die Uhr', Fortschritts-Bonbons und Empfehlung 'Hier weiter'" width="720">
+</p>
 
 ## So lernt man mit der App
 
@@ -87,7 +107,7 @@ liest die Antworten vor.
 
 ### Für Eltern
 
-- Auf der **Startseite** sieht man alle Pokale, Sterne und Abzeichen.
+- Auf der **Startseite** sieht man alle Pokale, Sterne und Abzeichen und die Lernbereiche.
 - Das **Zahnrad** im Uhr-Modul öffnet den Elternbereich: Stand jeder Stufe, Töne an/aus
   und „Fortschritt löschen“ (drei Sekunden gedrückt halten).
 - Der Fortschritt bleibt **nur auf dem Gerät** gespeichert (im Browser). Es werden keine
@@ -97,7 +117,7 @@ liest die Antworten vor.
 - Tipp: Kurze Übungsrunden von fünf bis zehn Minuten wirken besser als lange.
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Startseite mit Pokalen, Sternen, Abzeichen und dem Modul 'Die Uhr'" width="720">
+  <img src="docs/screenshots/dashboard.png" alt="Startseite mit Pokalen, Sternen, Abzeichen und den fünf Lernbereichen als Süßigkeiten" width="720">
 </p>
 
 ## Ideen für später
@@ -120,7 +140,8 @@ Für alle, die mitbauen möchten.
 - Die Schrift [Fredoka](https://fonts.google.com/specimen/Fredoka) ist eingebettet
   (kein Abruf bei Google).
 - Neue Module implementieren `LearningModule` aus
-  [`src/modules/types.ts`](src/modules/types.ts) und werden in `src/main.ts` eingetragen.
+  [`src/modules/types.ts`](src/modules/types.ts) und werden in ihrem Lernbereich in
+  [`src/areas.ts`](src/areas.ts) eingetragen.
 
 ```bash
 npm install

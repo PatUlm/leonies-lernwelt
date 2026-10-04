@@ -107,6 +107,9 @@ button {
 }
 
 .dash-header,
+.area-header,
+.areas,
+.areas-more,
 .rewards,
 .modules,
 .badges,
@@ -146,7 +149,8 @@ button {
 
 /* ---------- dashboard ---------- */
 
-.dashboard {
+.dashboard,
+.area-page {
   max-width: 900px;
   margin: 0 auto;
   padding: max(24px, env(safe-area-inset-top)) 20px 32px;
@@ -262,9 +266,234 @@ button {
   font-weight: 700;
 }
 
-.module-go {
+/* ---------- learning areas ---------- */
+
+.areas {
+  display: grid;
+  gap: 16px;
+}
+
+.area-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+  background: var(--card);
+  border-radius: 28px;
+  border: 4px solid color-mix(in srgb, var(--area) 45%, #fff);
+  box-shadow: 0 6px 0 var(--area);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.1s;
+}
+
+a.area-card:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--area);
+}
+
+.area-candy svg {
+  display: block;
+  width: clamp(76px, 13vw, 110px);
+  height: auto;
+}
+
+.area-text {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  justify-items: start;
+}
+
+.area-title {
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.area-subtitle {
+  font-size: 0.5em;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.area-card:not(.small) .area-subtitle::before,
+.area-header .area-subtitle::before {
+  content: '· ';
+}
+
+.area-info {
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.area-go {
   font-size: 48px;
   color: var(--ink-soft);
+}
+
+.areas-more h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .areas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.area-card.small {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 14px 10px;
+  border-radius: 22px;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--area) 60%, #fff);
+  text-align: center;
+}
+
+.area-card.small .area-candy svg {
+  width: 64px;
+}
+
+.area-card.small .area-title {
+  font-size: 22px;
+}
+
+.area-card.small .area-subtitle {
+  display: block;
+  font-size: 13px;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 9px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.status svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.status-next {
+  background: #2e7d32;
+}
+
+.status-new {
+  background: #1e40af;
+}
+
+.status-secure {
+  background: #5b21b6;
+}
+
+.status-soon {
+  background: #e7e2da;
+  color: #57534e;
+  font-size: 13px;
+  padding: 3px 10px 3px 8px;
+}
+
+.area-header {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.area-header h1 {
+  margin: 0;
+  font-size: clamp(36px, 6vw, 52px);
+}
+
+.area-candy.big svg {
+  width: clamp(100px, 18vw, 140px);
+}
+
+.back-link {
+  justify-self: start;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 2px 0 var(--line);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.rewards.compact .reward {
+  padding: 8px;
+}
+
+.rewards.compact .reward-icon svg {
+  height: 32px;
+}
+
+.rewards.compact .reward-count {
+  font-size: 24px;
+}
+
+.goals {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.goal svg {
+  display: block;
+  width: 42px;
+  height: auto;
+}
+
+.area-page .module-tile {
+  border-color: color-mix(in srgb, var(--area) 45%, #fff);
+  box-shadow: 0 6px 0 var(--area);
+}
+
+.area-page .module-title {
+  color: var(--ink);
+}
+
+.module-text {
+  justify-items: start;
+}
+
+.module-start {
+  align-self: center;
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: var(--area, var(--hour));
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--area, var(--hour)) 60%, #1e3a5f);
+}
+
+@media (max-width: 640px) {
+  .module-tile {
+    flex-wrap: wrap;
+  }
+
+  .module-start {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 .badges h2 {

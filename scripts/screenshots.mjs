@@ -46,7 +46,7 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, ne
 async function openClock(page, predicate, attempts = 40) {
   for (let i = 0; i < attempts; i++) {
     await page.goto(`${BASE}/#/`);
-    await page.goto(`${BASE}/#/uhr`);
+    await page.goto(`${BASE}/#/mathe/uhr`);
     await page.waitForSelector('.answer');
     if (await page.evaluate(predicate)) return;
   }
@@ -71,8 +71,13 @@ async function context(viewport, reducedMotion = 'reduce') {
   const { ctx, page } = await context(LANDSCAPE);
   await seedProgress(page, { tasks: 420, accuracy: 0.9, seed: 7 });
   await page.goto(`${BASE}/#/`);
-  await page.waitForSelector('.module-tile');
+  await page.waitForSelector('.area-card');
   await page.screenshot({ path: `${OUT}/dashboard.png` });
+
+  // Learning area with its modules.
+  await page.goto(`${BASE}/#/mathe`);
+  await page.waitForSelector('.module-tile');
+  await page.screenshot({ path: `${OUT}/area.png` });
 
   // Reading the clock (landscape tablet).
   await openClock(page, isDigitalQuestion);
