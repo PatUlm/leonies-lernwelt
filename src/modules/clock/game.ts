@@ -155,7 +155,6 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   let round = newRoundStats();
   const timers = new Set<number>();
   let disposed = false;
-  let dialogChosen: (() => void) | null = null;
   let dialogDismiss: (() => void) | null = null;
   let afterDialog: (() => void) | null = null;
 
@@ -370,7 +369,6 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
    * back), so the game never stays stuck behind a closed dialog.
    */
   function showDialog(html: string, actions: DialogAction[], onDismiss: () => void = () => {}): void {
-    dialogChosen = null;
     dialogDismiss = onDismiss;
     ui.dialogBody.innerHTML = html;
     ui.dialogActions.replaceChildren(
@@ -379,14 +377,22 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
         b.type = 'button';
         b.className = a.primary ? 'btn primary' : 'btn';
         b.textContent = a.label;
-        b.addEventListener('click', () => {
-          dialogChosen = a.action;
-          ui.dialog.close();
-        });
+        b.addEventListener('click', () => closeDialog(a.action));
         return b;
       }),
     );
     if (!ui.dialog.open) ui.dialog.showModal();
+  }
+
+  /**
+   * Closes the dialog and runs the follow-up synchronously. The asynchronous
+   * 'close' event must not act again: by then another dialog may be open.
+   */
+  function closeDialog(then: () => void): void {
+    dialogDismiss = null;
+    ui.dialog.close();
+    then();
+    flushAfterDialog();
   }
 
   /** Runs `fn` now, or once an open dialog (e.g. the parents' area) has been closed. */
@@ -395,18 +401,22 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     else fn();
   }
 
+  function flushAfterDialog(): void {
+    if (ui.dialog.open || !afterDialog) return;
+    const deferred = afterDialog;
+    afterDialog = null;
+    deferred();
+  }
+
+  // Escape / Android back: keep the dialog. Should the browser close it anyway,
+  // run its dismiss action so the game never stays stuck.
   ui.dialog.addEventListener('cancel', (e) => e.preventDefault());
   ui.dialog.addEventListener('close', () => {
-    if (disposed) return;
-    const run = dialogChosen ?? dialogDismiss;
-    dialogChosen = null;
+    if (disposed || ui.dialog.open || !dialogDismiss) return;
+    const dismiss = dialogDismiss;
     dialogDismiss = null;
-    run?.();
-    if (!ui.dialog.open && afterDialog) {
-      const deferred = afterDialog;
-      afterDialog = null;
-      deferred();
-    }
+    dismiss();
+    flushAfterDialog();
   });
 
   // --- tools -------------------------------------------------------------------
@@ -479,8 +489,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       afterDialog = null;
       engine = new Engine(loadProgress(Date.now()));
       round = newRoundStats();
-      dialogChosen = nextTask;
-      ui.dialog.close();
+      closeDialog(nextTask);
     });
   }
 

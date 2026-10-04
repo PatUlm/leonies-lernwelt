@@ -12,15 +12,23 @@
 # buildx over ssh:// opens a flood of SSH connections that sshd rejects.
 # The build runs the tests and aborts when they fail.
 #
-# Usage: bin/release.sh [version]   (default: YYYYMMDD-HHMM)
+# Tags are never reused: Terraform compares the tag name, so a rebuilt image
+# under an existing tag would not be rolled out.
+#
+# Usage: bin/release.sh [version]   (default: YYYYMMDD-HHMMSS)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP_VERSION="${1:-$(date +'%Y%m%d-%H%M')}"
+APP_VERSION="${1:-$(date +'%Y%m%d-%H%M%S')}"
 REPO="clock"
 IMAGE="${REPO}:${APP_VERSION}"
 export DOCKER_HOST="ssh://netcup1"
 export DOCKER_BUILDKIT=0
+
+if docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+  echo "ERROR: ${IMAGE} already exists on the server - use a new version." >&2
+  exit 1
+fi
 
 echo "==> Building ${IMAGE} on the server (DOCKER_HOST=${DOCKER_HOST})"
 docker build -f Dockerfile --build-arg "APP_VERSION=${APP_VERSION}" -t "${IMAGE}" -t "${REPO}:latest" .
@@ -28,4 +36,4 @@ docker build -f Dockerfile --build-arg "APP_VERSION=${APP_VERSION}" -t "${IMAGE}
 echo "image = \"${IMAGE}\"" > terraform/image.auto.tfvars
 echo
 echo "==> ${IMAGE} built (kept on the netcup1 daemon, no registry push)"
-echo "    terraform/image.auto.tfvars updated - now run bin/deploy.sh"
+echo "    terraform/image.auto.tfvars updated - now run: task plan && task deploy"
