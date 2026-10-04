@@ -13,10 +13,14 @@ let isSafe: () => boolean = () => true;
 export function setupUpdates(safeToReload: () => boolean): void {
   isSafe = safeToReload;
   if (!('serviceWorker' in navigator)) return;
-  // The very first install also changes the controller; that needs no reload.
-  const hadController = Boolean(navigator.serviceWorker.controller);
   registerSW({
     immediate: true,
+    // Without this hook autoUpdate reloads every open page at once, exercises included.
+    // It is not called for the very first install.
+    onNeedReload() {
+      reloadPending = true;
+      reloadIfPending();
+    },
     onRegisteredSW(_url, reg) {
       registration = reg;
       if (!reg) return;
@@ -25,11 +29,6 @@ export function setupUpdates(safeToReload: () => boolean): void {
         if (!document.hidden) void reg.update();
       });
     },
-  });
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController) return;
-    reloadPending = true;
-    reloadIfPending();
   });
 }
 

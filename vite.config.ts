@@ -40,6 +40,10 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallbackDenylist: [/^\/healthz/],
+        // The plugin sets these for autoUpdate only with injectRegister 'auto';
+        // without them a new version waits until every tab is closed.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
