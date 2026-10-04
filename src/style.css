@@ -1858,6 +1858,11 @@ a.area-card:active {
     font-size: 23px;
   }
 
+  /* "15:00 Uhr" in a third of the narrow right column. */
+  .daytime-answers .answer {
+    font-size: clamp(16px, 2.5vw, 21px);
+  }
+
   .answers.text-answers {
     grid-template-columns: 1fr;
     gap: 6px;
