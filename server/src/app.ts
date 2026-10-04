@@ -1,0 +1,225 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import {
+  FailureLimiter, hashPin, hashToken, isValidPin, newToken, normalizeName, profileId, verifyPin,
+} from './auth.ts';
+import type { Profile, ProfileStore } from './store.ts';
+
+export interface AppOptions {
+  store: ProfileStore;
+  /** Upper bound for profiles, so an open sign-up cannot fill the disk. */
+  maxProfiles?: number;
+  /** Largest accepted request body (saved progress included). */
+  maxBodyBytes?: number;
+  now?: () => number;
+}
+
+const MAX_TOKENS_PER_PROFILE = 10;
+const LOGIN_FAILURES_PER_PROFILE = 5;
+const LOGIN_FAILURES_PER_CLIENT = 20;
+const SIGNUPS_PER_CLIENT = 5;
+const QUARTER_HOUR = 15 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+/** Verified for unknown names too, so response times do not reveal which names exist. */
+const DUMMY_PIN_HASH = await hashPin('0000');
+
+// No parameter properties: Node runs this file with type stripping only.
+class HttpError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly extra: Record<string, unknown>;
+
+  constructor(status: number, code: string, extra: Record<string, unknown> = {}) {
+    super(code);
+    this.status = status;
+    this.code = code;
+    this.extra = extra;
+  }
+}
+
+function send(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
+  const json = JSON.stringify(body);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    ...headers,
+  });
+  res.end(json);
+}
+
+async function readJson(req: IncomingMessage, limit: number): Promise<Record<string, unknown>> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > limit) throw new HttpError(413, 'too_large');
+    chunks.push(chunk as Buffer);
+  }
+  try {
+    const value = JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('not an object');
+    return value as Record<string, unknown>;
+  } catch {
+    throw new HttpError(400, 'invalid_json');
+  }
+}
+
+/** Client address as seen by Traefik (X-Real-Ip), else the socket. */
+function clientKey(req: IncomingMessage): string {
+  const real = req.headers['x-real-ip'];
+  return (typeof real === 'string' && real) || req.socket.remoteAddress || 'unknown';
+}
+
+function bearer(req: IncomingMessage): string | null {
+  const header = req.headers.authorization;
+  return header?.startsWith('Bearer ') ? header.slice(7) : null;
+}
+
+function progressView(p: Profile) {
+  return { name: p.name, revision: p.revision, updatedAt: p.updatedAt, data: p.data };
+}
+
+export function createApp(options: AppOptions) {
+  const { store } = options;
+  const maxProfiles = options.maxProfiles ?? 200;
+  const maxBody = options.maxBodyBytes ?? 256 * 1024;
+  const now = options.now ?? Date.now;
+  const profileFailures = new FailureLimiter(LOGIN_FAILURES_PER_PROFILE, QUARTER_HOUR, now);
+  const clientFailures = new FailureLimiter(LOGIN_FAILURES_PER_CLIENT, HOUR, now);
+  const signups = new FailureLimiter(SIGNUPS_PER_CLIENT, HOUR, now);
+
+  function blocked(...waits: number[]): void {
+    const wait = Math.max(...waits);
+    if (wait > 0) throw new HttpError(429, 'too_many_attempts', { retryAfterSeconds: Math.ceil(wait / 1000) });
+  }
+
+  function addToken(profile: Profile): string {
+    const { token, hash } = newToken();
+    const t = now();
+    profile.tokens = [...profile.tokens, { hash, createdAt: t, lastUsed: t }]
+      .sort((a, b) => b.lastUsed - a.lastUsed)
+      .slice(0, MAX_TOKENS_PER_PROFILE);
+    return token;
+  }
+
+  /** Resolves the profile of a device token; the token's profile id travels with it. */
+  async function authenticate(req: IncomingMessage): Promise<{ id: string; tokenHash: string }> {
+    const token = bearer(req);
+    const [id, secret] = token?.split('.') ?? [];
+    if (!id || !secret || !/^[0-9a-f]{64}$/.test(id)) throw new HttpError(401, 'unauthorized');
+    const profile = await store.get(id);
+    const tokenHash = hashToken(secret);
+    if (!profile?.tokens.some((t) => t.hash === tokenHash)) throw new HttpError(401, 'unauthorized');
+    return { id, tokenHash };
+  }
+
+  async function signup(req: IncomingMessage) {
+    const client = clientKey(req);
+    blocked(signups.retryAfter(client));
+    const body = await readJson(req, 4096);
+    const name = normalizeName(body.name);
+    if (!name) throw new HttpError(400, 'invalid_name');
+    if (!isValidPin(body.pin)) throw new HttpError(400, 'invalid_pin');
+    if ((await store.count()) >= maxProfiles) throw new HttpError(507, 'too_many_profiles');
+    const id = profileId(name);
+    const pinHash = await hashPin(body.pin);
+    return store.update(id, async (current) => {
+      if (current) throw new HttpError(409, 'name_taken');
+      signups.fail(client); // counts sign-ups, not failures
+      const t = now();
+      const profile: Profile = { name, pinHash, createdAt: t, tokens: [], revision: 0, updatedAt: t, data: null };
+      const token = addToken(profile);
+      return { next: profile, result: { status: 201, body: { token: `${id}.${token}`, ...progressView(profile) } } };
+    });
+  }
+
+  async function login(req: IncomingMessage) {
+    const client = clientKey(req);
+    const body = await readJson(req, 4096);
+    const name = normalizeName(body.name);
+    if (!name || !isValidPin(body.pin)) throw new HttpError(400, 'invalid_login');
+    const id = profileId(name);
+    blocked(profileFailures.retryAfter(id), clientFailures.retryAfter(client));
+    const pin = body.pin;
+    return store.update(id, async (profile) => {
+      const valid = await verifyPin(pin, profile?.pinHash ?? DUMMY_PIN_HASH);
+      if (!profile || !valid) {
+        profileFailures.fail(id);
+        clientFailures.fail(client);
+        // Same answer for unknown names and wrong PINs.
+        throw new HttpError(401, 'wrong_login');
+      }
+      profileFailures.reset(id);
+      const token = addToken(profile);
+      return { next: profile, result: { status: 200, body: { token: `${id}.${token}`, ...progressView(profile) } } };
+    });
+  }
+
+  async function getProgress(req: IncomingMessage) {
+    const { id } = await authenticate(req);
+    const profile = await store.get(id);
+    if (!profile) throw new HttpError(401, 'unauthorized');
+    return { status: 200, body: progressView(profile) };
+  }
+
+  async function putProgress(req: IncomingMessage) {
+    const { id, tokenHash } = await authenticate(req);
+    const body = await readJson(req, maxBody);
+    const base = body.baseRevision;
+    if (typeof base !== 'number' || !body.data || typeof body.data !== 'object') throw new HttpError(400, 'invalid_progress');
+    return store.update(id, async (profile) => {
+      if (!profile) throw new HttpError(401, 'unauthorized');
+      if (base !== profile.revision) {
+        return { next: null, result: { status: 409, body: { error: 'conflict', ...progressView(profile) } } };
+      }
+      const t = now();
+      profile.revision += 1;
+      profile.updatedAt = t;
+      profile.data = body.data;
+      const token = profile.tokens.find((x) => x.hash === tokenHash);
+      if (token) token.lastUsed = t;
+      return { next: profile, result: { status: 200, body: { revision: profile.revision, updatedAt: t } } };
+    });
+  }
+
+  async function logout(req: IncomingMessage) {
+    const { id, tokenHash } = await authenticate(req);
+    return store.update(id, async (profile) => {
+      if (!profile) return { next: null, result: { status: 204, body: null } };
+      profile.tokens = profile.tokens.filter((t) => t.hash !== tokenHash);
+      return { next: profile, result: { status: 204, body: null } };
+    });
+  }
+
+  const routes: Record<string, (req: IncomingMessage) => Promise<{ status: number; body: unknown }>> = {
+    'POST /api/profiles': signup,
+    'POST /api/login': login,
+    'GET /api/progress': getProgress,
+    'PUT /api/progress': putProgress,
+    'POST /api/logout': logout,
+    'GET /api/health': async () => ({ status: 200, body: { ok: true } }),
+  };
+
+  return async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const path = (req.url ?? '/').split('?')[0];
+    const route = routes[`${req.method} ${path}`];
+    try {
+      if (!route) throw new HttpError(404, 'not_found');
+      const { status, body } = await route(req);
+      if (status === 204) {
+        res.writeHead(204, { 'Cache-Control': 'no-store' }).end();
+      } else {
+        send(res, status, body);
+      }
+    } catch (err) {
+      if (err instanceof HttpError) {
+        const headers: Record<string, string> = {};
+        if (typeof err.extra.retryAfterSeconds === 'number') headers['Retry-After'] = String(err.extra.retryAfterSeconds);
+        send(res, err.status, { error: err.code, ...err.extra }, headers);
+      } else {
+        console.error(err);
+        send(res, 500, { error: 'internal' });
+      }
+    }
+  };
+}

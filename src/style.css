@@ -301,6 +301,163 @@ button {
   }
 }
 
+/* ---------- account, sign-in, keypad ---------- */
+
+.account-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.account-name {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.account-bar .version {
+  margin-left: auto;
+}
+
+.link-button {
+  border: none;
+  background: none;
+  padding: 6px 0;
+  color: var(--hour);
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-button.quiet {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+.login-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px 24px;
+}
+
+.login {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 520px);
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--card);
+  border: 5px solid var(--candy-soft);
+  box-shadow: 0 8px 0 var(--candy);
+  text-align: center;
+}
+
+.login h1 {
+  margin: 0;
+  font-size: clamp(30px, 6vw, 42px);
+  color: #db2777;
+}
+
+.login-intro {
+  margin: 0;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+.login-field {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.login-field input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 3px solid #e2d8ca;
+  font: inherit;
+  font-size: 26px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: var(--hour);
+}
+
+.pin-dots {
+  display: flex;
+  gap: 14px;
+}
+
+.pin-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+}
+
+.pin-dot.filled {
+  background: var(--ink);
+}
+
+.login-error {
+  min-height: 1.3em;
+  margin: 0;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.key {
+  min-height: 56px;
+  border-radius: 16px;
+  border: 3px solid var(--candy-soft);
+  background: var(--card);
+  box-shadow: 0 4px 0 #f9a8d4;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.key:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #f9a8d4;
+}
+
+.key-back {
+  background: #fff7ed;
+}
+
+.key-submit {
+  background: var(--good);
+  border-color: var(--good);
+  color: #fff;
+  box-shadow: 0 4px 0 #15803d;
+}
+
+.key:disabled {
+  opacity: 0.4;
+}
+
 /* ---------- learning areas ---------- */
 
 .areas {

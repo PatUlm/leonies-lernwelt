@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
+    "api": "DATA_DIR=.data/profiles PORT=8081 node server/src/main.ts",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/node": "^24.19.1",
     "playwright": "^1.63.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",

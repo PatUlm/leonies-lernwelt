@@ -3,6 +3,8 @@ import { APP_NAME, CHILD_NAME } from './config';
 import { STATUS_ICONS, wrappedCandy } from './shared/candy';
 import { medal, plainStar, skyLayer, trophy } from './shared/decor';
 import { canInstall, onInstallChange, promptInstall } from './shared/install';
+import { sync, type SyncStatus } from './shared/sync';
+import { APP_VERSION, checkForUpdate } from './shared/update';
 
 export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -62,11 +64,20 @@ function areaTitle(area: Area): string {
     : escapeHtml(area.title);
 }
 
-/** Renders the dashboard; returns a cleanup function. */
-export function renderDashboard(app: HTMLElement): () => void {
+const SYNC_TEXT: Record<SyncStatus, string> = {
+  none: '',
+  local: 'Spielstand nur auf diesem Gerät',
+  saved: '☁ Spielstand gespeichert',
+  pending: '☁ wird gespeichert …',
+  offline: '☁ offline – wird später gespeichert',
+};
+
+/** Renders the dashboard; `rerender` redraws it (e.g. after signing out). */
+export function renderDashboard(app: HTMLElement, rerender: () => void): () => void {
   const entries = collectModules();
   const recommended = pickRecommendation(entries);
   const available = AREAS.filter((a) => a.modules.length);
+  const account = sync.account();
   const upcoming = AREAS.filter((a) => !a.modules.length);
 
   const bigCard = (area: Area) => {
@@ -110,13 +121,47 @@ export function renderDashboard(app: HTMLElement): () => void {
       <span class="install-icon" aria-hidden="true">📲</span>
       <span class="install-text">Die Lernwelt als App auf den Startbildschirm legen – dann öffnet sie im Vollbild.</span>
       <button type="button" class="btn primary install-button">Installieren</button>
-    </section>`;
+    </section>
+    <footer class="account-bar">
+      <span class="account-name">${account ? `👤 ${escapeHtml(account.name)}` : ''}</span>
+      <span class="sync-status" data-ref="sync"></span>
+      <button type="button" class="link-button" data-ref="account">${account ? 'Abmelden' : 'Anmelden'}</button>
+      <button type="button" class="link-button quiet version" data-ref="version" title="Nach Updates suchen">Version ${escapeHtml(APP_VERSION)}</button>
+    </footer>`;
 
   const install = app.querySelector<HTMLElement>('.install')!;
   const update = () => (install.hidden = !canInstall());
   install.querySelector('button')!.addEventListener('click', () => void promptInstall());
   update();
-  return onInstallChange(update);
+
+  const syncText = app.querySelector<HTMLElement>('[data-ref="sync"]')!;
+  const showSync = (s: SyncStatus) => (syncText.textContent = SYNC_TEXT[s]);
+  showSync(sync.status());
+  app.querySelector('[data-ref="account"]')!.addEventListener('click', async () => {
+    if (account) {
+      const ok = window.confirm(
+        `${account.name} abmelden? Der Spielstand bleibt auf dem Server und ist nach dem Anmelden wieder da.`,
+      );
+      if (!ok) return;
+      await sync.logout();
+    } else {
+      sync.chooseAgain(); // "Wer lernt hier?" – what was played here moves into a new profile
+    }
+    rerender();
+  });
+  const version = app.querySelector<HTMLButtonElement>('[data-ref="version"]')!;
+  version.addEventListener('click', async () => {
+    version.textContent = 'Suche Updates …';
+    await checkForUpdate().catch(() => undefined);
+    window.setTimeout(() => (version.textContent = `Version ${APP_VERSION}`), 1500);
+  });
+
+  const offInstall = onInstallChange(update);
+  const offSync = sync.onStatus(showSync);
+  return () => {
+    offInstall();
+    offSync();
+  };
 }
 
 /** Six (or as many as there are goals) small sweets, filled per goal reached. */

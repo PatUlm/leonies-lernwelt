@@ -3,8 +3,11 @@ import './style.css';
 import { AREAS } from './areas';
 import { APP_NAME } from './config';
 import { Sound } from './shared/sound';
+import { renderLogin } from './login';
 import { listenForInstallPrompt } from './shared/install';
 import { loadSettings, saveSettings } from './shared/storage';
+import { sync } from './shared/sync';
+import { reloadIfPending, setupUpdates } from './shared/update';
 import { renderArea, renderDashboard } from './views';
 
 const app = document.getElementById('app')!;
@@ -18,12 +21,35 @@ document.title = APP_NAME;
 void navigator.storage?.persist?.().catch(() => false);
 listenForInstallPrompt();
 
+/** True while an exercise runs: then neither updates nor server data may interrupt. */
+let inModule = false;
+setupUpdates(() => !inModule);
+
+// Progress from the server replaces the local one: show it (only outside exercises).
+sync.onRemoteData(() => {
+  Object.assign(settings, loadSettings());
+  if (!inModule) route();
+});
+window.addEventListener('online', () => void sync.push().catch(() => undefined));
+
 /** Routes: #/ (dashboard), #/<area>, #/<area>/<module>. */
 function route(): void {
   cleanup?.();
   cleanup = null;
   app.removeAttribute('style');
   window.scrollTo(0, 0);
+  inModule = false;
+
+  if (!sync.hasChosen()) {
+    cleanup = renderLogin(app, () => {
+      Object.assign(settings, loadSettings());
+      sound.enabled = settings.sound;
+      if (location.hash && location.hash !== '#/') location.hash = '#/';
+      else route();
+    });
+    return;
+  }
+  reloadIfPending();
 
   const [areaId, moduleId] = location.hash.replace(/^#\/?/, '').split('/');
   // Old links before learning areas existed (#/uhr).
@@ -35,7 +61,9 @@ function route(): void {
 
   const area = AREAS.find((a) => a.id === areaId && a.modules.length);
   if (!area) {
-    cleanup = renderDashboard(app);
+    cleanup = renderDashboard(app, route);
+    // Catch up with changes from other devices when coming back to the overview.
+    void sync.pull();
     return;
   }
   const module = area.modules.find((m) => m.id === moduleId);
@@ -44,6 +72,7 @@ function route(): void {
     return;
   }
   app.className = `module module-${module.id}`;
+  inModule = true;
   cleanup = module.mount(app, {
     exit: () => {
       location.hash = `#/${area.id}`;

@@ -22,6 +22,7 @@ cd "$(dirname "$0")/.."
 APP_VERSION="${1:-$(date +'%Y%m%d-%H%M%S')}"
 REPO="lernwelt"
 IMAGE="${REPO}:${APP_VERSION}"
+API_IMAGE="${REPO}-api:${APP_VERSION}"
 export DOCKER_HOST="ssh://netcup1"
 export DOCKER_BUILDKIT=0
 
@@ -30,10 +31,12 @@ if docker image inspect "${IMAGE}" >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> Building ${IMAGE} on the server (DOCKER_HOST=${DOCKER_HOST})"
-docker build -f Dockerfile --build-arg "APP_VERSION=${APP_VERSION}" -t "${IMAGE}" -t "${REPO}:latest" .
+echo "==> Building ${IMAGE} and ${API_IMAGE} on the server (DOCKER_HOST=${DOCKER_HOST})"
+docker build -f Dockerfile --target web --build-arg "APP_VERSION=${APP_VERSION}" -t "${IMAGE}" -t "${REPO}:latest" .
+# Same build stage (cached), so the tests do not run twice.
+docker build -f Dockerfile --target api --build-arg "APP_VERSION=${APP_VERSION}" -t "${API_IMAGE}" -t "${REPO}-api:latest" .
 
-echo "image = \"${IMAGE}\"" > terraform/image.auto.tfvars
+printf 'image     = "%s"\napi_image = "%s"\n' "${IMAGE}" "${API_IMAGE}" > terraform/image.auto.tfvars
 echo
-echo "==> ${IMAGE} built (kept on the netcup1 daemon, no registry push)"
+echo "==> ${IMAGE} and ${API_IMAGE} built (kept on the netcup1 daemon, no registry push)"
 echo "    terraform/image.auto.tfvars updated - now run: task plan && task deploy"

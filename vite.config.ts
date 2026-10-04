@@ -4,10 +4,20 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   // Relative paths so the build runs from any sub-path (e.g. GitHub Pages).
   base: './',
+  server: {
+    // `npm run api` serves the API locally on 8081.
+    proxy: { '/api': 'http://127.0.0.1:8081' },
+  },
+  define: {
+    // Release tag from bin/release.sh (Docker build arg), shown in the app.
+    __APP_VERSION__: JSON.stringify(process.env.APP_VERSION ?? 'dev'),
+  },
   plugins: [
     // Installable app ("Zum Startbildschirm") that opens without browser bars and works offline.
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered from src/shared/update.ts, which also reloads into new versions.
+      injectRegister: false,
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Leonies Lernwelt',
