@@ -140,8 +140,8 @@ export function explainExample(task: TaskInfo): string {
     return `Zieh den langen Zeiger ${minutePlace(minute)} und den kurzen Zeiger ${hourPlace(t)}. Dann tippe auf „Fertig“.`;
   }
   if (track === 'input') {
-    const [h, m] = digital.split(':');
-    return `Lies zuerst die Stunde, dann die Minuten: Es ist ${digital}. Tippe ${[...h].join(' ')} und dann ${[...m].join(' ')}.`;
+    const digits = [...digital.replace(':', '')].join(' ');
+    return `Lies zuerst die Stunde, dann die Minuten: Es ist ${digital}. Tippe ${digits} – wie auf einer Digitaluhr.`;
   }
   if (track === 'halb') {
     const diff = numberWord(Math.abs(30 - minute));

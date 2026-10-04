@@ -163,7 +163,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   document.addEventListener('visibilitychange', onVisibility);
   let buttons: HTMLButtonElement[] = [];
   let keypad: Keypad | null = null;
-  let typed = { hour: '', minute: '' };
+  /** Typed digits, read like a digital clock: 3 digits = H:MM, 4 digits = HH:MM. */
+  let typed = '';
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
   let round = newRoundStats();
@@ -309,15 +310,14 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function renderInput(): void {
-    typed = { hour: '', minute: '' };
+    typed = '';
     const display = document.createElement('div');
     display.className = 'time-display';
     display.innerHTML = '<span class="time-field" data-field="hour"></span><span class="time-colon">:</span><span class="time-field" data-field="minute"></span>';
     keypad = createKeypad({
       onDigit: (d) => typeDigit(d),
       onBackspace: () => {
-        if (typed.minute) typed.minute = typed.minute.slice(0, -1);
-        else typed.hour = typed.hour.slice(0, -1);
+        typed = typed.slice(0, -1);
         updateDisplay();
       },
       onSubmit: onInputDone,
@@ -327,25 +327,26 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     showQuestion();
   }
 
-  function hourComplete(): boolean {
-    // A first digit of 3 or more cannot be followed by another one (no 30 o'clock).
-    return typed.hour.length === 2 || (typed.hour.length === 1 && Number(typed.hour) >= 3);
+  /** Splits the typed digits into hour and minutes: "100" → 1:00, "1123" → 11:23. */
+  function typedParts(): { hour: string; minute: string } {
+    if (typed.length <= 2) return { hour: typed, minute: '' };
+    return { hour: typed.slice(0, typed.length - 2), minute: typed.slice(-2) };
   }
 
   function typeDigit(d: number): void {
-    if (phase !== 'question') return;
-    if (!hourComplete()) typed.hour += String(d);
-    else if (typed.minute.length < 2) typed.minute += String(d);
+    if (phase !== 'question' || typed.length >= 4) return;
+    typed += String(d);
     updateDisplay();
   }
 
   function updateDisplay(): void {
     const field = (name: 'hour' | 'minute') => ui.answers.querySelector<HTMLElement>(`[data-field="${name}"]`)!;
-    field('hour').textContent = typed.hour.padEnd(2, '_').replace(/_/g, '–');
-    field('minute').textContent = typed.minute.padEnd(2, '_').replace(/_/g, '–');
-    field('hour').classList.toggle('active', !hourComplete());
-    field('minute').classList.toggle('active', hourComplete() && typed.minute.length < 2);
-    keypad?.setSubmitEnabled(hourComplete() && typed.minute.length === 2);
+    const { hour, minute } = typedParts();
+    field('hour').textContent = hour || '–';
+    field('minute').textContent = minute.padEnd(2, '–');
+    field('hour').classList.toggle('active', typed.length < 3);
+    field('minute').classList.toggle('active', typed.length >= 3 && typed.length < 4);
+    keypad?.setSubmitEnabled(typed.length >= 3);
   }
 
   function onChoice(index: number): void {
@@ -378,17 +379,20 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     lockAnswers();
     clock.disableSetting();
     const result = engine.answerTime(task, set, helpUsed, stopwatch.read());
-    if (!result.ok) later(() => clock.setTime(task.time), 900); // then show how it looks
+    // Then show how it looks – unless she has already moved on to the next task.
+    const shown = task;
+    if (!result.ok) later(() => task === shown && clock.setTime(shown.time), 900);
     finish(result);
   }
 
   function onInputDone(): void {
-    if (phase !== 'question' || !hourComplete() || typed.minute.length !== 2) return;
-    const given: GivenTime = { hour: Number(typed.hour), minute: Number(typed.minute) };
+    if (phase !== 'question' || typed.length < 3) return;
+    const parts = typedParts();
+    const given: GivenTime = { hour: Number(parts.hour), minute: Number(parts.minute) };
     if (given.hour > 23 || given.minute > 59) {
       // Not a time at all: a typing slip, not a reading mistake.
-      setMessage(`${typed.hour}:${typed.minute} gibt es nicht. Bitte noch einmal.`, 'explain');
-      typed = { hour: '', minute: '' };
+      setMessage(`${parts.hour}:${parts.minute} gibt es nicht. Bitte noch einmal.`, 'explain');
+      typed = '';
       updateDisplay();
       return;
     }

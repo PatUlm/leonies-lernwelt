@@ -64,6 +64,8 @@ export class AnalogClock {
   /** Setting the hands: current time, snap step and change listener. */
   private setting: { time: ClockTime; total: number; step: number; onChange: (t: ClockTime) => void } | null = null;
   private dragging: 'hour' | 'minute' | null = null;
+  /** The finger that drags; other touches are ignored until it lets go. */
+  private dragPointer: number | null = null;
   private readonly minuteLabels: SVGGElement;
   private readonly quarters: SVGGElement;
   private readonly focusLayer: SVGGElement;
@@ -121,8 +123,10 @@ export class AnalogClock {
     this.svg.addEventListener('pointerdown', (e) => this.onPointerDown(e));
     this.svg.addEventListener('pointermove', (e) => this.onPointerMove(e));
     for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) {
-      this.svg.addEventListener(ev, () => {
+      this.svg.addEventListener(ev, (e) => {
+        if (e.pointerId !== this.dragPointer) return;
         this.dragging = null;
+        this.dragPointer = null;
         this.svg.classList.remove('dragging');
       });
     }
@@ -140,6 +144,7 @@ export class AnalogClock {
   disableSetting(): void {
     this.setting = null;
     this.dragging = null;
+    this.dragPointer = null;
     this.svg.classList.remove('settable', 'hour-only', 'dragging');
   }
 
@@ -152,16 +157,17 @@ export class AnalogClock {
     if (!this.setting) return;
     const grip = (e.target as Element).closest<SVGGElement>('[data-hand]');
     const hand = grip?.dataset.hand as 'hour' | 'minute' | undefined;
-    if (!hand || (hand === 'minute' && this.setting.step >= 60)) return;
+    if (!hand || (hand === 'minute' && this.setting.step >= 60) || this.dragPointer !== null) return;
     e.preventDefault();
     this.dragging = hand;
+    this.dragPointer = e.pointerId;
     this.svg.classList.add('dragging');
     this.svg.setPointerCapture(e.pointerId);
     this.onPointerMove(e);
   }
 
   private onPointerMove(e: PointerEvent): void {
-    if (!this.setting || !this.dragging) return;
+    if (!this.setting || !this.dragging || e.pointerId !== this.dragPointer) return;
     const matrix = this.svg.getScreenCTM();
     if (!matrix) return;
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());

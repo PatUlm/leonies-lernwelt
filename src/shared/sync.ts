@@ -22,6 +22,8 @@ interface SyncState {
   dirty: boolean;
   /** When the local data last changed (ms, device clock). */
   updatedAt: number;
+  /** Profile the local data belongs to (kept when the account is dropped). */
+  profile?: string;
 }
 
 export type SyncStatus = 'none' | 'local' | 'saved' | 'pending' | 'offline';
@@ -192,20 +194,28 @@ export class SyncClient {
     const r = (await this.request('POST', '/profiles', { name, pin })) as unknown as ServerProgress & { token: string };
     this.assertCurrent(gen);
     writeJson('account.v1', { name: r.name, token: r.token });
-    this.setState({ revision: r.revision, dirty: true, updatedAt: Date.now() });
+    this.setState({ revision: r.revision, dirty: true, updatedAt: Date.now(), profile: r.name });
     await this.push();
   }
 
-  /** Signs in; a saved progress on the server replaces the one on this device. */
+  /**
+   * Signs in; a saved progress on the server replaces the one on this device.
+   * Exception: unsaved changes of the same profile (e.g. left over after the
+   * device was signed out remotely) are kept if they are newer.
+   */
   async login(name: string, pin: string): Promise<void> {
     const gen = ++this.generation;
     const r = (await this.request('POST', '/login', { name, pin })) as unknown as ServerProgress & { token: string };
     this.assertCurrent(gen);
     writeJson('account.v1', { name: r.name, token: r.token });
-    if (isRecord(r.data?.entries)) {
+    const local = this.state();
+    const sameProfile = local.profile?.toLocaleLowerCase('de') === r.name.toLocaleLowerCase('de');
+    if (local.dirty && sameProfile) {
+      await this.reconcile(r, true);
+    } else if (isRecord(r.data?.entries)) {
       this.apply(r);
     } else {
-      this.setState({ revision: r.revision, dirty: true, updatedAt: Date.now() });
+      this.setState({ revision: r.revision, dirty: true, updatedAt: Date.now(), profile: r.name });
       await this.push();
     }
   }
@@ -218,8 +228,11 @@ export class SyncClient {
     const account = this.account();
     if (account) {
       if (this.state().dirty) await this.push();
+      // Also when the upload found the account gone: the changes are still only here.
       if (this.state().dirty) throw new ApiError(0, 'unsaved');
       await this.request('POST', '/logout', undefined, account.token).catch(() => undefined);
+    } else if (this.state().dirty) {
+      throw new ApiError(0, 'unsaved');
     }
     this.generation += 1;
     clearTimeout(this.timer);
@@ -233,8 +246,9 @@ export class SyncClient {
   // --- syncing -----------------------------------------------------------------
 
   private markDirty(): void {
-    if (!this.account()) return;
-    this.setState({ ...this.state(), dirty: true, updatedAt: Date.now() });
+    const account = this.account();
+    if (!account) return;
+    this.setState({ ...this.state(), dirty: true, updatedAt: Date.now(), profile: account.name });
     this.emitStatus();
     this.schedulePush();
   }
@@ -295,8 +309,14 @@ export class SyncClient {
     if (uploaded && this.state().dirty) this.schedulePush();
   }
 
-  private async reconcile(server: ServerProgress): Promise<void> {
+  /** `adopt`: take over the server revision even if it is older (fresh sign-in). */
+  private async reconcile(server: ServerProgress, adopt = false): Promise<void> {
     const local = this.state();
+    // Older than what this device already has (e.g. kept back during an exercise).
+    if (!adopt && server.revision < local.revision) {
+      if (local.dirty) await this.doPush();
+      return;
+    }
     if (server.revision === local.revision && !local.dirty) return;
     const serverChangedAt = typeof server.data?.changedAt === 'number' ? server.data.changedAt : 0;
     const serverHasData = isRecord(server.data?.entries);
@@ -318,7 +338,7 @@ export class SyncClient {
     const entries = server.data?.entries;
     replaceSyncedEntries(isRecord(entries) ? entries : {});
     const changedAt = typeof server.data?.changedAt === 'number' ? server.data.changedAt : server.updatedAt;
-    this.setState({ revision: server.revision, dirty: false, updatedAt: changedAt });
+    this.setState({ revision: server.revision, dirty: false, updatedAt: changedAt, profile: server.name });
     for (const fn of this.remoteListeners) fn();
   }
 
@@ -329,11 +349,13 @@ export class SyncClient {
     if (server) await this.reconcile(server);
   }
 
-  /** The token is no longer valid (logged out elsewhere): keep the data, drop the account. */
+  /**
+   * The token is no longer valid (signed out elsewhere): drop the account but
+   * keep the data and its sync state, so unsaved changes survive a new sign-in.
+   */
   private forget(): void {
     this.generation += 1;
     remove('account.v1');
-    remove('sync.v1');
   }
 }
 

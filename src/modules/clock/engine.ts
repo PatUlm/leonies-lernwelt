@@ -747,9 +747,7 @@ export function isReady(
 ): boolean {
   if (s.mastery < readyAt) return false;
   const correct = s.window.filter((a) => a.ok);
-  const hours = new Set(correct.map((a) => a.hour));
-  // Noon and night tasks only have the 12, so variety counts across contexts.
-  if (hours.size < Math.min(MIN_DISTINCT_HOURS, correct.length)) return false;
+  if (new Set(correct.map((a) => a.hour)).size < MIN_DISTINCT_HOURS) return false;
   if (minutes.length > 1 && minutes.length < 12) {
     const seen = new Set(correct.map((a) => a.minute));
     if (!minutes.every((m) => seen.has(m))) return false;

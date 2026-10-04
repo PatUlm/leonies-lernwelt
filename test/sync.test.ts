@@ -186,6 +186,47 @@ describe('SyncClient', () => {
     }
   });
 
+  it('keeps unsaved changes when the device was signed out elsewhere', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    const token = tablet.client.account()!.token;
+    // The token becomes invalid (e.g. signed out on the server).
+    await fetch(`${base}/api/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+    writeJson('uhr.progress.v1', { stars: 8 });
+    await tablet.client.push();
+    expect(tablet.client.account()).toBeNull();
+    await expect(tablet.client.logout()).rejects.toMatchObject({ code: 'unsaved' });
+    expect(readJson('uhr.progress.v1')).toEqual({ stars: 8 });
+    // Signing in again uploads them instead of taking the older server state.
+    await tablet.client.login('Leonie', '1234');
+    expect(readJson('uhr.progress.v1')).toEqual({ stars: 8 });
+    const phone = new Device(base);
+    phone.use();
+    await phone.client.login('Leonie', '1234');
+    expect(readJson('uhr.progress.v1')).toEqual({ stars: 8 });
+  });
+
+  it('does not apply server data kept back during an exercise once it is outdated', async () => {
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    const phone = new Device(base);
+    phone.use();
+    await phone.client.login('Leonie', '1234');
+    writeJson('uhr.progress.v1', { points: 10 });
+    await phone.client.push();
+
+    tablet.use();
+    let inExercise = true;
+    tablet.client.setApplyGuard(() => !inExercise);
+    await tablet.client.pull(); // kept back: points 10
+    await new Promise((r) => setTimeout(r, 5));
+    writeJson('uhr.progress.v1', { points: 50 }); // played on, newer
+    await tablet.client.push();
+    inExercise = false;
+    await tablet.client.applyDeferred();
+    expect(readJson('uhr.progress.v1')).toEqual({ points: 50 });
+  });
+
   it('ignores the answer to a request that started before signing out', async () => {
     const tablet = new Device(base);
     await tablet.client.signup('Leonie', '1234');
