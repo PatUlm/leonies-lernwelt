@@ -26,6 +26,19 @@ vielen Wiederholungen statt mit Prüfungen:
 - Fehler kosten nichts. Die App erklärt in Ruhe, was die Zeiger zeigen, und bringt die
   Uhrzeit ein paar Aufgaben später noch einmal.
 
+## Auf Tablet und Handy
+
+Gemacht für das Tablet, läuft aber genauso auf dem Handy – im Hoch- und im Querformat. Die Uhr
+nimmt immer den Platz ein, der übrig bleibt; auf dem Handy quer stehen Uhr und Antworten
+nebeneinander. Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ – dann startet die App
+im Vollbild.
+
+<p align="center">
+  <img src="docs/screenshots/phone-portrait.png" alt="Handy im Hochformat: Uhr oben, drei Antworten darunter" height="420">
+  &nbsp;
+  <img src="docs/screenshots/phone-landscape.png" alt="Handy im Querformat: Uhr links, Frage und Antworten rechts" height="195">
+</p>
+
 ## Lernbereiche
 
 | Bereich | Süßigkeit | Module |

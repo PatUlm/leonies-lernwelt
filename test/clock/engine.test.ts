@@ -115,6 +115,19 @@ describe('Engine', () => {
     expect(engine.unlockedTiers('text').length).toBeGreaterThanOrEqual(3);
   });
 
+  it('ends the warm-up also when answers are found with help', () => {
+    const engine = new Engine(freshProgress(T0), seeded(14));
+    play(engine, 60, 1, seeded(15), 1000, 10_000);
+    engine.touch(T0 + 100 * SESSION_GAP_MS);
+    expect(engine.progress.warmup).toBe(3);
+    for (let i = 0; i < 3; i++) {
+      const t = engine.nextTask();
+      expect(t.warmup).toBe(true);
+      engine.answer(t, t.correctIndex, true);
+    }
+    expect(engine.progress.warmup).toBe(0);
+  });
+
   it('unlocks text within a single session once the clock tier is mastered', () => {
     const engine = new Engine(freshProgress(T0), seeded(11));
     play(engine, 120, 1, seeded(12), 100000, 3_000);

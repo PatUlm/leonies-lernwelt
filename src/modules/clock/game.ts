@@ -1,11 +1,12 @@
 import { CHILD_NAME } from '../../config';
 import { afternoonScene, confetti, plainStar, skyLayer, trophy } from '../../shared/decor';
 import { canSpeak, speak, stopSpeaking } from '../../shared/speech';
+import { Stopwatch } from '../../shared/stopwatch';
 import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
 import {
   CORRECT_PER_STAR, DAYTIME_TIERS, Engine, MASTERY_CORRECT, MASTERY_FAST_BONUS, MASTERY_WRONG,
-  READY_MASTERY, SECURE_MASTERY, TRACKS, label,
+  MIN_DISTINCT_HOURS, READY_MASTERY_BY_TRACK, SECURE_MASTERY, TRACKS, label,
   type AnswerResult, type RoundSummary, type Task, type Track,
 } from './engine';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
@@ -116,8 +117,10 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   let task: Task;
   let phase: 'question' | 'feedback' = 'question';
   let helpUsed = false;
-  /** When the current task appeared, for the (invisible) fluency bonus. */
-  let shownAt = 0;
+  /** Active answer time for the (invisible) fluency bonus. */
+  const stopwatch = new Stopwatch();
+  const onVisibility = () => (document.hidden ? stopwatch.pause('hidden') : stopwatch.resume('hidden'));
+  document.addEventListener('visibilitychange', onVisibility);
   let buttons: HTMLButtonElement[] = [];
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
@@ -163,7 +166,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     renderScore();
     phase = 'question';
     helpUsed = false;
-    shownAt = performance.now();
+    stopwatch.restart(document.hidden ? ['hidden'] : []);
     afterFeedback = null;
 
     clock.setTime(task.time);
@@ -223,7 +226,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
     phase = 'feedback';
     lockAnswers();
-    const result = engine.answer(task, index, helpUsed, performance.now() - shownAt);
+    const result = engine.answer(task, index, helpUsed, stopwatch.read());
     saveProgress(engine.progress);
     renderScore(result.roundComplete ?? undefined);
     if (result.unlocked.length) {
@@ -355,6 +358,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       }),
     );
     if (!ui.dialog.open) ui.dialog.showModal();
+    stopwatch.pause('dialog');
   }
 
   /**
@@ -364,6 +368,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   function closeDialog(then: () => void): void {
     dialogDismiss = null;
     ui.dialog.close();
+    stopwatch.resume('dialog');
     then();
     flushAfterDialog();
   }
@@ -385,6 +390,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   // run its dismiss action so the game never stays stuck.
   ui.dialog.addEventListener('cancel', (e) => e.preventDefault());
   ui.dialog.addEventListener('close', () => {
+    if (!ui.dialog.open) stopwatch.resume('dialog');
     if (disposed || ui.dialog.open || !dialogDismiss) return;
     const dismiss = dialogDismiss;
     dialogDismiss = null;
@@ -426,7 +432,12 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     if (phase === 'question' && task.kind !== 'example') {
       const context = task.track === 'daytime' ? 'Es ist Nachmittag. ' : '';
       const parts = [context + (ui.message.textContent ?? ''), ...buttons.map((b) => b.textContent ?? '')];
-      speak(parts, (i) => buttons.forEach((b, j) => b.classList.toggle('speaking', j === i - 1)));
+      // Listening is not answering time.
+      stopwatch.pause('speech');
+      speak(parts, (i) => {
+        buttons.forEach((b, j) => b.classList.toggle('speaking', j === i - 1));
+        if (i === -1) stopwatch.resume('speech');
+      });
     } else {
       speak([ui.message.textContent ?? '']);
     }
@@ -451,7 +462,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
        <table class="progress-table"><thead><tr><th></th>${header}</tr></thead><tbody>${rows}</tbody></table>
        <p class="legend">S1 volle · S2 halbe · S3 Viertel · S4 10er · S5 5er · S6 einzelne Minuten.<br>
        „übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je richtige Antwort (+${MASTERY_FAST_BONUS} wenn flott),
-       −${MASTERY_WRONG} je Fehler · „gelernt“ ab ${READY_MASTERY} = nächste Stufe frei ·
+       −${MASTERY_WRONG} je Fehler. „gelernt“ = nächste Stufe frei: Zahl ab ${READY_MASTERY_BY_TRACK.digital},
+       Text und Nachmittag ab ${READY_MASTERY_BY_TRACK.text} Lernpunkten, mit richtigen Antworten auf
+       mindestens ${MIN_DISTINCT_HOURS} verschiedene Stunden (Viertel, 10er, 5er: alle Minutenwerte).
        „sicher“ ab ${SECURE_MASTERY}. Ein Stern je ${CORRECT_PER_STAR} richtige Antworten.</p>
        <label class="setting"><input type="checkbox" data-ref="soundToggle" ${ctx.settings.sound ? 'checked' : ''}/> Töne</label>
        <p><button type="button" class="btn danger" data-ref="reset">Fortschritt löschen (3 Sek. halten)</button></p>`,
@@ -494,6 +507,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   return () => {
     disposed = true;
+    document.removeEventListener('visibilitychange', onVisibility);
     for (const id of timers) window.clearTimeout(id);
     stopSpeaking();
     if (ui.dialog.open) ui.dialog.close();

@@ -311,6 +311,9 @@ export class Engine {
       this.scheduleReview(task);
     }
 
+    // The warm-up shrinks with every correct answer, also one found with help.
+    if (task.warmup) p.warmup = ok ? Math.max(0, p.warmup - 1) : Math.min(MAX_WARMUP_TASKS, p.warmup + 1);
+
     if (helped) {
       p.wrongStreak = 0;
       p.correctStreak = 0;
@@ -323,7 +326,6 @@ export class Engine {
     const state = this.tierState(task.track, task.tier);
     const wasSecure = state.secure;
     this.recordAttempt(task, state, ok, ok && elapsedMs < FAST_ANSWER_MS[task.track]);
-    if (task.warmup) p.warmup = ok ? Math.max(0, p.warmup - 1) : Math.min(MAX_WARMUP_TASKS, p.warmup + 1);
     if (state.secure && !wasSecure) result.secured.push({ track: task.track, tier: task.tier });
     if (ok) {
       this.award(result, TIER_POINTS[task.tier] + (task.track === 'digital' ? 0 : SIDE_TRACK_BONUS));

@@ -1358,10 +1358,20 @@ a.area-card:active {
     height: 24px;
   }
 
+  .round-track {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
   .round-label {
-    grid-column: auto;
+    grid-column: 2;
     grid-row: 1;
     font-size: 13px;
+  }
+
+  .round-goal {
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .stage {

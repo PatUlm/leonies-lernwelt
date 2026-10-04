@@ -108,6 +108,15 @@ async function context(viewport, reducedMotion = 'reduce') {
   await ctx.close();
 }
 
+// Phones: portrait and landscape.
+for (const [name, viewport] of [['phone-portrait', { width: 390, height: 844 }], ['phone-landscape', { width: 844, height: 390 }]]) {
+  const { ctx, page } = await context(viewport);
+  await seedProgress(page, { tasks: 300, accuracy: 0.92, seed: 9 });
+  await openClock(page, isDigitalQuestion);
+  await page.screenshot({ path: `${OUT}/${name}.png` });
+  await ctx.close();
+}
+
 // Afternoon times: context beside the clock.
 for (const [name, viewport] of [['clock-afternoon', LANDSCAPE]]) {
   const { ctx, page } = await context(viewport);
