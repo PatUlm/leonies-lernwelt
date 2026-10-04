@@ -1,5 +1,8 @@
 // Takes the README screenshots from a running dev server.
-// Usage: npm run dev, then: node scripts/screenshots.mjs [http://localhost:5173]
+// Usage: npm run dev and the API with an empty data directory
+// (DATA_DIR=$(mktemp -d) PORT=8081 node server/src/main.ts), then:
+// node scripts/screenshots.mjs [http://localhost:5173]
+// The profile "Leonie" (PIN 1234) is created on the first run.
 import { mkdir } from 'node:fs/promises';
 import { chromium } from 'playwright';
 
@@ -50,8 +53,14 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, da
       }
       else p.round.points = Math.round((p.round.target * 0.45) / 5) * 5;
       localStorage.setItem('lernwelt.uhr.progress.v1', JSON.stringify(p));
-      // Skip "Wer lernt hier?": play on this device.
-      localStorage.setItem('lernwelt.account.v1', JSON.stringify({ local: true }));
+      // Sign in as Leonie, so title and greeting carry her name. The seeded progress
+      // counts as her newer unsaved change and replaces the one on the server.
+      localStorage.setItem('lernwelt.sync.v1', JSON.stringify({ revision: 0, dirty: true, updatedAt: Date.now(), profile: 'Leonie' }));
+      const { sync } = await import('/src/shared/sync.ts');
+      await sync.login('Leonie', '1234').catch((err) => {
+        if (err.code === 'unknown_name') return sync.signup('Leonie', '1234');
+        throw err;
+      });
     },
     { tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy },
   );
@@ -175,6 +184,8 @@ for (const [name, viewport] of [['clock-afternoon', LANDSCAPE]]) {
     if (await page.locator('.dialog[open]').count()) await page.locator('.dialog[open] .btn.primary').click();
     else if (await page.locator('.next:not([hidden])').count()) await page.locator('.next').click();
     else if (await page.locator('.answer:not(:disabled)').count()) await page.locator('.answer:not(:disabled)').nth(i % 3).click();
+    // Setting the hands still comes up as practice after a wrong answer.
+    else if (await page.locator('.check:not(:disabled)').count()) await page.locator('.check').click();
     await page.waitForTimeout(1600);
   }
   await page.waitForSelector('.trophy');
