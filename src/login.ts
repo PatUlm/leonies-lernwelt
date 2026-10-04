@@ -31,6 +31,8 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
   let mode: Mode = 'login';
   let pin = '';
   let confirmPin: string | null = null;
+  /** Name a login did not find; the sign-up then only asks for the PIN again. */
+  let unknownName: string | null = null;
   let busy = false;
 
   app.className = 'login-page';
@@ -73,7 +75,9 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
     ref('intro').textContent =
       mode === 'login'
         ? 'Melde dich mit deinem Namen und deiner PIN an. Dann ist dein Spielstand auf jedem Gerät da.'
-        : 'Neues Profil: Wähle einen Namen und eine geheime PIN aus vier Ziffern.';
+        : confirmPin !== null && unknownName === nameInput.value.trim()
+          ? `Den Namen „${unknownName}“ gibt es noch nicht. Gib deine PIN noch einmal ein, dann ist dein neues Profil fertig.`
+          : 'Neues Profil: Wähle einen Namen und eine geheime PIN aus vier Ziffern.';
     ref('pinLabel').textContent = confirmPin !== null ? 'PIN noch einmal' : 'PIN';
     ref('dots').innerHTML = Array.from({ length: 4 }, (_, i) => `<span class="pin-dot${i < pin.length ? ' filled' : ''}"></span>`).join('');
     ref('switch').textContent = mode === 'login' ? 'Ich bin neu hier – Profil anlegen' : 'Ich habe schon ein Profil – anmelden';
@@ -102,6 +106,7 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
     }
     busy = true;
     keypad.setDisabled(true);
+    nameInput.disabled = true; // an answer always belongs to the name it was asked for
     ref<HTMLButtonElement>('local').disabled = true;
     ref<HTMLButtonElement>('switch').disabled = true;
     showError('');
@@ -109,11 +114,20 @@ export function renderLogin(app: HTMLElement, done: () => void): () => void {
       if (mode === 'login') await sync.login(nameInput.value, pin);
       else await sync.signup(nameInput.value, pin);
     } catch (err) {
-      pin = '';
-      confirmPin = null;
-      showError(errorText(err));
       busy = false;
+      if (mode === 'login' && err instanceof ApiError && err.code === 'unknown_name') {
+        // Keep the PIN as the first entry of a sign-up; the next entry confirms it.
+        mode = 'signup';
+        confirmPin = pin;
+        unknownName = nameInput.value.trim();
+        showError('');
+      } else {
+        confirmPin = null;
+        showError(errorText(err));
+      }
+      pin = '';
       keypad.setDisabled(false);
+      nameInput.disabled = false;
       ref<HTMLButtonElement>('local').disabled = false;
       ref<HTMLButtonElement>('switch').disabled = false;
       render();

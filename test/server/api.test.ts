@@ -61,13 +61,18 @@ describe('profiles and login', () => {
     expect((await call('POST', '/api/profiles', { name: 'Leonie', pin: '12345' })).status).toBe(400);
   });
 
-  it('logs in with the right PIN only, with the same answer for unknown names', async () => {
+  it('logs in with the right PIN only and tells unknown names apart', async () => {
     await call('POST', '/api/profiles', { name: 'Leonie', pin: '1234' });
     expect((await call('POST', '/api/login', { name: 'LEONIE', pin: '1234' })).status).toBe(200);
     const wrong = await call('POST', '/api/login', { name: 'Leonie', pin: '0000' });
     const unknown = await call('POST', '/api/login', { name: 'Max', pin: '0000' });
     expect([wrong.status, wrong.body.error]).toEqual([401, 'wrong_login']);
-    expect([unknown.status, unknown.body.error]).toEqual([401, 'wrong_login']);
+    expect([unknown.status, unknown.body.error]).toEqual([404, 'unknown_name']);
+  });
+
+  it('counts unknown names against the client limit', async () => {
+    for (let i = 0; i < 20; i++) await call('POST', '/api/login', { name: `Max${i}`, pin: '0000' });
+    expect((await call('POST', '/api/login', { name: 'Max', pin: '0000' })).status).toBe(429);
   });
 
   it('blocks a profile after five wrong PINs for a quarter of an hour', async () => {

@@ -19,8 +19,6 @@ const LOGIN_FAILURES_PER_CLIENT = 20;
 const SIGNUPS_PER_CLIENT = 5;
 const QUARTER_HOUR = 15 * 60 * 1000;
 const HOUR = 60 * 60 * 1000;
-/** Verified for unknown names too, so response times do not reveal which names exist. */
-const DUMMY_PIN_HASH = await hashPin('0000');
 
 // No parameter properties: Node runs this file with type stripping only.
 class HttpError extends Error {
@@ -161,11 +159,15 @@ export function createApp(options: AppOptions) {
     return loginQueue(async () => {
       blocked(profileFailures.retryAfter(id), clientFailures.retryAfter(client));
       return store.update(id, async (profile) => {
-        const valid = await verifyPin(pin, profile?.pinHash ?? DUMMY_PIN_HASH);
-        if (!profile || !valid) {
+        // Unknown names are told apart, so the app can offer a sign-up; they
+        // still count against the client, which bounds probing for names.
+        if (!profile) {
+          clientFailures.fail(client);
+          throw new HttpError(404, 'unknown_name');
+        }
+        if (!(await verifyPin(pin, profile.pinHash))) {
           profileFailures.fail(id);
           clientFailures.fail(client);
-          // Same answer for unknown names and wrong PINs.
           throw new HttpError(401, 'wrong_login');
         }
         profileFailures.reset(id);
