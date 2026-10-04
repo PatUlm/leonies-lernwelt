@@ -19,8 +19,10 @@ test('imprint and privacy notice are linked from the sign-in and the dashboard',
   const legal = page.getByRole('navigation', { name: 'Rechtliches' });
   await legal.getByRole('link', { name: 'Impressum' }).click();
   await expect(page.getByRole('heading', { name: 'Impressum' })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
   await page.getByRole('link', { name: 'Datenschutzhinweis' }).click();
   await expect(page.getByRole('heading', { name: 'Datenschutzhinweis' })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
 
   await startDevice(page);
   await page.goto('/#/');
