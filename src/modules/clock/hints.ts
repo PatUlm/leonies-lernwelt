@@ -1,5 +1,5 @@
 import type { AnswerOption } from './distractors';
-import { formatSpoken, formatSpokenCapitalized } from './german';
+import { capitalize, formatSpoken, formatSpokenCapitalized } from './german';
 import { formatDigital, wrapHour, type ClockTime } from './time';
 
 /** Which part of the clock a hint is about; the clock highlights it. */
@@ -60,8 +60,11 @@ export function explainExample(track: 'digital' | 'text', t: ClockTime): string 
     if (minute === 30) {
       return `Eine halbe Stunde fehlt noch bis ${next} Uhr. Darum sagt man bei ${digital} „${spoken}“.`;
     }
-    if (minute < 30) return `${minute} Minuten nach der vollen Stunde: ${digital} ist „${spoken}“.`;
-    return `Noch ${60 - minute} Minuten bis ${next} Uhr: ${digital} ist „${spoken}“.`;
+    const minutes = (n: number) => (n === 1 ? 'eine Minute' : `${n} Minuten`);
+    if (minute < 30) {
+      return `${capitalize(minutes(minute))} nach der vollen Stunde: ${digital} ist „${spoken}“.`;
+    }
+    return `Noch ${minutes(60 - minute)} bis ${next} Uhr: ${digital} ist „${spoken}“.`;
   }
 
   const hourPart =

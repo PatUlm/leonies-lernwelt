@@ -181,6 +181,11 @@ export function label(track: Track, t: ClockTime): string {
 
 export class Engine {
   private current: Task | null = null;
+  /**
+   * Queue entry behind the current task. It is only removed once the task is
+   * answered, so leaving or reloading never loses an example or a review.
+   */
+  private currentSource: 'forced' | ReviewItem | null = null;
 
   constructor(
     readonly progress: Progress,
@@ -220,6 +225,7 @@ export class Engine {
   nextTask(): Task {
     const p = this.progress;
     p.taskCounter += 1;
+    this.currentSource = null;
     const task = this.pickForced() ?? this.pickReview() ?? this.pickPractice();
     // Examples count too, so a shown solution never comes straight back as a task.
     p.recent = [...p.recent, timeKey(task.time)].slice(-RECENT_SPAN);
@@ -231,6 +237,9 @@ export class Engine {
     if (this.current?.id !== task.id) throw new Error('answer for a task that is not current');
     this.current = null;
     const p = this.progress;
+    if (this.currentSource === 'forced') p.forced.shift();
+    else if (this.currentSource) p.reviewQueue = p.reviewQueue.filter((r) => r !== this.currentSource);
+    this.currentSource = null;
     const chosen = task.options[optionIndex];
     const ok = chosen.kind === 'correct';
     const result: AnswerResult = {
@@ -337,8 +346,9 @@ export class Engine {
   // --- selection -----------------------------------------------------------
 
   private pickForced(): Task | null {
-    const forced = this.progress.forced.shift();
+    const forced = this.progress.forced[0];
     if (!forced) return null;
+    this.currentSource = 'forced';
     if (forced.type === 'example') {
       return this.makeTask(forced.track, forced.tier, 'example', this.chooseTime(forced.track, forced.tier));
     }
@@ -353,7 +363,8 @@ export class Engine {
       (r) => r.dueAt <= p.taskCounter && !p.recent.includes(timeKey(r)),
     );
     if (idx < 0) return null;
-    const [item] = p.reviewQueue.splice(idx, 1);
+    const item = p.reviewQueue[idx];
+    this.currentSource = item;
     const time = { hour: item.hour, minute: item.minute };
     return this.makeTask(item.track, tierOf(item.minute), 'review', time);
   }

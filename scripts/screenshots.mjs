@@ -111,7 +111,7 @@ async function context(viewport) {
     await page.waitForTimeout(1600);
   }
   await page.waitForSelector('.trophy');
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(650);
   await page.screenshot({ path: `${OUT}/trophy.png` });
   await ctx.close();
 }

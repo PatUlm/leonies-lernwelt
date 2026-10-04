@@ -1,7 +1,9 @@
+import '@fontsource-variable/fredoka';
 import './style.css';
 import { APP_NAME, CHILD_NAME } from './config';
 import { clockModule } from './modules/clock';
 import type { LearningModule } from './modules/types';
+import { medal, plainStar, skyLayer, trophy } from './shared/decor';
 import { Sound } from './shared/sound';
 import { loadSettings, saveSettings } from './shared/storage';
 
@@ -19,6 +21,16 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+const TITLE_COLORS = ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
+
+/** Each word of the title in its own candy colour. */
+function colorfulTitle(title: string): string {
+  return title
+    .split(' ')
+    .map((word, i) => `<span style="color:${TITLE_COLORS[i % TITLE_COLORS.length]}">${escapeHtml(word)}</span>`)
+    .join(' ');
+}
+
 function renderDashboard(): void {
   const stats = MODULES.map((m) => m.stats());
   const stars = stats.reduce((n, s) => n + s.stars, 0);
@@ -27,14 +39,15 @@ function renderDashboard(): void {
 
   app.className = 'dashboard';
   app.innerHTML = `
+    ${skyLayer('dashboard')}
     <header class="dash-header">
-      <h1>${escapeHtml(APP_NAME)}</h1>
+      <h1>${colorfulTitle(APP_NAME)}</h1>
       <p class="greeting">Hallo ${escapeHtml(CHILD_NAME)}! Was möchtest du heute üben?</p>
     </header>
     <section class="rewards" aria-label="Deine Sammlung">
-      <div class="reward"><span class="reward-icon" aria-hidden="true">🏆</span><span class="reward-count">${trophies}</span><span class="reward-label">Pokale</span></div>
-      <div class="reward"><span class="reward-icon star-icon" aria-hidden="true">★</span><span class="reward-count">${stars}</span><span class="reward-label">Sterne</span></div>
-      <div class="reward"><span class="reward-icon" aria-hidden="true">🎖</span><span class="reward-count">${badges.length}</span><span class="reward-label">Abzeichen</span></div>
+      <div class="reward"><span class="reward-icon">${trophy()}</span><span class="reward-count">${trophies}</span><span class="reward-label">Pokale</span></div>
+      <div class="reward"><span class="reward-icon">${plainStar('#fbbf24')}</span><span class="reward-count">${stars}</span><span class="reward-label">Sterne</span></div>
+      <div class="reward"><span class="reward-icon">${medal()}</span><span class="reward-count">${badges.length}</span><span class="reward-label">Abzeichen</span></div>
     </section>
     <nav class="modules" aria-label="Lernmodule">
       ${MODULES.map(
@@ -53,7 +66,7 @@ function renderDashboard(): void {
     ${
       badges.length
         ? `<section class="badges" aria-label="Abzeichen"><h2>Deine Abzeichen</h2><ul>${badges
-            .map((b) => `<li>🎖 ${escapeHtml(b)}</li>`)
+            .map((b) => `<li><span class="badge-icon">${medal()}</span>${escapeHtml(b)}</li>`)
             .join('')}</ul></section>`
         : ''
     }`;

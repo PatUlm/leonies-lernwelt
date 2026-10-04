@@ -146,6 +146,34 @@ describe('Engine', () => {
   });
 });
 
+describe('persistence of queued tasks', () => {
+  it('keeps an unanswered example and review when the app is left', () => {
+    const progress = freshProgress(T0);
+    const first = new Engine(progress, seeded(40));
+    first.nextTask(); // example shown, never answered
+    const reloaded = new Engine(JSON.parse(JSON.stringify(progress)), seeded(41));
+    expect(reloaded.nextTask().kind).toBe('example');
+    expect(reloaded.progress.forced).toHaveLength(2);
+  });
+
+  it('removes a review only once it is answered', () => {
+    const engine = new Engine(freshProgress(T0), seeded(42));
+    play(engine, 2, 1, seeded(43));
+    const wrong = engine.nextTask();
+    engine.answer(wrong, wrongIndex(wrong), false);
+    let review: Task | undefined;
+    for (let i = 0; i < 10 && !review; i++) {
+      const t = engine.nextTask();
+      if (t.kind === 'review') review = t;
+      else engine.answer(t, t.correctIndex, false);
+    }
+    expect(review).toBeDefined();
+    expect(engine.progress.reviewQueue).toHaveLength(1);
+    engine.answer(review!, review!.correctIndex, false);
+    expect(engine.progress.reviewQueue).toHaveLength(0);
+  });
+});
+
 describe('isReady', () => {
   const base = {
     unlocked: true, attempts: 12, block: [], step: 3, ready: false,

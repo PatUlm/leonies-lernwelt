@@ -39,8 +39,11 @@ export function formatSpoken(t: ClockTime): string {
   return `${minutesPhrase(60 - minute)} vor ${numberWord(next)}`;
 }
 
+export function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 /** Same as formatSpoken, first letter upper-cased for buttons and sentences. */
 export function formatSpokenCapitalized(t: ClockTime): string {
-  const s = formatSpoken(t);
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return capitalize(formatSpoken(t));
 }

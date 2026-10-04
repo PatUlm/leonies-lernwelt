@@ -10,7 +10,9 @@
   --good-bg: #dcfce7;
   --accent: #f59e0b;
   --radius: 18px;
-  --font: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --candy: #f472b6;
+  --candy-soft: #fbcfe8;
+  --font: 'Fredoka Variable', ui-rounded, 'SF Pro Rounded', 'Segoe UI', system-ui, sans-serif;
   color-scheme: light;
 }
 
@@ -26,7 +28,7 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--bg);
+  background: linear-gradient(180deg, #dbeafe 0%, #fdf2f8 55%, #fef3c7 100%) fixed var(--bg);
   color: var(--ink);
   font-family: var(--font);
   -webkit-tap-highlight-color: transparent;
@@ -44,6 +46,104 @@ button {
   cursor: pointer;
 }
 
+/* ---------- sky decoration ---------- */
+
+.sky {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.deco {
+  position: absolute;
+  display: block;
+}
+
+.deco svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.drift {
+  animation: drift 22s ease-in-out infinite alternate;
+}
+
+.drift.slow {
+  animation-duration: 34s;
+}
+
+.bob {
+  animation: bob 3.2s ease-in-out infinite alternate;
+}
+
+.bob.late {
+  animation-delay: 1.4s;
+}
+
+.twinkle {
+  animation: twinkle 2.6s ease-in-out infinite;
+}
+
+@keyframes drift {
+  to {
+    transform: translateX(60px);
+  }
+}
+
+@keyframes bob {
+  to {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes twinkle {
+  50% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+}
+
+.dash-header,
+.rewards,
+.modules,
+.badges,
+.topbar,
+.round,
+.stage {
+  position: relative;
+  z-index: 1;
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -70px;
+  display: block;
+  animation: fall 2.2s ease-in forwards;
+}
+
+.confetti-piece svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@keyframes fall {
+  to {
+    transform: translateY(115vh) rotate(var(--spin));
+  }
+}
+
 /* ---------- dashboard ---------- */
 
 .dashboard {
@@ -55,10 +155,16 @@ button {
   gap: 24px;
 }
 
+.dash-header {
+  text-align: center;
+}
+
 .dash-header h1 {
   margin: 0;
-  font-size: clamp(32px, 6vw, 52px);
-  letter-spacing: -0.01em;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 700;
+  line-height: 1.05;
+  text-shadow: 0 3px 0 #fff, 0 6px 0 rgba(30, 58, 95, 0.08);
 }
 
 .greeting {
@@ -82,13 +188,10 @@ button {
   box-shadow: 0 2px 0 var(--line);
 }
 
-.reward-icon {
-  font-size: 34px;
-  line-height: 1.1;
-}
-
-.star-icon {
-  color: var(--accent);
+.reward-icon svg {
+  display: block;
+  height: 48px;
+  width: auto;
 }
 
 .reward-count {
@@ -112,17 +215,17 @@ button {
   gap: 20px;
   padding: 20px;
   background: var(--card);
-  border-radius: 24px;
-  border: 3px solid transparent;
-  box-shadow: 0 4px 0 var(--line);
+  border-radius: 28px;
+  border: 4px solid var(--candy-soft);
+  box-shadow: 0 6px 0 var(--candy);
   text-decoration: none;
   color: inherit;
   transition: transform 0.1s;
 }
 
 .module-tile:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 var(--line);
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--candy);
 }
 
 .module-tile:focus-visible {
@@ -143,8 +246,9 @@ button {
 }
 
 .module-title {
-  font-size: clamp(26px, 4vw, 34px);
-  font-weight: 800;
+  font-size: clamp(28px, 4.4vw, 38px);
+  font-weight: 700;
+  color: #db2777;
 }
 
 .module-desc {
@@ -177,10 +281,19 @@ button {
 }
 
 .badges li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: var(--card);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 18px;
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 19px;
+}
+
+.badge-icon svg {
+  display: block;
+  width: 26px;
+  height: auto;
 }
 
 /* ---------- clock module ---------- */
@@ -209,9 +322,16 @@ button {
   flex: 1;
 }
 
-.points {
-  color: var(--ink-soft);
-  font-weight: 700;
+.score > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score-icon svg {
+  display: block;
+  height: 30px;
+  width: auto;
 }
 
 .tools {
@@ -259,23 +379,26 @@ button {
 }
 
 .round-track {
-  height: 22px;
+  height: 24px;
   border-radius: 999px;
-  background: #ede4d6;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 2px 4px rgba(30, 58, 95, 0.12);
   overflow: hidden;
 }
 
+/* Candy-cane stripes. */
 .round-fill {
   height: 100%;
   width: 0;
   border-radius: 999px;
-  background: linear-gradient(90deg, #22c55e, var(--good));
+  background: repeating-linear-gradient(-45deg, var(--candy) 0 12px, #f9a8d4 12px 24px);
   transition: width 0.6s ease-out;
 }
 
-.round-goal {
-  font-size: 28px;
-  line-height: 1;
+.round-goal svg {
+  display: block;
+  height: 38px;
+  width: auto;
 }
 
 .round-label {
@@ -447,9 +570,9 @@ button {
   min-height: 72px;
   padding: 10px 12px;
   border-radius: var(--radius);
-  border: 3px solid #e2d8ca;
+  border: 3px solid var(--candy-soft);
   background: var(--card);
-  box-shadow: 0 4px 0 #e2d8ca;
+  box-shadow: 0 5px 0 #f9a8d4;
   font-size: clamp(28px, 4.2vw, 36px);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -462,8 +585,8 @@ button {
 }
 
 .answer:active:not(:disabled) {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 #e2d8ca;
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #f9a8d4;
 }
 
 .answer:disabled {
@@ -596,11 +719,14 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: min(50vw, 320px);
-  color: var(--accent);
   pointer-events: none;
   z-index: 20;
-  text-shadow: 0 8px 30px rgba(245, 158, 11, 0.5);
+}
+
+.celebrate svg {
+  width: min(50vw, 300px);
+  height: auto;
+  filter: drop-shadow(0 8px 24px rgba(245, 158, 11, 0.5));
 }
 
 .celebrate.pop {
@@ -628,8 +754,8 @@ button {
 /* ---------- dialogs ---------- */
 
 .dialog {
-  border: none;
-  border-radius: 28px;
+  border: 5px solid var(--candy-soft);
+  border-radius: 32px;
   padding: 28px 28px 22px;
   width: min(92vw, 560px);
   max-height: 90dvh;
@@ -692,10 +818,19 @@ button {
   transition: background-position 3s linear;
 }
 
-.trophy {
-  font-size: 120px;
-  line-height: 1;
+.trophy svg {
+  display: block;
+  margin: 0 auto;
+  width: 130px;
+  height: auto;
   animation: trophy 1.6s ease-out;
+}
+
+.inline-stars svg {
+  display: inline-block;
+  width: 24px;
+  height: auto;
+  vertical-align: -4px;
 }
 
 @keyframes trophy {

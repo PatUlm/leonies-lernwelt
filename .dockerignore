@@ -1,0 +1,12 @@
+# Only sources and the lockfile are needed for the build. Keep everything else out
+# of the build context (and thus out of the SSH transfer to the server).
+**/node_modules
+**/dist
+.git
+.gitignore
+docs
+bin
+terraform
+Taskfile.yml
+*.md
+*.sock

@@ -1,0 +1,28 @@
+version: '3'
+
+# Deployment to netcup1 (clock.nieda.de). Development and tests use the npm scripts.
+tasks:
+
+  # Backend config (bucket/key/region) comes from terraform/backend.hcl (gitignored).
+  init: terraform -chdir=terraform init -backend-config=backend.hcl
+
+  # Build the image locally (smoke test) and serve it on http://localhost:8080.
+  build: docker build -f Dockerfile -t clock:local .
+  up: docker run --rm -d --name clock_local -p 8080:8080 clock:local
+  down: docker stop clock_local
+
+  # Build the image on netcup1 (no registry push).
+  release: ./bin/release.sh {{.CLI_ARGS}}
+
+  # Terraform plan against netcup1 (read-only).
+  plan: ./bin/tunnel.sh plan {{.CLI_ARGS}}
+
+  # Apply the Terraform stack on netcup1.
+  deploy: ./bin/tunnel.sh apply {{.CLI_ARGS}}
+
+  # Build, show plan, then apply.
+  deploy-full:
+    cmds:
+      - ./bin/release.sh
+      - ./bin/tunnel.sh plan
+      - ./bin/tunnel.sh apply
