@@ -65,6 +65,16 @@ describe('hints for 24-hour times', () => {
     expect(explainExample({ track: 'dayInput', time: { hour: 9, minute: 30 }, context: 'evening' })).toContain('Tippe 2 1 3 0');
     expect(explainExample({ track: 'daySet', time: { hour: 9, minute: 30 }, context: 'evening' })).toContain('21 − 12 = 9');
   });
+
+  it('names only the hour hand when the minute hand stays on the 12', () => {
+    expect(explainExample({ track: 'set', time: { hour: 2, minute: 0 }, hourOnly: true })).toBe(
+      'Der lange Zeiger steht schon auf der 12. Zieh den kurzen Zeiger genau auf die 2. Dann tippe auf „Fertig“.',
+    );
+    expect(explainExample({ track: 'daySet', time: { hour: 3, minute: 0 }, context: 'afternoon', hourOnly: true })).toContain(
+      'Der lange Zeiger steht schon auf der 12. Zieh den kurzen Zeiger genau auf die 3.',
+    );
+    expect(explainExample({ track: 'set', time: { hour: 2, minute: 0 } })).toContain('Zieh den langen Zeiger auf die 12');
+  });
 });
 
 describe('24-hour tracks in the engine', () => {

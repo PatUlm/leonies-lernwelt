@@ -690,7 +690,7 @@ export class Engine {
       track, tier, kind, mode, time, context, prompt, options,
       correctIndex: options.findIndex((o) => o.kind === 'correct'),
       minuteLabels: kind === 'example' || (track === 'digital' && tier >= 4 && introPhase),
-      explanation: kind === 'example' ? explainExample({ track, time, context }) : undefined,
+      explanation: kind === 'example' ? explainExample({ track, time, context, hourOnly: mode === 'set' && setStep(tier) >= 60 }) : undefined,
       familiar: kind !== 'example' && state.secure,
       warmup,
       sayFirst,

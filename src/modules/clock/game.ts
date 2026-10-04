@@ -628,10 +628,11 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       rule = ' Ist die Stunde größer als 12, rechne zwölf weniger: aus 15 Uhr wird 3 Uhr. 0 Uhr ist die 12.';
     }
     if (task.mode === 'set') {
-      setMessage(
-        `Stelle die Uhr auf ${targetText()}:${rule} Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen Zeiger zur Stunde. Die kleinen Zahlen außen zeigen die Minuten.`,
-        'explain',
-      );
+      const hands =
+        setStep(task.tier) >= 60
+          ? ' Der lange orange Zeiger steht schon auf der 12. Zieh den kurzen blauen Zeiger zur Stunde.'
+          : ' Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen Zeiger zur Stunde. Die kleinen Zahlen außen zeigen die Minuten.';
+      setMessage(`Stelle die Uhr auf ${targetText()}:${rule}${hands}`, 'explain');
       return;
     }
     setMessage(

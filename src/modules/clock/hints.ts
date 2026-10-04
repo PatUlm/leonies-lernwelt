@@ -17,6 +17,8 @@ export interface TaskInfo {
   track: Track;
   time: ClockTime;
   context?: DayContext;
+  /** Setting the hands at full hours: the minute hand stays on the 12. */
+  hourOnly?: boolean;
 }
 
 const AFTERNOON_RULE = 'Nach zwölf Uhr mittags zählen wir weiter: dreizehn, vierzehn, fünfzehn …';
@@ -189,6 +191,14 @@ export function contextRule(context: DayContext): string {
   }
 }
 
+/** How to set the hands; at full hours only the hour hand moves. */
+function setInstruction(t: ClockTime, hourOnly: boolean): string {
+  const hands = hourOnly
+    ? `Der lange Zeiger steht schon auf der 12. Zieh den kurzen Zeiger ${hourPlace(t)}.`
+    : `Zieh den langen Zeiger ${minutePlace(t.minute)} und den kurzen Zeiger ${hourPlace(t)}.`;
+  return `${hands} Dann tippe auf „Fertig“.`;
+}
+
 /** Explanation for a guided example (not scored). */
 export function explainExample(task: TaskInfo): string {
   const { track, time: t } = task;
@@ -201,7 +211,7 @@ export function explainExample(task: TaskInfo): string {
     return `Das Bild zeigt die Tageszeit.${rule} ${contextConfirmation(task.context, t)}`;
   }
   if (track === 'daySet' && task.context) {
-    return `${towardsClock(task.context, hour)} Zieh den langen Zeiger ${minutePlace(minute)} und den kurzen Zeiger ${hourPlace(t)}. Dann tippe auf „Fertig“.`;
+    return `${towardsClock(task.context, hour)} ${setInstruction(t, !!task.hourOnly)}`;
   }
   if (track === 'dayInput' && task.context) {
     const written = `${hour24(task.context, hour)}:${String(minute).padStart(2, '0')}`;
@@ -209,7 +219,7 @@ export function explainExample(task: TaskInfo): string {
     return `Die Uhr zeigt ${formatSpoken(t)}. Das Bild zeigt die Tageszeit. ${towards24(task.context, hour)} Tippe ${digits} – das ist ${written}.`;
   }
   if (track === 'set') {
-    return `Zieh den langen Zeiger ${minutePlace(minute)} und den kurzen Zeiger ${hourPlace(t)}. Dann tippe auf „Fertig“.`;
+    return setInstruction(t, !!task.hourOnly);
   }
   if (track === 'input') {
     const digits = [...digital.replace(':', '')].join(' ');
