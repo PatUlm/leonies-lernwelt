@@ -39,6 +39,8 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 - Der Server meldet beim Anmelden einen unbekannten Namen jetzt eigens, statt wie bei
   einer falschen PIN zu antworten. Solche Versuche zählen weiter gegen das Limit pro
   IP-Adresse.
+- Titel, Begrüßung und Pokal-Dialog nennen das angemeldete Profil („Patricks Lernwelt“,
+  „Hallo Patrick!“). Ohne Profil heißt die App neutral „Meine Lernwelt“.
 - Neuer Name: Leonies Lernwelt unter [lernwelt.nieda.de](https://lernwelt.nieda.de).
 
 ### Behoben

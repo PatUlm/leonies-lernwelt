@@ -262,7 +262,8 @@ npx playwright install chromium   # einmalig
 node scripts/screenshots.mjs http://localhost:5173
 ```
 
-Der Name der App und des Kindes steht in [`src/config.ts`](src/config.ts).
+Der angezeigte Titel („Patricks Lernwelt“) entsteht in [`src/config.ts`](src/config.ts) aus
+dem Profilnamen.
 Das Deployment (Docker + Terraform) beschreibt [`DEPLOY.md`](DEPLOY.md).
 
 ## Lizenz

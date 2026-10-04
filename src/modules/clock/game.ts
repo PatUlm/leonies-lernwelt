@@ -1,10 +1,11 @@
-import { CHILD_NAME } from '../../config';
 import {
   afternoonScene, confetti, eveningScene, forenoonScene, nightScene, noonScene, plainStar, skyLayer, trophy,
 } from '../../shared/decor';
 import { createKeypad, type Keypad } from '../../shared/keypad';
 import { canSpeak, speak, stopSpeaking } from '../../shared/speech';
+import { escapeHtml } from '../../shared/html';
 import { Stopwatch } from '../../shared/stopwatch';
+import { sync } from '../../shared/sync';
 import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
 import { contextSentence, hour24, type DayContext } from './daytime';
@@ -493,8 +494,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
     for (const badge of round.secured) lines.push(`<p class="badge">${badge}</p>`);
     round = newRoundStats();
+    const name = sync.account()?.name;
     showDialog(
-      `<div class="trophy">${trophy()}</div><h2>${CHILD_NAME}, Durchgang geschafft!</h2>${lines.join('')}`,
+      `<div class="trophy">${trophy()}</div><h2>${name ? `${escapeHtml(name)}, d` : 'D'}urchgang geschafft!</h2>${lines.join('')}`,
       [
         { label: ctx.exitLabel, action: ctx.exit },
         { label: 'Noch ein Durchgang', action: nextTask },

@@ -1,7 +1,7 @@
 import '@fontsource-variable/fredoka';
 import './style.css';
 import { AREAS } from './areas';
-import { APP_NAME } from './config';
+import { appTitle } from './config';
 import { Sound } from './shared/sound';
 import { renderLogin } from './login';
 import { listenForInstallPrompt } from './shared/install';
@@ -14,8 +14,6 @@ const app = document.getElementById('app')!;
 const settings = loadSettings();
 const sound = new Sound(settings.sound);
 let cleanup: (() => void) | null = null;
-
-document.title = APP_NAME;
 
 // Ask the browser not to evict the progress when storage runs low.
 void navigator.storage?.persist?.().catch(() => false);
@@ -42,6 +40,7 @@ function route(): void {
   window.scrollTo(0, 0);
   inModule = false;
   void sync.applyDeferred();
+  document.title = appTitle(sync.account()?.name);
 
   if (!sync.hasChosen()) {
     cleanup = renderLogin(app, () => {

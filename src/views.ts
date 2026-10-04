@@ -1,14 +1,11 @@
 import { AREAS, collectModules, pickRecommendation, type Area, type ModuleEntry } from './areas';
-import { APP_NAME, CHILD_NAME } from './config';
+import { appTitle } from './config';
 import { STATUS_ICONS, wrappedCandy } from './shared/candy';
 import { medal, plainStar, skyLayer, trophy } from './shared/decor';
+import { escapeHtml } from './shared/html';
 import { canInstall, onInstallChange, promptInstall } from './shared/install';
 import { sync, type SyncStatus } from './shared/sync';
 import { APP_VERSION, checkForUpdate } from './shared/update';
-
-export function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-}
 
 const TITLE_COLORS = ['#ec4899', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7'];
 
@@ -105,8 +102,8 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
   app.innerHTML = `
     ${skyLayer('dashboard')}
     <header class="dash-header">
-      <h1>${colorfulTitle(APP_NAME)}</h1>
-      <p class="greeting">Hallo ${escapeHtml(CHILD_NAME)}! Was möchtest du heute üben?</p>
+      <h1>${colorfulTitle(appTitle(account?.name))}</h1>
+      <p class="greeting">Hallo${account ? ` ${escapeHtml(account.name)}` : ''}! Was möchtest du heute üben?</p>
     </header>
     ${rewardsRow(entries)}
     <nav class="areas" aria-label="Lernbereiche">${available.map(bigCard).join('')}</nav>
