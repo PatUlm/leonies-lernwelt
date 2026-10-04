@@ -105,7 +105,8 @@ async function context(viewport) {
   await seedProgress(page, { tasks: 120, accuracy: 0.9, seed: 11, nearTrophy: true });
   await openClock(page, () => true);
   for (let i = 0; i < 60 && !(await page.locator('.trophy').count()); i++) {
-    if (await page.locator('.next:not([hidden])').count()) await page.locator('.next').click();
+    if (await page.locator('.dialog[open]').count()) await page.locator('.dialog[open] .btn.primary').click();
+    else if (await page.locator('.next:not([hidden])').count()) await page.locator('.next').click();
     else if (await page.locator('.answer:not(:disabled)').count()) await page.locator('.answer:not(:disabled)').nth(i % 3).click();
     await page.waitForTimeout(1600);
   }

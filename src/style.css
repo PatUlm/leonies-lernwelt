@@ -543,6 +543,19 @@ button {
   box-shadow: 0 4px 0 #1d4ed8;
 }
 
+/* Landscape has no room below the answers, but plenty beside the clock. */
+@media (orientation: landscape) and (min-width: 900px) {
+  .next {
+    position: fixed;
+    right: max(24px, env(safe-area-inset-right));
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: 0;
+    width: clamp(160px, calc((100vw - 760px) / 2 - 40px), 240px);
+    min-height: 96px;
+  }
+}
+
 .toast {
   position: fixed;
   top: 84px;
@@ -651,7 +664,7 @@ button {
 
 .btn {
   min-height: 60px;
-  padding: 0 24px;
+  padding: 0 14px;
   border-radius: var(--radius);
   border: 3px solid #e2d8ca;
   background: var(--card);
