@@ -125,9 +125,6 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
       tasks: num(round.tasks, 0),
     },
     trophies: num(raw.trophies, 0),
-    week: isRecord(raw.week) && typeof raw.week.key === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.week.key)
-      ? { key: raw.week.key, points: num(raw.week.points, 0) }
-      : fresh.week,
   };
 }
 

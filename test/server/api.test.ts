@@ -171,20 +171,62 @@ describe('progress', () => {
   });
 });
 
-describe('leaderboard', () => {
+describe('points and leaderboard', () => {
   const WEEK = '2026-09-28';
+  let seq = 0;
 
-  async function player(name: string, score?: { week: string; points: unknown }): Promise<string> {
+  function add(token: string, points: unknown, week = WEEK, id = `inc-${++seq}-abcdef`) {
+    return call('POST', '/api/points', { id, week, points }, token);
+  }
+
+  async function player(name: string, points = 0, week = WEEK): Promise<string> {
     const t = (await call('POST', '/api/profiles', { name, pin: '1234' })).body.token;
-    if (score) await call('PUT', '/api/progress', { baseRevision: 0, data: { entries: {}, changedAt: 1, score } }, t);
+    if (points) await add(t, points, week);
     return t;
   }
 
+  it('adds points on the server and answers the week as counted now', async () => {
+    const t = await player('Anna');
+    expect((await add(t, 20)).body).toEqual({ week: { key: WEEK, points: 20 } });
+    expect((await add(t, 15)).body).toEqual({ week: { key: WEEK, points: 35 } });
+  });
+
+  it('counts a retried increment once', async () => {
+    const t = await player('Anna');
+    await add(t, 20, WEEK, 'same-id-123');
+    for (let i = 0; i < 250; i++) await add(t, 1);
+    expect((await add(t, 20, WEEK, 'same-id-123')).body.week.points).toBe(270);
+  });
+
+  it('starts a new week and drops late points of an older one', async () => {
+    const t = await player('Anna', 40, '2026-09-21');
+    expect((await add(t, 10)).body.week).toEqual({ key: WEEK, points: 10 });
+    expect((await add(t, 99, '2026-09-21')).body.week).toEqual({ key: WEEK, points: 10 });
+  });
+
+  it('keeps the points when another device uploads an outdated progress', async () => {
+    const t = await player('Anna', 30);
+    await call('PUT', '/api/progress', { baseRevision: 0, data: { entries: { old: true }, changedAt: 1 } }, t);
+    const r = await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, t);
+    expect(r.body.me).toEqual({ rank: 1, points: 30 });
+  });
+
+  it('rejects invalid increments', async () => {
+    const t = await player('Anna');
+    expect((await add(t, 0)).status).toBe(400);
+    expect((await add(t, 2.5)).status).toBe(400);
+    expect((await add(t, '10')).status).toBe(400);
+    expect((await add(t, 5000)).status).toBe(400);
+    expect((await add(t, 10, 'soon')).status).toBe(400);
+    expect((await add(t, 10, WEEK, 'x')).status).toBe(400);
+    expect((await call('POST', '/api/points', { id: 'no-token-1', week: WEEK, points: 5 })).status).toBe(401);
+  });
+
   it('lists places 1–3 of the week with shared places on a tie', async () => {
-    const anna = await player('Anna', { week: WEEK, points: 50 });
-    await player('Ben', { week: WEEK, points: 80 });
-    await player('Carla', { week: WEEK, points: 50 });
-    await player('Dora', { week: WEEK, points: 20 });
+    const anna = await player('Anna', 50);
+    await player('Ben', 80);
+    await player('Carla', 50);
+    await player('Dora', 20);
     const r = await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, anna);
     expect(r.status).toBe(200);
     expect(r.body.top).toEqual([
@@ -195,20 +237,20 @@ describe('leaderboard', () => {
     expect(r.body.me).toEqual({ rank: 2, points: 50 });
   });
 
-  it('gives the own place outside the top 3 and leaves out other weeks and bad scores', async () => {
-    await player('Anna', { week: WEEK, points: 90 });
-    await player('Ben', { week: '2026-09-21', points: 500 });
-    await player('Carla', { week: WEEK, points: '999' });
-    const dora = await player('Dora', { week: WEEK, points: 10 });
+  it('gives the own place outside the top 3 and leaves out other weeks', async () => {
+    await player('Anna', 90);
+    await player('Ben', 500, '2026-09-21');
+    await player('Carla', 40);
+    const dora = await player('Dora', 10);
+    await player('Emil', 30);
     const r = await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, dora);
-    expect(r.body.top.map((x: { name: string }) => x.name)).toEqual(['Anna', 'Dora']);
-    expect(r.body.me).toEqual({ rank: 2, points: 10 });
-    const emil = await player('Emil');
-    expect((await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, emil)).body.me).toEqual({ rank: null, points: 0 });
+    expect(r.body.top.map((x: { name: string }) => x.name)).toEqual(['Anna', 'Carla', 'Emil']);
+    expect(r.body.me).toEqual({ rank: 4, points: 10 });
   });
 
-  it('needs a token and a valid week', async () => {
+  it('has no place without points and needs a token and a valid week', async () => {
     const t = await player('Anna');
+    expect((await call('GET', `/api/leaderboard?week=${WEEK}`, undefined, t)).body.me).toEqual({ rank: null, points: 0 });
     expect((await call('GET', `/api/leaderboard?week=${WEEK}`)).status).toBe(401);
     expect((await call('GET', '/api/leaderboard?week=soon', undefined, t)).status).toBe(400);
   });

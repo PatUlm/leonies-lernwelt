@@ -1,4 +1,3 @@
-import { weekKey } from '../../shared/week';
 import { CONTEXT_HOURS, hour24, type DayContext } from './daytime';
 import { buildDaytimeOptions, buildOptions, type AnswerOption } from './distractors';
 import { formatSpoken } from './german';
@@ -190,8 +189,6 @@ export interface Progress {
   correctStreak: number;
   round: RoundState;
   trophies: number;
-  /** Points of one week (for the leaderboard); `key` is its Monday, see weekKey. */
-  week: { key: string; points: number };
 }
 
 export type TaskKind = 'example' | 'practice' | 'review' | 'easy';
@@ -279,7 +276,6 @@ export function freshProgress(now: number): Progress {
     correctStreak: 0,
     round: { target: MIN_ROUND_TARGET, points: 0, correct: 0, tasks: 0 },
     trophies: 0,
-    week: { key: weekKey(now), points: 0 },
   };
 }
 
@@ -479,18 +475,8 @@ export class Engine {
   }
 
   private award(result: AnswerResult, points: number): void {
-    const p = this.progress;
     result.points = points;
-    p.points += points;
-    // lastActive is the time of this answer (touch runs before each task).
-    const key = weekKey(p.lastActive);
-    if (p.week.key !== key) p.week = { key, points: 0 };
-    p.week.points += points;
-  }
-
-  /** Points of the week that contains `now` (0 once a new week has begun). */
-  weekPoints(now: number): number {
-    return this.progress.week.key === weekKey(now) ? this.progress.week.points : 0;
+    this.progress.points += points;
   }
 
   private countRound(result: AnswerResult, independentCorrect: boolean): void {

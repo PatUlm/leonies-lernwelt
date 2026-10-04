@@ -9,10 +9,11 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 
 ### Hinzugefügt
 
-- **Bestenliste dieser Woche** auf dem Dashboard (nur mit Profil): Platz 1 bis 3 mit
-  Pokalen in Gold, Silber und Bronze, darunter der eigene Platz. Es zählen die Punkte
-  der laufenden Woche; montags beginnt die Liste neu. Bei Gleichstand teilen sich
-  Profile einen Platz.
+- **Bestenliste dieser Woche** auf dem Dashboard unter den Lernbereichen (nur mit
+  Profil): Platz 1 bis 3 mit Pokalen in Gold, Silber und Bronze, darunter der eigene
+  Platz. Es zählen die Punkte der laufenden Woche; montags beginnt die Liste neu. Bei
+  Gleichstand teilen sich Profile einen Platz. Der Server zählt die Punkte selbst, so
+  kann ein Gerät mit veraltetem Spielstand sie nicht mehr zurücksetzen.
 - **Anmeldung:** Ist der Name beim Anmelden noch nicht vergeben, wechselt die App
   automatisch zu „Profil anlegen“. Die eben eingegebene PIN zählt als erste Eingabe, die
   zweite PIN-Eingabe legt das Profil direkt an.

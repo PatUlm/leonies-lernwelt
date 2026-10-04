@@ -28,19 +28,27 @@ interface SyncState {
 
 export type SyncStatus = 'none' | 'local' | 'saved' | 'pending' | 'offline';
 
-/** Points of one week; `week` is its Monday ("2026-09-28"), see weekKey. */
-export interface WeekScore {
-  week: string;
-  points: number;
-}
-
-/** What the app stores on the server (opaque to it, except `score` for the leaderboard). */
+/** What the app stores on the server (opaque to it). */
 interface SyncedData {
   entries: Record<string, unknown>;
   /** When these entries were last changed on a device. */
   changedAt: number;
-  score?: WeekScore;
 }
+
+/**
+ * Points earned and not yet counted by the server. The server adds them up, so
+ * a device with an outdated progress can never lower them; `id` makes a
+ * retried request count once.
+ */
+interface PendingPoints {
+  id: string;
+  profile: string;
+  /** Monday of the week they were earned in, see weekKey. */
+  week: string;
+  points: number;
+}
+
+const POINTS_KEY = 'points.v1';
 
 export interface LeaderboardRow {
   rank: number;
@@ -95,7 +103,7 @@ export class SyncClient {
   /** Server data that arrived while an exercise was running. */
   private deferred: ServerProgress | null = null;
   private canApply: () => boolean = () => true;
-  private score: (() => WeekScore) | null = null;
+  private sendingPoints: Promise<void> | null = null;
   private readonly statusListeners = new Set<(s: SyncStatus) => void>();
   private readonly remoteListeners = new Set<() => void>();
   private readonly fetchFn: typeof fetch;
@@ -111,11 +119,6 @@ export class SyncClient {
    */
   setApplyGuard(canApply: () => boolean): void {
     this.canApply = canApply;
-  }
-
-  /** The week's points, uploaded with the progress for the leaderboard. */
-  setScoreSource(score: () => WeekScore): void {
-    this.score = score;
   }
 
   // --- state ---------------------------------------------------------------
@@ -156,7 +159,7 @@ export class SyncClient {
     if (!this.hasChosen()) return 'none';
     if (!this.account()) return 'local';
     if (!this.online) return 'offline';
-    return this.state().dirty ? 'pending' : 'saved';
+    return this.state().dirty || this.ownPendingPoints().length ? 'pending' : 'saved';
   }
 
   onStatus(fn: (s: SyncStatus) => void): () => void {
@@ -245,6 +248,8 @@ export class SyncClient {
       this.setState({ revision: r.revision, dirty: true, updatedAt: Date.now(), profile: r.name });
       await this.push();
     }
+    // Points earned before this device was signed out remotely.
+    void this.flushPoints();
   }
 
   /**
@@ -255,8 +260,9 @@ export class SyncClient {
     const account = this.account();
     if (account) {
       if (this.state().dirty) await this.push();
+      await this.flushPoints();
       // Also when the upload found the account gone: the changes are still only here.
-      if (this.state().dirty) throw new ApiError(0, 'unsaved');
+      if (this.state().dirty || this.ownPendingPoints().length) throw new ApiError(0, 'unsaved');
       await this.request('POST', '/logout', undefined, account.token).catch(() => undefined);
     } else if (this.state().dirty) {
       throw new ApiError(0, 'unsaved');
@@ -313,7 +319,7 @@ export class SyncClient {
     const state = this.state();
     if (!account || !state.dirty) return;
     const gen = this.generation;
-    const data: SyncedData = { entries: syncedEntries(), changedAt: state.updatedAt, score: this.score?.() };
+    const data: SyncedData = { entries: syncedEntries(), changedAt: state.updatedAt };
     let uploaded = false;
     try {
       const r = (await this.request('PUT', '/progress', { baseRevision: state.revision, data }, account.token)) as unknown as {
@@ -334,6 +340,55 @@ export class SyncClient {
       this.emitStatus();
     }
     if (uploaded && this.state().dirty) this.schedulePush();
+  }
+
+  // --- points ------------------------------------------------------------------
+
+  private pendingPoints(): PendingPoints[] {
+    return readJson<PendingPoints[]>(POINTS_KEY) ?? [];
+  }
+
+  /** Queued points of the signed-in profile. */
+  private ownPendingPoints(): PendingPoints[] {
+    const name = this.account()?.name.toLocaleLowerCase('de');
+    return name ? this.pendingPoints().filter((p) => p.profile.toLocaleLowerCase('de') === name) : [];
+  }
+
+  /** Counts earned points on the server (queued while offline). Ignored without a profile. */
+  addPoints(points: number, week: string): void {
+    const account = this.account();
+    if (!account || points <= 0) return;
+    const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    writeJson(POINTS_KEY, [...this.pendingPoints(), { id, profile: account.name, week, points }]);
+    this.emitStatus();
+    void this.flushPoints();
+  }
+
+  /** Sends queued points of the signed-in profile, oldest first, one at a time. */
+  flushPoints(): Promise<void> {
+    this.sendingPoints ??= this.doFlushPoints().finally(() => {
+      this.sendingPoints = null;
+    });
+    return this.sendingPoints;
+  }
+
+  private async doFlushPoints(): Promise<void> {
+    try {
+      for (;;) {
+        const account = this.account();
+        const next = this.ownPendingPoints()[0];
+        if (!account || !next) return;
+        try {
+          await this.request('POST', '/points', { id: next.id, week: next.week, points: next.points }, account.token);
+        } catch (err) {
+          // Offline or server trouble: try again later. A rejected entry would block the queue.
+          if (!(err instanceof ApiError) || err.status !== 400) return;
+        }
+        writeJson(POINTS_KEY, this.pendingPoints().filter((p) => p.id !== next.id));
+      }
+    } finally {
+      this.emitStatus();
+    }
   }
 
   /** Places 1–3 and the own place of `week`; null when signed out or offline. */

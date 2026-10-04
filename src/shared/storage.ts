@@ -1,8 +1,8 @@
 /** localStorage access that never throws (private mode, full or blocked storage). */
 const PREFIX = 'lernwelt.';
 
-/** Keys that stay on this device and are never synced (account, sync bookkeeping). */
-export const LOCAL_ONLY_KEYS = new Set(['account.v1', 'sync.v1']);
+/** Keys that stay on this device and are never synced (account, sync bookkeeping, points to send). */
+export const LOCAL_ONLY_KEYS = new Set(['account.v1', 'sync.v1', 'points.v1']);
 
 type WriteListener = (key: string) => void;
 const writeListeners = new Set<WriteListener>();

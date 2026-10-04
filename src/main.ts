@@ -1,6 +1,6 @@
 import '@fontsource-variable/fredoka';
 import './style.css';
-import { AREAS, collectModules } from './areas';
+import { AREAS } from './areas';
 import { appTitle } from './config';
 import { Sound } from './shared/sound';
 import { renderLogin } from './login';
@@ -25,17 +25,16 @@ let inModule = false;
 setupUpdates(() => !inModule);
 // A running exercise keeps its own state; server data waits until it is left.
 sync.setApplyGuard(() => !inModule);
-sync.setScoreSource(() => ({
-  week: weekKey(Date.now()),
-  points: collectModules().reduce((n, e) => n + e.stats.weekPoints, 0),
-}));
 
 // Progress from the server replaces the local one: show it (only outside exercises).
 sync.onRemoteData(() => {
   Object.assign(settings, loadSettings());
   if (!inModule) route();
 });
-window.addEventListener('online', () => void sync.push().catch(() => undefined));
+window.addEventListener('online', () => {
+  void sync.push().catch(() => undefined);
+  void sync.flushPoints();
+});
 
 /** Routes: #/ (dashboard), #/<area>, #/<area>/<module>. */
 function route(): void {
@@ -88,6 +87,7 @@ function route(): void {
     settings,
     saveSettings: () => saveSettings(settings),
     sound,
+    addPoints: (points) => sync.addPoints(points, weekKey(Date.now())),
   });
 }
 

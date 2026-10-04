@@ -17,6 +17,10 @@ export interface Profile {
   updatedAt: number;
   /** The app's saved state (opaque to the server). */
   data: unknown;
+  /** Points of the latest week the app reported points for (`key`: its Monday). */
+  week?: { key: string; points: number };
+  /** Ids of the point increments of `week`, so a retried request counts once. */
+  pointIds?: string[];
 }
 
 /** One JSON file per profile; writes are atomic (temp file + rename) and serialised. */

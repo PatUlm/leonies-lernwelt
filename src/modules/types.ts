@@ -9,6 +9,8 @@ export interface ModuleContext {
   settings: Settings;
   saveSettings(): void;
   sound: Sound;
+  /** Points just earned; counted on the server for the weekly leaderboard. */
+  addPoints(points: number): void;
 }
 
 /**
@@ -40,8 +42,6 @@ export interface Suggestion {
 export interface ModuleStats {
   stars: number;
   trophies: number;
-  /** Points earned in the current week (leaderboard). */
-  weekPoints: number;
   /** Learning badges, phrased for the child. */
   badges: string[];
   /** Short progress line for the tile. */

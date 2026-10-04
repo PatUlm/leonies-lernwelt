@@ -246,4 +246,40 @@ describe('SyncClient', () => {
     expect(tablet.client.account()).toBeNull();
     expect(tablet.client.hasChosen()).toBe(false);
   });
+
+  it('adds points from two devices on the server, whatever progress is uploaded', async () => {
+    const week = '2026-09-28';
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    const phone = new Device(base);
+    phone.use();
+    await phone.client.login('Leonie', '1234');
+
+    tablet.use();
+    tablet.client.addPoints(30, week);
+    await tablet.client.flushPoints();
+    phone.use();
+    phone.client.addPoints(20, week);
+    await phone.client.flushPoints();
+    writeJson('uhr.progress.v1', { outdated: true });
+    await phone.client.push();
+
+    expect((await phone.client.leaderboard(week))?.me).toEqual({ rank: 1, points: 50 });
+  });
+
+  it('keeps points earned offline and sends them once later', async () => {
+    const week = '2026-09-28';
+    const tablet = new Device(base);
+    await tablet.client.signup('Leonie', '1234');
+    tablet.online = false;
+    tablet.client.addPoints(15, week);
+    await tablet.client.flushPoints();
+    await expect(tablet.client.logout()).rejects.toMatchObject({ code: 'unsaved' });
+    tablet.online = true;
+    await tablet.client.flushPoints();
+    await tablet.client.flushPoints();
+    expect((await tablet.client.leaderboard(week))?.me).toEqual({ rank: 1, points: 15 });
+    expect(readJson('points.v1')).toEqual([]);
+    expect(tablet.client.status()).toBe('saved');
+  });
 });

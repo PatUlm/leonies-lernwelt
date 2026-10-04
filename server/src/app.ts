@@ -14,6 +14,10 @@ export interface AppOptions {
 }
 
 const MAX_TOKENS_PER_PROFILE = 10;
+/** Upper bound for one point increment (one answer gives far less). */
+const MAX_POINTS_PER_INCREMENT = 1000;
+/** Safety cap only: a week of practice stays far below it. */
+const POINT_IDS_KEPT = 20_000;
 const LOGIN_FAILURES_PER_PROFILE = 5;
 const LOGIN_FAILURES_PER_CLIENT = 20;
 const SIGNUPS_PER_CLIENT = 5;
@@ -87,12 +91,10 @@ function progressView(p: Profile) {
   return { name: p.name, revision: p.revision, updatedAt: p.updatedAt, data: p.data };
 }
 
-/** Points the app reported for `week` with its last upload; 0 for any other week. */
+const WEEK_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 function weekPoints(p: Profile, week: string): number {
-  const score = (p.data as { score?: { week?: unknown; points?: unknown } } | null)?.score;
-  const points = score?.points;
-  if (score?.week !== week || typeof points !== 'number' || !Number.isFinite(points)) return 0;
-  return Math.max(0, Math.floor(points));
+  return p.week?.key === week ? p.week.points : 0;
 }
 
 export function createApp(options: AppOptions) {
@@ -213,6 +215,38 @@ export function createApp(options: AppOptions) {
   }
 
   /**
+   * Adds earned points; the server keeps the only count, so an outdated progress
+   * uploaded by another device cannot lower it. Points of a newer week start
+   * that week; late points of an older week (sent after being offline) are
+   * dropped. Answers the week's points as counted now.
+   */
+  async function addPoints(req: IncomingMessage) {
+    const { id } = await authenticate(req);
+    const body = await readJson(req, 4096);
+    const { id: incrementId, week, points } = body;
+    if (typeof incrementId !== 'string' || !/^[A-Za-z0-9-]{8,64}$/.test(incrementId)
+      || typeof week !== 'string' || !WEEK_PATTERN.test(week)
+      || typeof points !== 'number' || !Number.isInteger(points) || points < 1 || points > MAX_POINTS_PER_INCREMENT) {
+      throw new HttpError(400, 'invalid_points');
+    }
+    return store.update(id, async (profile) => {
+      if (!profile) throw new HttpError(401, 'unauthorized');
+      const current = profile.week;
+      // Week keys are ISO dates, so they compare as strings. Ids are kept for the
+      // whole current week: a retry of an older week is dropped anyway.
+      if (!current || week > current.key) {
+        profile.week = { key: week, points };
+        profile.pointIds = [incrementId];
+      } else if (week === current.key && !profile.pointIds?.includes(incrementId)) {
+        current.points += points;
+        profile.pointIds = [...(profile.pointIds ?? []), incrementId].slice(-POINT_IDS_KEPT);
+      }
+      const result = { status: 200, body: { week: profile.week ?? { key: week, points: 0 } } };
+      return { next: profile, result };
+    });
+  }
+
+  /**
    * Places 1–3 of a week (shared places on a tie: 1, 1, 3) and the caller's own
    * place. The week comes from the app ("2026-09-28", its Monday), so the server
    * needs no calendar of its own.
@@ -220,7 +254,7 @@ export function createApp(options: AppOptions) {
   async function leaderboard(req: IncomingMessage) {
     const { id } = await authenticate(req);
     const week = new URL(req.url ?? '/', 'http://localhost').searchParams.get('week') ?? '';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(week)) throw new HttpError(400, 'invalid_week');
+    if (!WEEK_PATTERN.test(week)) throw new HttpError(400, 'invalid_week');
     const rows = (await store.list())
       .map(({ id: pid, profile }) => ({ name: profile.name, points: weekPoints(profile, week), me: pid === id }))
       .filter((r) => r.points > 0)
@@ -250,6 +284,7 @@ export function createApp(options: AppOptions) {
     'POST /api/login': login,
     'GET /api/progress': getProgress,
     'PUT /api/progress': putProgress,
+    'POST /api/points': addPoints,
     'GET /api/leaderboard': leaderboard,
     'POST /api/logout': logout,
     'GET /api/health': async () => ({ status: 200, body: { ok: true } }),

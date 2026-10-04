@@ -427,6 +427,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   /** Common feedback for all modes. */
   function finish(result: AnswerResult, typedTime?: GivenTime): void {
     saveProgress(engine.progress);
+    if (result.points) ctx.addPoints(result.points);
     if (task.kind !== 'example') renderScore(result.roundComplete ?? undefined);
     if (result.unlocked.length) {
       pendingToast = `Neu: ${result.unlocked.map((u) => practicedName(u.track, u.tier)).join(', ')}!`;

@@ -129,8 +129,8 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
       <p class="greeting">Hallo${account ? ` ${escapeHtml(account.name)}` : ''}! Was möchtest du heute üben?</p>
     </header>
     ${rewardsRow(entries)}
-    <section class="leaderboard" aria-label="Bestenliste" hidden></section>
     <nav class="areas" aria-label="Lernbereiche">${available.map(bigCard).join('')}</nav>
+    <section class="leaderboard" aria-label="Bestenliste" hidden></section>
     ${
       upcoming.length
         ? `<section class="areas-more" aria-label="Weitere Lernbereiche"><h2>Weitere Lernbereiche</h2>
@@ -155,14 +155,11 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
   install.querySelector('button')!.addEventListener('click', () => void promptInstall());
   update();
 
-  // Upload pending points first, so the own entry is up to date. The second push
-  // covers changes saved while an earlier upload was already on its way.
+  // Send pending points first, so the own entry is up to date.
   if (account) {
     const board = app.querySelector<HTMLElement>('.leaderboard')!;
     void sync
-      .push()
-      .then(() => sync.push())
-      .catch(() => undefined)
+      .flushPoints()
       .then(() => sync.leaderboard(weekKey(Date.now())))
       .then((data) => {
         if (!data) return;
