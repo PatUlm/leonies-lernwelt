@@ -1200,7 +1200,8 @@ a.area-card:active {
   filter: grayscale(1);
 }
 
-.answer.suggested {
+/* Only while the question is open: once answered, the answer turns green like any other. */
+.answer.suggested:not(:disabled) {
   border-color: var(--accent);
   animation: suggest 1.4s ease-in-out infinite;
 }
