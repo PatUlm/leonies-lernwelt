@@ -17,6 +17,9 @@ let cleanup: (() => void) | null = null;
 
 document.title = APP_NAME;
 
+// Ask the browser not to evict the progress when storage runs low.
+void navigator.storage?.persist?.().catch(() => false);
+
 function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }

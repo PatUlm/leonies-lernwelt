@@ -1,10 +1,12 @@
-# Leonies Lern App
+# Leonis Lernwelt
 
 Eine kleine Lern-App für Kinder im Grundschulalter, gemacht für das Tablet. Sie läuft
 einfach im Browser – ohne Installation, ohne Konto, ohne Werbung.
 
-Das erste Modul heißt **„Die Uhr“**: Leonie (8) lernt damit, die Zeigeruhr zu lesen.
+Das erste Modul heißt **„Die Uhr“**: Leoni (8) lernt damit, die Zeigeruhr zu lesen.
 Weitere Module folgen.
+
+**Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
 
 <p align="center">
   <img src="docs/screenshots/clock-question.png" alt="Die Uhr: große Zeigeruhr mit drei Antwortknöpfen" width="720">
@@ -89,7 +91,9 @@ liest die Antworten vor.
 - Das **Zahnrad** im Uhr-Modul öffnet den Elternbereich: Stand jeder Stufe, Töne an/aus
   und „Fortschritt löschen“ (drei Sekunden gedrückt halten).
 - Der Fortschritt bleibt **nur auf dem Gerät** gespeichert (im Browser). Es werden keine
-  Daten verschickt.
+  Daten verschickt. Wer im Browser die Websitedaten löscht, fängt wieder von vorne an.
+- Tipp: Die Seite über das Browser-Menü „Zum Startbildschirm hinzufügen“ – dann startet sie
+  wie eine App im Vollbild.
 - Tipp: Kurze Übungsrunden von fünf bis zehn Minuten wirken besser als lange.
 
 <p align="center">
@@ -134,3 +138,7 @@ node scripts/screenshots.mjs http://localhost:5173
 
 Der Name der App und des Kindes steht in [`src/config.ts`](src/config.ts).
 Das Deployment (Docker + Terraform) beschreibt [`DEPLOY.md`](DEPLOY.md).
+
+## Lizenz
+
+[MIT](LICENSE)

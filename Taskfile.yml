@@ -1,15 +1,15 @@
 version: '3'
 
-# Deployment to netcup1 (clock.nieda.de). Development and tests use the npm scripts.
+# Deployment to netcup1 (lernwelt.nieda.de). Development and tests use the npm scripts.
 tasks:
 
   # Backend config (bucket/key/region) comes from terraform/backend.hcl (gitignored).
   init: terraform -chdir=terraform init -backend-config=backend.hcl
 
   # Build the image locally (smoke test) and serve it on http://localhost:8080.
-  build: docker build -f Dockerfile -t clock:local .
-  up: docker run --rm -d --name clock_local -p 8080:8080 clock:local
-  down: docker stop clock_local
+  build: docker build -f Dockerfile -t lernwelt:local .
+  up: docker run --rm -d --name lernwelt_local -p 8080:8080 lernwelt:local
+  down: docker stop lernwelt_local
 
   # Build the image on netcup1 (no registry push).
   release: ./bin/release.sh {{.CLI_ARGS}}

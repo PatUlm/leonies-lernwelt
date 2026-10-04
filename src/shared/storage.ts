@@ -1,5 +1,5 @@
 /** localStorage access that never throws (private mode, full or blocked storage). */
-const PREFIX = 'lern-app.';
+const PREFIX = 'lernwelt.';
 
 export function readJson<T>(key: string): T | null {
   try {

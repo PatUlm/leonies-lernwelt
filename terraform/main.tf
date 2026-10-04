@@ -1,8 +1,9 @@
 locals {
-  # Hostname and project name are planned to change later (see DEPLOY.md).
-  project       = "clock"
-  hostname      = "clock.nieda.de"
-  proxy_network = "proxy-manager"
+  project  = "lernwelt"
+  hostname = "lernwelt.nieda.de"
+  # Former hostname, permanently redirected to the current one.
+  legacy_hostname = "clock.nieda.de"
+  proxy_network   = "proxy-manager"
 }
 
 # Local image tag (repo:tag), built by bin/release.sh on the netcup1 daemon.
@@ -10,7 +11,7 @@ locals {
 # referenced directly. Written to image.auto.tfvars on every release.
 variable "image" {
   type        = string
-  description = "Local image tag, e.g. clock:20261004-1200"
+  description = "Local image tag, e.g. lernwelt:20261004-120000"
 }
 
 terraform {
@@ -68,6 +69,40 @@ resource "docker_container" "web" {
   labels {
     label = "traefik.http.routers.${local.project}.tls.certresolver"
     value = "production"
+  }
+
+  # Old bookmarks on clock.nieda.de land on the new hostname.
+  labels {
+    label = "traefik.http.routers.${local.project}-legacy.entrypoints"
+    value = "web, websecure"
+  }
+  labels {
+    label = "traefik.http.routers.${local.project}-legacy.rule"
+    value = "Host(`${local.legacy_hostname}`)"
+  }
+  labels {
+    label = "traefik.http.routers.${local.project}-legacy.tls"
+    value = "true"
+  }
+  labels {
+    label = "traefik.http.routers.${local.project}-legacy.tls.certresolver"
+    value = "production"
+  }
+  labels {
+    label = "traefik.http.routers.${local.project}-legacy.middlewares"
+    value = "${local.project}-legacy-redirect"
+  }
+  labels {
+    label = "traefik.http.middlewares.${local.project}-legacy-redirect.redirectregex.regex"
+    value = "^https?://${replace(local.legacy_hostname, ".", "\\.")}/(.*)"
+  }
+  labels {
+    label = "traefik.http.middlewares.${local.project}-legacy-redirect.redirectregex.replacement"
+    value = "https://${local.hostname}/$${1}"
+  }
+  labels {
+    label = "traefik.http.middlewares.${local.project}-legacy-redirect.redirectregex.permanent"
+    value = "true"
   }
 
   network_mode = "bridge"

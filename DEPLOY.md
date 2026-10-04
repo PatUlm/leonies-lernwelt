@@ -1,4 +1,4 @@
-# Deployment – clock.nieda.de
+# Deployment – lernwelt.nieda.de
 
 Runbook für das Ausrollen auf **netcup1**. Für die Entwicklung reicht `npm run dev`
 (siehe README). Das Muster entspricht dem Tiefenlicht-Deployment.
@@ -7,9 +7,9 @@ Runbook für das Ausrollen auf **netcup1**. Für die Entwicklung reicht `npm run
 
 | Was | Wert |
 |-----|------|
-| Domain | `clock.nieda.de` (öffentlich) – wird später umbenannt |
+| Domain | `lernwelt.nieda.de` (öffentlich); `clock.nieda.de` leitet dauerhaft dorthin um |
 | Server | `netcup1` (SSH-Host aus `~/.ssh/config`) |
-| Laufzeit | Docker-Container `clock_web` (nginx-unprivileged, Port 8080, statische Seite) |
+| Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite) |
 | Reverse-Proxy | Traefik im Docker-Netz `proxy-manager`, TLS via Certresolver `production` |
 | Verwaltung | Terraform (`terraform/main.tf`), State im S3-Bucket (`terraform/backend.hcl`) |
 
@@ -51,7 +51,7 @@ task deploy       # anwenden (nicht-interaktiv: task deploy -- -auto-approve)
 Prüfen:
 
 ```bash
-curl -s https://clock.nieda.de/healthz   # {"ok":true,"version":"<Tag>"}
+curl -s https://lernwelt.nieda.de/healthz   # {"ok":true,"version":"<Tag>"}
 ```
 
 Beim ersten Deploy eines Hostnamens liefert Traefik einige Sekunden ein
@@ -60,8 +60,8 @@ Standardzertifikat, bis Let's Encrypt ausgestellt hat.
 ## Rollback
 
 ```bash
-DOCKER_HOST=ssh://netcup1 docker image ls clock
-echo 'image = "clock:<alter-tag>"' > terraform/image.auto.tfvars
+DOCKER_HOST=ssh://netcup1 docker image ls lernwelt
+echo 'image = "lernwelt:<alter-tag>"' > terraform/image.auto.tfvars
 task deploy
 ```
 

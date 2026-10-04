@@ -20,7 +20,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP_VERSION="${1:-$(date +'%Y%m%d-%H%M%S')}"
-REPO="clock"
+REPO="lernwelt"
 IMAGE="${REPO}:${APP_VERSION}"
 export DOCKER_HOST="ssh://netcup1"
 export DOCKER_BUILDKIT=0

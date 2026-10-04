@@ -37,7 +37,7 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, ne
       if (textHeavy) p.textStep = 2;
       if (nearTrophy) p.round.points = p.round.target - 5;
       else p.round.points = Math.round((p.round.target * 0.45) / 5) * 5;
-      localStorage.setItem('lern-app.uhr.progress.v1', JSON.stringify(p));
+      localStorage.setItem('lernwelt.uhr.progress.v1', JSON.stringify(p));
     },
     { tasks, accuracy, seed, textHeavy, nearTrophy },
   );
