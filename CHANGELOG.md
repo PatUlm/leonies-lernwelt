@@ -45,6 +45,9 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 
 ### Behoben
 
+- Auf schmalen Handys im Hochformat sind die Karten auf dem Dashboard und in den
+  Lernbereichen nicht mehr breiter als der Bildschirm; die Seite lässt sich nicht mehr
+  seitlich verschieben.
 - Ungespeicherte Änderungen bleiben bei einem ungültigen Gerätetoken erhalten; veraltete
   Serverdaten werden nicht mehr übernommen.
 - **Die Uhr:** Getippte Ziffern werden wie auf einer Digitaluhr gelesen: drei Ziffern als

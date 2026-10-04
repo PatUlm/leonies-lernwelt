@@ -210,6 +210,7 @@ button {
 
 .modules {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -247,6 +248,7 @@ button {
   display: grid;
   gap: 4px;
   flex: 1;
+  min-width: 0;
 }
 
 .module-title {
@@ -462,6 +464,7 @@ button {
 
 .areas {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -494,6 +497,7 @@ a.area-card:active {
   display: grid;
   gap: 6px;
   flex: 1;
+  min-width: 0;
   justify-items: start;
 }
 
@@ -538,6 +542,21 @@ a.area-card:active {
 @media (max-width: 900px) {
   .areas-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .area-card .status {
+    white-space: normal;
+    border-radius: 16px;
+  }
+}
+
+/* Small phones held upright: keep "Hier weiter" on one line. */
+@media (max-width: 380px) {
+  .area-card {
+    gap: 12px;
+    padding: 16px 14px;
   }
 }
 
@@ -692,6 +711,12 @@ a.area-card:active {
   .module-start {
     width: 100%;
     text-align: center;
+  }
+
+  /* "Hier weiter · Bekanntes wieder üben" is wider than a phone held upright. */
+  .module-tile .status {
+    white-space: normal;
+    border-radius: 16px;
   }
 }
 
