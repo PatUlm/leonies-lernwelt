@@ -51,9 +51,11 @@ const MARKUP = `
     <span class="round-label" data-ref="roundLabel"></span>
   </div>
   <main class="stage" data-ref="stage">
-    <div class="daytime" data-ref="daytime" hidden><span data-ref="scene"></span><span data-ref="sceneText"></span></div>
     <div class="clock-wrap" data-ref="clock"></div>
-    <p class="message" data-ref="message" aria-live="polite"></p>
+    <p class="message" data-ref="messageBox" aria-live="polite">
+      <span class="daytime" data-ref="daytime" hidden><span data-ref="scene"></span></span>
+      <span class="message-text"><span class="context-line" data-ref="sceneText"></span><span data-ref="message"></span></span>
+    </p>
     <div class="answers" data-ref="answers"></div>
     <button class="next" type="button" data-ref="next" hidden>Weiter</button>
   </main>
@@ -141,6 +143,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     roundFill: ref('roundFill'),
     roundLabel: ref('roundLabel'),
     clock: ref('clock'),
+    messageBox: ref('messageBox'),
     message: ref('message'),
     answers: ref('answers'),
     next: ref<HTMLButtonElement>('next'),
@@ -220,11 +223,14 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     return `${hour24(t.context!, t.time.hour)}:${String(t.time.minute).padStart(2, '0')}`;
   }
 
-  /** Shows the time of day next to the clock (setting from "21:30" only in examples, on help and afterwards). */
+  /**
+   * Shows the time of day as picture and sentence in front of the question, so
+   * it stays where the answer is chosen (setting from "21:30" only in examples,
+   * on help and afterwards).
+   */
   function showContext(): void {
     if (!task.context) return;
     ui.daytime.hidden = false;
-    ui.stage.classList.add('with-context');
     ui.scene.innerHTML = SCENES[task.context]();
     ui.sceneText.textContent = contextSentence(task.context, task.time);
   }
@@ -254,7 +260,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
     // The time-of-day context stays visible for the whole task.
     ui.daytime.hidden = true;
-    ui.stage.classList.remove('with-context');
+    ui.sceneText.textContent = '';
     if (task.track !== 'daySet' || example) showContext();
     ui.answers.className = `answers mode-${task.mode}`;
     ui.answers.classList.toggle('text-answers', task.track === 'text' || task.track === 'halb');
@@ -514,7 +520,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   function setMessage(text: string, tone: 'question' | 'good' | 'explain'): void {
     ui.message.textContent = text;
-    ui.message.className = `message ${tone}`;
+    ui.messageBox.className = `message ${tone}`;
   }
 
   function lockAnswers(): void {

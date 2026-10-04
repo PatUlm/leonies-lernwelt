@@ -958,53 +958,38 @@ a.area-card:active {
   max-height: 680px;
 }
 
-/* Daytime context ("Es ist Nachmittag"): beside the clock in landscape, above it in portrait. */
+/*
+ * Daytime context: picture in front of the message, sentence ("Es ist Nachmittag.")
+ * on the line above the question or hint, right where the answer is chosen.
+ */
 .daytime {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 20px;
+  flex: none;
+  margin-right: 12px;
+  padding: 3px;
+  border-radius: 14px;
   background: var(--card);
-  border: 4px solid #fde68a;
-  box-shadow: 0 4px 0 #fcd34d;
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  z-index: 2;
+  border: 3px solid #fde68a;
+  box-shadow: 0 3px 0 #fcd34d;
 }
 
 .daytime svg {
   display: block;
+  width: 64px;
   height: auto;
 }
 
-/* Landscape: in the free space left of the clock. */
-@media (orientation: landscape) {
-  .daytime {
-    position: absolute;
-    top: 8%;
-    left: max(24px, env(safe-area-inset-left));
-    width: 170px;
-    flex-direction: column;
-    padding: 10px;
-  }
-
-  .daytime svg {
-    width: 120px;
-  }
+.message-text {
+  min-width: 0;
 }
 
-/* Portrait: in the layout flow above the clock, which shrinks to make room. */
-@media (orientation: portrait) {
-  .daytime {
-    flex-direction: row;
-    padding: 4px 16px 4px 4px;
-    white-space: nowrap;
-  }
+.context-line {
+  display: block;
+  font-weight: 800;
+  color: var(--ink);
+}
 
-  .daytime svg {
-    width: 64px;
-  }
+.context-line:empty {
+  display: none;
 }
 
 .clock {
@@ -1725,10 +1710,6 @@ a.area-card:active {
     font-size: 22px;
   }
 
-  .daytime {
-    font-size: 17px;
-  }
-
   .daytime svg {
     width: 52px;
   }
@@ -1823,20 +1804,8 @@ a.area-card:active {
     max-height: none;
   }
 
-  .stage.with-context .clock-wrap {
-    grid-row: 2 / 6;
-  }
-
   .daytime {
-    grid-column: 1;
-    grid-row: 1;
-    position: static;
-    justify-self: center;
-    width: auto;
-    flex-direction: row;
-    padding: 2px 12px 2px 2px;
-    font-size: 15px;
-    white-space: nowrap;
+    margin-right: 8px;
   }
 
   .daytime svg {
