@@ -59,8 +59,8 @@ const isTextQuestion = () => document.querySelector('.message')?.textContent?.in
 const browser = await chromium.launch();
 await mkdir(OUT, { recursive: true });
 
-async function context(viewport) {
-  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion: 'reduce', locale: 'de-DE' });
+async function context(viewport, reducedMotion = 'reduce') {
+  const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, reducedMotion, locale: 'de-DE' });
   const page = await ctx.newPage();
   await page.goto(BASE);
   return { ctx, page };
@@ -99,9 +99,9 @@ async function context(viewport) {
   await ctx.close();
 }
 
-// Trophy at the end of a round.
+// Trophy at the end of a round, with falling sweets.
 {
-  const { ctx, page } = await context(PORTRAIT);
+  const { ctx, page } = await context(PORTRAIT, 'no-preference');
   await seedProgress(page, { tasks: 120, accuracy: 0.9, seed: 11, nearTrophy: true });
   await openClock(page, () => true);
   for (let i = 0; i < 60 && !(await page.locator('.trophy').count()); i++) {
