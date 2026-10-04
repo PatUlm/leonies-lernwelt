@@ -12,16 +12,19 @@ function wrongIndex(task: Task): number {
 }
 
 /** Plays `tasks` tasks; a new session starts every `perSession` tasks. */
-function play(engine: Engine, tasks: number, accuracy: number, rng: () => number, perSession = 10): Task[] {
+function play(
+  engine: Engine, tasks: number, accuracy: number, rng: () => number,
+  perSession = 10, elapsedMs = 10_000, start = T0,
+): Task[] {
   const seen: Task[] = [];
-  let now = T0;
+  let now = start;
   for (let i = 0; i < tasks; i++) {
     if (i > 0 && i % perSession === 0) now += SESSION_GAP_MS + 1;
     engine.touch(now);
     const task = engine.nextTask();
     seen.push(task);
     const ok = task.kind === 'example' || rng() < accuracy;
-    engine.answer(task, ok ? task.correctIndex : wrongIndex(task), false);
+    engine.answer(task, ok ? task.correctIndex : wrongIndex(task), false, elapsedMs);
   }
   return seen;
 }
@@ -45,26 +48,55 @@ describe('Engine', () => {
     expect(engine.progress.points).toBe(0);
   });
 
-  it('unlocks half hours after full hours are mastered, but not earlier than 12 attempts', () => {
+  it('unlocks half hours after six correct answers (60 mastery points)', () => {
     const engine = new Engine(freshProgress(T0), seeded(2));
-    play(engine, 2 + 11, 1, seeded(3));
+    play(engine, 2 + 5, 1, seeded(3), 1000, 10_000);
+    expect(engine.tierState('digital', 1).mastery).toBe(50);
     expect(engine.tierState('digital', 2).unlocked).toBe(false);
-    play(engine, 1, 1, seeded(3));
+    play(engine, 1, 1, seeded(3), 1000, 10_000);
     expect(engine.tierState('digital', 2).unlocked).toBe(true);
   });
 
-  it('introduces a new tier with two examples and then only a small share', () => {
+  it('unlocks faster with fluent answers', () => {
+    const engine = new Engine(freshProgress(T0), seeded(2));
+    play(engine, 2 + 4, 1, seeded(3), 1000, 2_000);
+    expect(engine.tierState('digital', 1).mastery).toBe(60);
+    expect(engine.tierState('digital', 2).unlocked).toBe(true);
+  });
+
+  it('loses mastery points on mistakes, never below zero', () => {
+    const engine = new Engine(freshProgress(T0), seeded(2));
+    play(engine, 2 + 3, 1, seeded(3), 1000, 10_000);
+    play(engine, 5, 0, seeded(3), 1000, 10_000);
+    expect(engine.tierState('digital', 1).mastery).toBe(0);
+  });
+
+  it('introduces a new tier with two examples and then focuses on it', () => {
     const engine = new Engine(freshProgress(T0), seeded(4));
-    play(engine, 14, 1, seeded(5), 1000);
+    play(engine, 2 + 6, 1, seeded(5), 1000, 10_000);
     const next = [engine.nextTask()];
     engine.answer(next[0], next[0].correctIndex, false);
     next.push(engine.nextTask());
     engine.answer(next[1], next[1].correctIndex, false);
     expect(next.map((t) => [t.kind, t.tier])).toEqual([['example', 2], ['example', 2]]);
 
-    const practice = play(engine, 20, 1, seeded(6), 1000).filter((t) => t.kind === 'practice');
+    // Before tier 3 arrives, most clock tasks are half hours.
+    const practice = play(engine, 12, 1, seeded(6), 1000, 10_000).filter(
+      (t) => t.kind === 'practice' && t.track === 'digital',
+    );
     const newest = practice.filter((t) => t.tier === 2).length;
-    expect(newest).toBeLessThan(practice.length / 2);
+    expect(newest).toBeGreaterThanOrEqual(practice.length * 0.4);
+  });
+
+  it('starts a new session with a short warm-up on earlier tiers', () => {
+    const engine = new Engine(freshProgress(T0), seeded(14));
+    play(engine, 60, 1, seeded(15), 1000, 10_000);
+    const unlocked = engine.unlockedTiers('digital');
+    expect(unlocked.length).toBeGreaterThan(2);
+    const next = play(engine, 3, 1, seeded(16), 1000, 10_000, T0 + 100 * SESSION_GAP_MS);
+    const newest = unlocked[unlocked.length - 1];
+    expect(next.every((t) => t.warmup && t.tier < newest)).toBe(true);
+    expect(engine.progress.warmup).toBe(0);
   });
 
   it('never repeats a time within four tasks', () => {
@@ -83,10 +115,10 @@ describe('Engine', () => {
     expect(engine.unlockedTiers('text').length).toBeGreaterThanOrEqual(3);
   });
 
-  it('keeps text locked within a single session (secure needs a later session)', () => {
+  it('unlocks text within a single session once the clock tier is mastered', () => {
     const engine = new Engine(freshProgress(T0), seeded(11));
-    play(engine, 200, 1, seeded(12), 100000);
-    expect(engine.unlockedTiers('text')).toEqual([]);
+    play(engine, 120, 1, seeded(12), 100000, 3_000);
+    expect(engine.unlockedTiers('text').length).toBeGreaterThanOrEqual(2);
   });
 
   it('does not unlock anything for a player who always fails', () => {
@@ -175,10 +207,13 @@ describe('persistence of queued tasks', () => {
 });
 
 describe('isReady', () => {
-  const base = {
-    unlocked: true, attempts: 12, block: [], step: 3, ready: false,
-    readySession: null, secure: false, review: [],
-  };
+  const base = { unlocked: true, attempts: 12, mastery: 60, ready: false, secure: false };
+
+  it('requires enough mastery points', () => {
+    const window = Array.from({ length: 6 }, (_, i) => ({ ok: true, hour: 1 + i, minute: 0 }));
+    expect(isReady(1, { ...base, mastery: 50, window })).toBe(false);
+    expect(isReady(1, { ...base, window })).toBe(true);
+  });
 
   it('requires both quarter minutes in the window for tier 3', () => {
     const onlyQuarterPast = Array.from({ length: 8 }, (_, i) => ({ ok: true, hour: 1 + i, minute: 15 }));
@@ -187,8 +222,8 @@ describe('isReady', () => {
     expect(isReady(3, { ...base, window: mixed })).toBe(true);
   });
 
-  it('requires at least four different hours', () => {
-    const sameHours = Array.from({ length: 8 }, (_, i) => ({ ok: true, hour: 1 + (i % 3), minute: 0 }));
+  it('requires correct answers on at least three different hours', () => {
+    const sameHours = Array.from({ length: 8 }, (_, i) => ({ ok: true, hour: 1 + (i % 2), minute: 0 }));
     expect(isReady(1, { ...base, window: sameHours })).toBe(false);
   });
 });
@@ -197,12 +232,13 @@ describe('rounds', () => {
   it('ends a round when the point target is reached and awards a trophy', () => {
     const engine = new Engine(freshProgress(T0), seeded(30));
     expect(engine.progress.round.target).toBe(100);
-    play(engine, 2 + 9, 1, seeded(31), 1000);
-    expect(engine.progress.trophies).toBe(0);
-    expect(engine.progress.round.points).toBe(90);
-    const t = engine.nextTask();
-    const r = engine.answer(t, t.correctIndex, false);
-    expect(r.roundComplete).toEqual({ target: 100, points: 100, correct: 10, tasks: 10 });
+    let r = null;
+    for (let i = 0; i < 40 && !r; i++) {
+      const t = engine.nextTask();
+      r = engine.answer(t, t.correctIndex, false).roundComplete;
+    }
+    expect(r?.target).toBe(100);
+    expect(r?.points).toBeGreaterThanOrEqual(100);
     expect(engine.progress.trophies).toBe(1);
     expect(engine.progress.round.points).toBe(0);
   });

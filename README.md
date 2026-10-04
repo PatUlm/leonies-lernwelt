@@ -58,16 +58,21 @@ auffrischen. Kleine Bonbons zeigen, wie viele Stufen eines Moduls schon sicher s
 | 5 | Fünf-Minuten-Schritte – 3:05, 3:25, 3:35, 3:55 | 30 |
 | 6 | einzelne Minuten – 3:07, 3:52 … | 40 |
 
-Eine neue Stufe kommt erst, wenn die alte wirklich sitzt (sieben von acht richtig, mit
-verschiedenen Uhrzeiten). Dann wird sie **sanft eingeblendet**: Zuerst zeigt die App
-zwei Beispiele mit Erklärung, danach kommt die neue Stufe nur ab und zu dran und
-wird erst mit wachsender Sicherheit häufiger. Zwischendurch kommen immer wieder leichte
-Uhrzeiten – „Das kannst du schon!“.
+Wie schnell es weitergeht, entscheidet allein das Können – nicht der Kalender. Jede Stufe
+sammelt **Lernpunkte**: +10 für jede richtige Antwort (+5 extra, wenn sie flott kam – eine
+Uhr oder einen Zeitdruck sieht das Kind nie), −10 für einen Fehler. Bei **60 Lernpunkten**
+und richtigen Antworten auf verschiedene Uhrzeiten geht es zur nächsten Stufe – wer alles
+richtig macht, also schon nach vier bis sechs Aufgaben. Die neue Stufe startet mit zwei
+erklärten Beispielen und kommt dann immer öfter dran (40 % bis 75 % der Aufgaben).
+Zwischendurch kommen leichte Uhrzeiten – „Das kannst du schon!“.
+
+**Aufwärmen:** An einem neuen Tag kommen zuerst ein paar Uhrzeiten aus früheren Stufen,
+die schwächeren häufiger. Sitzen sie, geht es sofort mit der aktuellen Stufe weiter; ein
+Fehler verlängert das Aufwärmen um eine Aufgabe.
 
 ### Uhrzeiten in Worten
 
-Sobald eine Stufe sicher sitzt (auch noch in einer späteren Übungsrunde), kommen
-dieselben Uhrzeiten auch **in Worten**: „Viertel nach zehn“, „halb vier“, „zehn vor
+Sobald eine Stufe geschafft ist, kommen dieselben Uhrzeiten auch **in Worten**: „Viertel nach zehn“, „halb vier“, „zehn vor
 drei“. Diese Aufgaben sind eingestreut und bringen 5 Bonuspunkte. Ein Lautsprecher-Knopf
 liest die Antworten vor.
 
@@ -80,7 +85,7 @@ liest die Antworten vor.
 ### Nachmittagszeiten
 
 Eine Zeigeruhr sieht um 3 Uhr morgens genauso aus wie um 3 Uhr nachmittags. Sobald halbe
-Stunden sicher sitzen, steht deshalb bei manchen Aufgaben neben der Uhr **„Es ist
+Stunden geschafft sind, steht deshalb bei manchen Aufgaben neben der Uhr **„Es ist
 Nachmittag.“** – mit Sonne und Schaukel. Dann ist die Antwort **15:00 Uhr**, nicht 3:00 Uhr:
 „Nach zwölf Uhr mittags zählen wir weiter: dreizehn, vierzehn, fünfzehn …“ Geübt werden
 zuerst volle und halbe Stunden zwischen 13 und 18 Uhr; die Morgen-Uhrzeit ist dabei immer

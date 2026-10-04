@@ -15,6 +15,11 @@ function play(engine: Engine, tasks: number, now: number): void {
   }
 }
 
+/** Plays correctly until the first trophy, so no round is in progress. */
+function finishRound(engine: Engine, now: number): void {
+  for (let i = 0; i < 100 && engine.progress.trophies === 0; i++) play(engine, 1, now);
+}
+
 describe('clock suggestion', () => {
   it('invites to discover the clock on first start', () => {
     const stats = statsFromProgress(freshProgress(T0), T0);
@@ -32,7 +37,7 @@ describe('clock suggestion', () => {
 
   it('suggests a refresh after three days without practice once the round is done', () => {
     const engine = new Engine(freshProgress(T0), seeded(2));
-    play(engine, 2 + 10, T0); // examples + one full round of full hours
+    finishRound(engine, T0);
     expect(engine.progress.round.tasks).toBe(0);
     const later = T0 + REFRESH_AFTER_MS + SESSION_GAP_MS;
     const stats = statsFromProgress(engine.progress, later);
@@ -41,7 +46,7 @@ describe('clock suggestion', () => {
 
   it('does not count opening without answering as practice', () => {
     const engine = new Engine(freshProgress(T0), seeded(3));
-    play(engine, 2 + 10, T0);
+    finishRound(engine, T0);
     const later = T0 + REFRESH_AFTER_MS + SESSION_GAP_MS;
     engine.touch(later);
     engine.nextTask(); // shown, never answered
@@ -50,7 +55,7 @@ describe('clock suggestion', () => {
 
   it('suggests reviews only once they are due', () => {
     const engine = new Engine(freshProgress(T0), seeded(4));
-    play(engine, 2 + 10, T0);
+    finishRound(engine, T0);
     const p = engine.progress;
     p.reviewQueue = [{ track: 'digital', hour: 3, minute: 0, dueAt: p.taskCounter + 4 }];
     expect(statsFromProgress(p, T0).suggestion.priority).not.toBe(SUGGESTION_PRIORITY.reviewDue);

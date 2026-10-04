@@ -72,10 +72,10 @@ describe('daytime track in the engine', () => {
     return tasks;
   }
 
-  it('unlocks afternoon times only after half hours are secure', () => {
+  it('unlocks afternoon times only after half hours are mastered', () => {
     const engine = new Engine(freshProgress(T0), seeded(6));
     playUntil(engine, () => engine.unlockedTiers('daytime').length > 0);
-    expect(engine.tierState('digital', 2).secure).toBe(true);
+    expect(engine.tierState('digital', 2).ready).toBe(true);
     expect(engine.unlockedTiers('daytime')).toEqual([1]);
   });
 
@@ -99,20 +99,23 @@ describe('loading progress saved before the daytime track', () => {
     Object.defineProperty(globalThis, 'localStorage', { value: original, configurable: true });
   });
 
-  it('keeps the text share and adds the daytime track', () => {
+  it('adds the daytime track and derives mastery points from the old state', () => {
     Object.defineProperty(globalThis, 'localStorage', {
       value: { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) },
       configurable: true,
     });
     const legacy: Record<string, unknown> = { ...freshProgress(T0), textStep: 2, textBlock: [true], taskCounter: 5 };
-    delete legacy.sideShares;
     delete legacy.lastAnswered;
-    legacy.tracks = { digital: freshProgress(T0).tracks.digital, text: freshProgress(T0).tracks.text };
+    const oldTier = (ready: boolean, secure: boolean, oks: number) => ({
+      unlocked: true, attempts: 8, block: [], step: 1, ready, readySession: null, secure, review: [],
+      window: Array.from({ length: oks }, (_, i) => ({ ok: true, hour: i + 1, minute: 0 })),
+    });
+    const digital = [oldTier(true, true, 8), oldTier(true, false, 8), oldTier(false, false, 3), ...freshProgress(T0).tracks.digital.slice(3)];
+    legacy.tracks = { digital, text: freshProgress(T0).tracks.text };
     store.set('lernwelt.uhr.progress.v1', JSON.stringify(legacy));
 
     const p = loadProgress(T0);
-    expect(p.sideShares.text).toEqual({ block: [true], step: 2 });
-    expect(p.sideShares.daytime).toEqual({ block: [], step: 0 });
+    expect(p.tracks.digital.slice(0, 3).map((t) => t.mastery)).toEqual([100, 60, 30]);
     expect(p.tracks.daytime).toHaveLength(6);
     expect(p.lastAnswered).toBe(T0);
     expect('textStep' in p).toBe(false);

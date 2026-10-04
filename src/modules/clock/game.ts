@@ -4,7 +4,8 @@ import { canSpeak, speak, stopSpeaking } from '../../shared/speech';
 import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
 import {
-  CORRECT_PER_STAR, DAYTIME_TIERS, Engine, TRACKS, label,
+  CORRECT_PER_STAR, DAYTIME_TIERS, Engine, MASTERY_CORRECT, MASTERY_FAST_BONUS, MASTERY_WRONG,
+  READY_MASTERY, SECURE_MASTERY, TRACKS, label,
   type AnswerResult, type RoundSummary, type Task, type Track,
 } from './engine';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
@@ -115,6 +116,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   let task: Task;
   let phase: 'question' | 'feedback' = 'question';
   let helpUsed = false;
+  /** When the current task appeared, for the (invisible) fluency bonus. */
+  let shownAt = 0;
   let buttons: HTMLButtonElement[] = [];
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
@@ -160,6 +163,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     renderScore();
     phase = 'question';
     helpUsed = false;
+    shownAt = performance.now();
     afterFeedback = null;
 
     clock.setTime(task.time);
@@ -219,7 +223,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
     phase = 'feedback';
     lockAnswers();
-    const result = engine.answer(task, index, helpUsed);
+    const result = engine.answer(task, index, helpUsed, performance.now() - shownAt);
     saveProgress(engine.progress);
     renderScore(result.roundComplete ?? undefined);
     if (result.unlocked.length) {
@@ -435,8 +439,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
         const cells = TIERS.map((tier) => {
           if (track === 'daytime' && !DAYTIME_TIERS.includes(tier)) return '<td class="locked"></td>';
           const s = engine.tierState(track, tier);
-          const rate = s.window.length ? `${s.window.filter((a) => a.ok).length}/${s.window.length}` : '–';
-          const status = s.secure ? 'sicher' : s.ready ? 'gelernt' : s.unlocked ? `übt ${rate}` : '–';
+          const status = s.secure ? 'sicher' : s.ready ? 'gelernt' : s.unlocked ? `übt ${s.mastery}` : '–';
           return `<td class="${s.unlocked ? '' : 'locked'}">${status}</td>`;
         }).join('');
         return `<tr><th>${TRACK_NAMES[track]}</th>${cells}</tr>`;
@@ -447,8 +450,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       `<h2>Elternbereich</h2>
        <table class="progress-table"><thead><tr><th></th>${header}</tr></thead><tbody>${rows}</tbody></table>
        <p class="legend">S1 volle · S2 halbe · S3 Viertel · S4 10er · S5 5er · S6 einzelne Minuten.<br>
-       „übt 6/8“ = richtige der letzten 8 Antworten · „gelernt“ = nächste Stufe frei ·
-       „sicher“ = in einer späteren Sitzung bestätigt. Ein Stern je ${CORRECT_PER_STAR} richtige Antworten.</p>
+       „übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je richtige Antwort (+${MASTERY_FAST_BONUS} wenn flott),
+       −${MASTERY_WRONG} je Fehler · „gelernt“ ab ${READY_MASTERY} = nächste Stufe frei ·
+       „sicher“ ab ${SECURE_MASTERY}. Ein Stern je ${CORRECT_PER_STAR} richtige Antworten.</p>
        <label class="setting"><input type="checkbox" data-ref="soundToggle" ${ctx.settings.sound ? 'checked' : ''}/> Töne</label>
        <p><button type="button" class="btn danger" data-ref="reset">Fortschritt löschen (3 Sek. halten)</button></p>`,
       [{ label: 'Schließen', primary: true, action: () => {} }],

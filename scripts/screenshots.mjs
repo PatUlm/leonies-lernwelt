@@ -34,8 +34,10 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, da
       p.forced = [];
       p.reviewQueue = [];
       p.lastActive = Date.now();
-      if (textHeavy) p.sideShares.text.step = 2;
-      if (daytimeHeavy) p.sideShares.daytime.step = 1;
+      // Leave the last text / afternoon tier unfinished, so those tasks come often.
+      const learn = (track) => { const t = p.tracks[track].filter((x) => x.unlocked).at(-1); if (t) { t.ready = false; t.mastery = 0; } };
+      if (textHeavy) learn('text');
+      if (daytimeHeavy) learn('daytime');
       if (nearTrophy) p.round.points = p.round.target - 5;
       else p.round.points = Math.round((p.round.target * 0.45) / 5) * 5;
       localStorage.setItem('lernwelt.uhr.progress.v1', JSON.stringify(p));
