@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { nextTaskShown, openClock, startDevice } from './helpers';
+import { finishSpeech, holdSpeech, nextTaskShown, openClock, startDevice } from './helpers';
 
 /** --bad and --good in style.css. */
 const RED = 'rgb(220, 38, 38)';
@@ -47,4 +47,18 @@ test('a right choice stays green and greys out all other answers', async ({ page
   await expect(page.locator('.answer.faded')).toHaveCount((await page.locator('.answer').count()) - 1);
   await expect(page.locator('.answer.faded').first()).toHaveCSS('opacity', '0.45');
   await expect(page.locator('.answer.wrong')).toHaveCount(0);
+});
+
+test('after a right answer, the next time waits until the explanation has been read aloud', async ({ page }) => {
+  await holdSpeech(page);
+  await page.clock.install();
+  await startDevice(page);
+  await openClock(page);
+  await page.locator('.answer.suggested').click();
+  await expect(page.locator('.message')).toContainText('Genau!');
+  await page.locator('[data-ref="speak"]').click();
+  await page.clock.runFor(5000);
+  await expect(page.locator('.message')).toContainText('Genau!');
+  await finishSpeech(page);
+  await expect(page.locator('.message')).toContainText('Schau mal');
 });

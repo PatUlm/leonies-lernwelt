@@ -16,6 +16,11 @@ deshalb ist dieses Changelog nach Datum gegliedert.
   Bild, Fehler ohne Punktabzug, ein Pokal nach zehn Aufgaben, Sterne, Abzeichen und
   Wochenpunkte wie bei der Uhr.
 
+### Geändert
+
+- Nach einer richtigen Antwort wartet die nächste Aufgabe, bis das Vorlesen fertig ist –
+  die Erklärung wird nicht mehr mittendrin abgeschnitten (Uhr und Deutsch).
+
 ## 2026-10-04
 
 ### Hinzugefügt

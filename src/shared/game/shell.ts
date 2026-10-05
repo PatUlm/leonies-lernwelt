@@ -1,6 +1,6 @@
 import { confetti, plainStar, skyLayer, trophy } from '../decor';
 import { escapeHtml } from '../html';
-import { canSpeak } from '../speech';
+import { canSpeak, speak, stopSpeaking } from '../speech';
 import { sync } from '../sync';
 
 /**
@@ -29,6 +29,9 @@ export interface ShellOptions {
   /** A dialog opened (true) or closed (false), e.g. to pause a stopwatch. */
   onDialog?(open: boolean): void;
 }
+
+/** Some speech engines never report the end: a follow-up waits at most this long. */
+const MAX_SPEECH_WAIT_MS = 30_000;
 
 function frame(stage: string): string {
   return `
@@ -64,6 +67,10 @@ export class GameShell {
   private disposed = false;
   private dialogDismiss: (() => void) | null = null;
   private afterDialog: (() => void) | null = null;
+  /** Counts read-alouds, so the end of an interrupted one is not taken for the current. */
+  private speech = 0;
+  private speaking = false;
+  private afterSpeech: (() => void) | null = null;
   private readonly ui: {
     stars: HTMLElement;
     trophies: HTMLElement;
@@ -153,11 +160,54 @@ export class GameShell {
     this.timers.add(id);
   }
 
-  /** Clears all pending timeouts and a follow-up waiting for the dialog. */
+  /** Clears all pending timeouts and a follow-up waiting for the dialog or speech. */
   cancelPending(): void {
     for (const id of this.timers) window.clearTimeout(id);
     this.timers.clear();
     this.afterDialog = null;
+    this.afterSpeech = null;
+  }
+
+  /**
+   * Reads the parts aloud; `onPart` reports the index being spoken, -1 when
+   * done. A follow-up passed to whenIdle() waits until the end.
+   */
+  speak(parts: string[], onPart: (index: number) => void = () => {}): void {
+    const id = ++this.speech;
+    this.speaking = true;
+    speak(parts, (i) => {
+      onPart(i);
+      if (i === -1 && id === this.speech) this.speechEnded();
+    });
+  }
+
+  stopSpeaking(): void {
+    this.speech += 1;
+    stopSpeaking();
+    this.speechEnded();
+  }
+
+  private speechEnded(): void {
+    this.speaking = false;
+    const next = this.afterSpeech;
+    this.afterSpeech = null;
+    next?.();
+  }
+
+  /**
+   * Runs `fn` once nothing is read aloud and no dialog is open: moving on to
+   * the next task never cuts off an explanation she asked to hear.
+   */
+  whenIdle(fn: () => void): void {
+    if (!this.speaking) {
+      this.whenNoDialog(fn);
+      return;
+    }
+    const waiting = () => this.whenNoDialog(fn);
+    this.afterSpeech = waiting;
+    this.later(() => {
+      if (this.afterSpeech === waiting) this.speechEnded();
+    }, MAX_SPEECH_WAIT_MS);
   }
 
   toast(text: string): void {
@@ -261,6 +311,8 @@ export class GameShell {
 
   dispose(): void {
     this.disposed = true;
+    this.afterSpeech = null;
+    stopSpeaking();
     for (const id of this.timers) window.clearTimeout(id);
     if (this.ui.dialog.open) this.ui.dialog.close();
     this.root.classList.remove(this.options.className);

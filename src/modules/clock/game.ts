@@ -1,11 +1,7 @@
-import {
-  afternoonScene, confetti, eveningScene, forenoonScene, nightScene, noonScene, plainStar, skyLayer, trophy,
-} from '../../shared/decor';
+import { afternoonScene, eveningScene, forenoonScene, nightScene, noonScene, plainStar } from '../../shared/decor';
+import { GameShell } from '../../shared/game/shell';
 import { createKeypad, type Keypad } from '../../shared/keypad';
-import { canSpeak, speak, stopSpeaking } from '../../shared/speech';
-import { escapeHtml } from '../../shared/html';
 import { Stopwatch } from '../../shared/stopwatch';
-import { sync } from '../../shared/sync';
 import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
 import { contextSentence, hour24, type DayContext } from './daytime';
@@ -31,25 +27,7 @@ const SCENES: Record<DayContext, () => string> = {
   night: nightScene,
 };
 
-const MARKUP = `
-  ${skyLayer('game')}
-  <header class="topbar">
-    <button class="tool back" type="button" data-ref="back">‹</button>
-    <div class="score" aria-live="polite">
-      <span class="stars" title="Sterne"><span class="score-icon">${plainStar('#fbbf24')}</span><span data-ref="stars">0</span></span>
-      <span class="trophies" title="Pokale"><span class="score-icon">${trophy()}</span><span data-ref="trophies">0</span></span>
-    </div>
-    <div class="tools">
-      <button class="tool" type="button" data-ref="speak" aria-label="Vorlesen">🔊</button>
-      <button class="tool" type="button" data-ref="help" aria-label="Hilfe">?</button>
-      <button class="tool tool-quiet" type="button" data-ref="parents" aria-label="Elternbereich">⚙</button>
-    </div>
-  </header>
-  <div class="round" data-ref="round">
-    <div class="round-track"><div class="round-fill" data-ref="roundFill"></div></div>
-    <span class="round-goal">${trophy()}</span>
-    <span class="round-label" data-ref="roundLabel"></span>
-  </div>
+const STAGE_MARKUP = `
   <main class="stage" data-ref="stage">
     <div class="clock-wrap" data-ref="clock"></div>
     <p class="message" data-ref="messageBox" aria-live="polite">
@@ -58,19 +36,7 @@ const MARKUP = `
     </p>
     <div class="answers" data-ref="answers"></div>
     <button class="next" type="button" data-ref="next" hidden>Weiter</button>
-  </main>
-  <div class="toast" data-ref="toast" hidden></div>
-  <div class="celebrate" data-ref="celebrate" hidden aria-hidden="true">${plainStar('#fbbf24')}</div>
-  <dialog class="dialog" data-ref="dialog">
-    <div data-ref="dialogBody"></div>
-    <div class="dialog-actions" data-ref="dialogActions"></div>
-  </dialog>`;
-
-interface DialogAction {
-  label: string;
-  primary?: boolean;
-  action: () => void;
-}
+  </main>`;
 
 interface RoundStats {
   starsAtStart: number;
@@ -124,37 +90,28 @@ function startPosition(target: ClockTime, step: number): ClockTime {
 }
 
 export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => void {
-  root.innerHTML = MARKUP;
-  root.classList.add('clock-game');
-  const ref = <T extends HTMLElement = HTMLElement>(name: string): T => {
-    const node = root.querySelector<T>(`[data-ref="${name}"]`);
-    if (!node) throw new Error(`ref ${name} missing`);
-    return node;
-  };
+  const shell = new GameShell(root, {
+    className: 'clock-game',
+    stage: STAGE_MARKUP,
+    exitLabel: ctx.exitLabel,
+    onExit: ctx.exit,
+    onHelp: showHelp,
+    onSpeak: readAloud,
+    onParents: showParents,
+    // Time in a dialog is no answer time.
+    onDialog: (open) => (open ? stopwatch.pause('dialog') : stopwatch.resume('dialog')),
+  });
+  const ref = <T extends HTMLElement = HTMLElement>(name: string): T => shell.ref<T>(name);
   const ui = {
-    back: ref<HTMLButtonElement>('back'),
-    stars: ref('stars'),
-    trophies: ref('trophies'),
     daytime: ref('daytime'),
     scene: ref('scene'),
     sceneText: ref('sceneText'),
     stage: ref('stage'),
-    round: ref('round'),
-    roundFill: ref('roundFill'),
-    roundLabel: ref('roundLabel'),
     clock: ref('clock'),
     messageBox: ref('messageBox'),
     message: ref('message'),
     answers: ref('answers'),
     next: ref<HTMLButtonElement>('next'),
-    help: ref<HTMLButtonElement>('help'),
-    speak: ref<HTMLButtonElement>('speak'),
-    parents: ref<HTMLButtonElement>('parents'),
-    toast: ref('toast'),
-    celebrate: ref('celebrate'),
-    dialog: ref<HTMLDialogElement>('dialog'),
-    dialogBody: ref('dialogBody'),
-    dialogActions: ref('dialogActions'),
   };
 
   const { sound } = ctx;
@@ -178,18 +135,6 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
   let round = newRoundStats();
-  const timers = new Set<number>();
-  let disposed = false;
-  let dialogDismiss: (() => void) | null = null;
-  let afterDialog: (() => void) | null = null;
-
-  function later(fn: () => void, ms: number): void {
-    const id = window.setTimeout(() => {
-      timers.delete(id);
-      fn();
-    }, ms);
-    timers.add(id);
-  }
 
   function newRoundStats(): RoundStats {
     return { starsAtStart: engine.stars, secured: [] };
@@ -197,12 +142,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   /** `shown` lets the bar stay full on a just completed round until the next task. */
   function renderScore(shown: { points: number; target: number } = engine.progress.round): void {
-    ui.stars.textContent = String(engine.stars);
-    ui.trophies.textContent = String(engine.progress.trophies);
+    shell.setScore(engine.stars, engine.progress.trophies);
     const { points, target } = shown;
-    ui.roundFill.style.width = `${Math.min(100, (points / target) * 100)}%`;
-    ui.roundLabel.textContent = `${Math.min(points, target)} / ${target} Punkte`;
-    ui.round.setAttribute('aria-label', `${points} von ${target} Punkten bis zum Pokal`);
+    shell.setRound(points, target, 'Punkte', `${points} von ${target} Punkten bis zum Pokal`);
   }
 
   function answerLabel(option: Task['options'][number]): string {
@@ -238,7 +180,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   // --- task flow -------------------------------------------------------------
 
   function nextTask(): void {
-    stopSpeaking();
+    shell.stopSpeaking();
     engine.sayFirst = ctx.settings.sayFirst;
     engine.touch(Date.now());
     task = engine.nextTask();
@@ -266,7 +208,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     ui.answers.classList.toggle('text-answers', task.track === 'text' || task.track === 'halb');
     ui.answers.classList.toggle('daytime-answers', task.track === 'daytime');
     ui.next.hidden = true;
-    ui.help.disabled = example;
+    shell.setHelpEnabled(!example);
 
     if (task.mode === 'set') renderSet();
     else if (task.mode === 'input') renderInput();
@@ -274,7 +216,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     else renderChoices();
 
     if (pendingToast) {
-      showToast(pendingToast);
+      shell.toast(pendingToast);
       pendingToast = null;
     }
   }
@@ -409,7 +351,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     const result = engine.answerTime(task, set, helpUsed, stopwatch.read());
     // Then show how it looks – unless she has already moved on to the next task.
     const shown = task;
-    if (!result.ok) later(() => task === shown && clock.setTime(shown.time), 900);
+    if (!result.ok) shell.later(() => task === shown && clock.setTime(shown.time), 900);
     finish(result);
   }
 
@@ -449,17 +391,17 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       setMessage(`${lead} ${confirmation(task)}${written}`, 'good');
       if (result.streak) {
         const n = result.streak <= 12 ? capitalize(numberWord(result.streak)) : String(result.streak);
-        showToast(`${n} hintereinander geschafft!`);
+        shell.toast(`${n} hintereinander geschafft!`);
       }
       sound.correct();
-      if (result.points) floatPoints(ui.round, result.points);
+      if (result.points) shell.floatPoints(result.points);
       let delay = CORRECT_DELAY_MS;
       if (result.starEarned) {
-        celebrate();
+        shell.celebrate();
         sound.star();
         delay += STAR_DELAY_MS;
       }
-      later(() => whenNoDialog(() => afterAnswer(result)), delay);
+      shell.later(() => shell.whenIdle(() => afterAnswer(result)), delay);
       return;
     }
     showContext();
@@ -479,7 +421,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       return;
     }
     if (result.offerPause) {
-      showDialog(
+      shell.showDialog(
         '<h2>Kleine Pause?</h2><p>Das war gerade knifflig. Wir können gleich weitermachen oder eine Pause machen. Dein Durchgang bleibt gespeichert.</p>',
         [
           { label: 'Pause machen', action: ctx.exit },
@@ -493,7 +435,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function showTrophy(summary: RoundSummary): void {
-    stopSpeaking();
+    shell.stopSpeaking();
     sound.star();
     const stars = engine.stars - round.starsAtStart;
     const lines = [`<p class="round-score">${summary.points} Punkte · ${plural(summary.tasks, 'Uhrzeit', 'Uhrzeiten')} geübt</p>`];
@@ -503,17 +445,14 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
     for (const badge of round.secured) lines.push(`<p class="badge">${badge}</p>`);
     round = newRoundStats();
-    const name = sync.account()?.name;
-    showDialog(
-      `<div class="trophy">${trophy()}</div><h2>${name ? `${escapeHtml(name)}, ` : ''}Durchgang geschafft!</h2>${lines.join('')}`,
+    shell.showTrophy(
+      lines,
       [
         { label: ctx.exitLabel, action: ctx.exit },
         { label: 'Noch ein Durchgang', action: nextTask },
       ],
       nextTask,
     );
-    // Inside the modal dialog, so the sweets fall above its backdrop.
-    confetti(ui.dialog);
   }
 
   // --- UI helpers --------------------------------------------------------------
@@ -525,97 +464,10 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   function lockAnswers(): void {
     for (const b of buttons) b.disabled = true;
-    stopSpeaking();
+    shell.stopSpeaking();
   }
-
-  function restartAnimation(node: HTMLElement, cls: string): void {
-    node.hidden = false;
-    node.classList.remove(cls);
-    void node.offsetWidth;
-    node.classList.add(cls);
-  }
-
-  function showToast(text: string): void {
-    ui.toast.textContent = text;
-    restartAnimation(ui.toast, 'show');
-    later(() => (ui.toast.hidden = true), 3200);
-  }
-
-  function celebrate(): void {
-    restartAnimation(ui.celebrate, 'pop');
-    later(() => (ui.celebrate.hidden = true), 1800);
-  }
-
-  function floatPoints(anchor: HTMLElement, points: number): void {
-    const f = document.createElement('span');
-    f.className = 'float-points';
-    f.textContent = `+${points}`;
-    anchor.appendChild(f);
-    later(() => f.remove(), 1200);
-  }
-
-  /**
-   * `onDismiss` runs when the dialog closes without a button (Escape, Android
-   * back), so the game never stays stuck behind a closed dialog.
-   */
-  function showDialog(html: string, actions: DialogAction[], onDismiss: () => void = () => {}): void {
-    dialogDismiss = onDismiss;
-    ui.dialogBody.innerHTML = html;
-    ui.dialogActions.replaceChildren(
-      ...actions.map((a) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = a.primary ? 'btn primary' : 'btn';
-        b.textContent = a.label;
-        b.addEventListener('click', () => closeDialog(a.action));
-        return b;
-      }),
-    );
-    if (!ui.dialog.open) ui.dialog.showModal();
-    stopwatch.pause('dialog');
-  }
-
-  /**
-   * Closes the dialog and runs the follow-up synchronously. The asynchronous
-   * 'close' event must not act again: by then another dialog may be open.
-   */
-  function closeDialog(then: () => void): void {
-    dialogDismiss = null;
-    ui.dialog.close();
-    stopwatch.resume('dialog');
-    then();
-    flushAfterDialog();
-  }
-
-  /** Runs `fn` now, or once an open dialog (e.g. the parents' area) has been closed. */
-  function whenNoDialog(fn: () => void): void {
-    if (ui.dialog.open) afterDialog = fn;
-    else fn();
-  }
-
-  function flushAfterDialog(): void {
-    if (ui.dialog.open || !afterDialog) return;
-    const deferred = afterDialog;
-    afterDialog = null;
-    deferred();
-  }
-
-  // Escape / Android back: keep the dialog. Should the browser close it anyway,
-  // run its dismiss action so the game never stays stuck.
-  ui.dialog.addEventListener('cancel', (e) => e.preventDefault());
-  ui.dialog.addEventListener('close', () => {
-    if (!ui.dialog.open) stopwatch.resume('dialog');
-    if (disposed || ui.dialog.open || !dialogDismiss) return;
-    const dismiss = dialogDismiss;
-    dialogDismiss = null;
-    dismiss();
-    flushAfterDialog();
-  });
 
   // --- tools -------------------------------------------------------------------
-
-  ui.back.setAttribute('aria-label', ctx.exitLabel);
-  ui.back.addEventListener('click', ctx.exit);
 
   ui.next.addEventListener('click', () => {
     const continueWith = afterFeedback;
@@ -624,7 +476,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     continueWith?.();
   });
 
-  ui.help.addEventListener('click', () => {
+  function showHelp(): void {
     if (phase !== 'question' || task.kind === 'example') return;
     helpUsed = true;
     clock.setHelpers({ minuteLabels: true, quarters: true });
@@ -650,28 +502,25 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`,
       'explain',
     );
-  });
+  }
 
-  ui.speak.hidden = !canSpeak();
-  ui.speak.addEventListener('click', () => {
+  function readAloud(): void {
     const context = task.context && !ui.daytime.hidden ? `${contextSentence(task.context, task.time)} ` : '';
     if (phase === 'question' && task.mode === 'choice' && buttons.length && task.kind !== 'example') {
       const parts = [context + (ui.message.textContent ?? ''), ...buttons.map((b) => b.textContent ?? '')];
       // Listening is not answering time.
       stopwatch.pause('speech');
-      speak(parts, (i) => {
+      shell.speak(parts, (i) => {
         buttons.forEach((b, j) => b.classList.toggle('speaking', j === i - 1));
         if (i === -1) stopwatch.resume('speech');
       });
     } else {
       stopwatch.pause('speech');
-      speak([context + (ui.message.textContent ?? '')], (i) => {
+      shell.speak([context + (ui.message.textContent ?? '')], (i) => {
         if (i === -1) stopwatch.resume('speech');
       });
     }
-  });
-
-  ui.parents.addEventListener('click', showParents);
+  }
 
   function showParents(): void {
     const rows = TRACKS.map((track) => {
@@ -684,7 +533,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       return `<tr><th>${TRACK_NAMES[track]}</th>${cells}</tr>`;
     }).join('');
     const header = TIERS.map((t) => `<th title="${TIER_NAMES[t]}">S${t}</th>`).join('');
-    showDialog(
+    shell.showDialog(
       `<h2>Elternbereich</h2>
        <table class="progress-table"><thead><tr><th></th>${header}</tr></thead><tbody>${rows}</tbody></table>
        <p class="legend">S1 volle · S2 halbe · S3 Viertel · S4 10er · S5 5er · S6 einzelne Minuten.<br>
@@ -707,43 +556,20 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       ctx.settings.sayFirst = (e.target as HTMLInputElement).checked;
       ctx.saveSettings();
     });
-    holdToConfirm(ref<HTMLButtonElement>('reset'), 3000, () => {
+    shell.holdToConfirm(ref<HTMLButtonElement>('reset'), 3000, () => {
       clearProgress();
-      for (const id of timers) window.clearTimeout(id);
-      timers.clear();
-      afterDialog = null;
+      shell.cancelPending();
       engine = new Engine(loadProgress(Date.now()), Math.random, { sayFirst: ctx.settings.sayFirst });
       round = newRoundStats();
-      closeDialog(nextTask);
+      shell.closeDialog(nextTask);
     });
-  }
-
-  function holdToConfirm(button: HTMLButtonElement, ms: number, onConfirm: () => void): void {
-    let timer: number | undefined;
-    const cancel = () => {
-      window.clearTimeout(timer);
-      button.classList.remove('holding');
-    };
-    button.addEventListener('pointerdown', () => {
-      button.classList.add('holding');
-      timer = window.setTimeout(() => {
-        cancel();
-        onConfirm();
-      }, ms);
-    });
-    for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) button.addEventListener(ev, cancel);
   }
 
   renderScore();
   nextTask();
 
   return () => {
-    disposed = true;
     document.removeEventListener('visibilitychange', onVisibility);
-    for (const id of timers) window.clearTimeout(id);
-    stopSpeaking();
-    if (ui.dialog.open) ui.dialog.close();
-    root.classList.remove('clock-game');
-    root.replaceChildren();
+    shell.dispose();
   };
 }

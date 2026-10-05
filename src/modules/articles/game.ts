@@ -1,7 +1,6 @@
 import { plainStar } from '../../shared/decor';
 import { GameShell } from '../../shared/game/shell';
 import { escapeHtml } from '../../shared/html';
-import { speak, stopSpeaking } from '../../shared/speech';
 import type { ModuleContext, ModuleStats } from '../types';
 import {
   CORRECT_PER_STAR, Engine, MASTERY_CORRECT, READY_MASTERY, READY_WINDOW_CORRECT, ROUND_TASKS, SECURE_MASTERY, STAGES,
@@ -76,7 +75,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   // --- task flow -------------------------------------------------------------
 
   function nextTask(): void {
-    stopSpeaking();
+    shell.stopSpeaking();
     engine.touch(Date.now());
     task = engine.nextTask();
     saveProgress(engine.progress);
@@ -157,7 +156,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
     }
     phase = 'feedback';
     for (const b of buttons) b.disabled = true;
-    stopSpeaking();
+    shell.stopSpeaking();
     const result = engine.answer(task, index, helpUsed);
     buttons[task.correctIndex].classList.add('correct');
     buttons.forEach((b, i) => {
@@ -188,7 +187,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
         sound.star();
         delay += STAR_DELAY_MS;
       }
-      shell.later(() => shell.whenNoDialog(() => afterAnswer(result)), delay);
+      shell.later(() => shell.whenIdle(() => afterAnswer(result)), delay);
       return;
     }
     setMessage(`Schauen wir zusammen. ${mistake(task)}`, 'explain');
@@ -216,7 +215,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   function showTrophy(summary: RoundState): void {
-    stopSpeaking();
+    shell.stopSpeaking();
     sound.star();
     const stars = engine.stars - round.starsAtStart;
     const lines = [`<p class="round-score">${summary.points} Punkte · ${plural(summary.correct, 'Wort', 'Wörter')} allein richtig</p>`];
@@ -260,13 +259,13 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   function readAloud(): void {
     const message = ui.message.textContent ?? '';
     if (phase !== 'question' || task.kind === 'example') {
-      speak([message]);
+      shell.speak([message]);
       return;
     }
     const sentence = task.variant === 'sentence';
     const parts = sentence ? [message, ...task.options] : [message, cardSpeech(task), ...task.options];
     const first = sentence ? 1 : 2;
-    speak(parts, (i) => buttons.forEach((b, j) => b.classList.toggle('speaking', j === i - first)));
+    shell.speak(parts, (i) => buttons.forEach((b, j) => b.classList.toggle('speaking', j === i - first)));
   }
 
   function showParents(): void {
@@ -304,8 +303,5 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   renderScore();
   nextTask();
 
-  return () => {
-    stopSpeaking();
-    shell.dispose();
-  };
+  return () => shell.dispose();
 }

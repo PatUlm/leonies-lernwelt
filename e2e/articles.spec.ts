@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { finishSpeech, holdSpeech } from './helpers';
 
 type Review = { stage: number; key: string; dueAt: number };
 
@@ -81,6 +82,32 @@ test('a story: the known thing takes der, the gap is filled with a capital at th
   await page.locator('.answer', { hasText: 'der' }).click();
   await expect(page.locator('.story-line').nth(1)).toHaveText('Der Ball ist schön.');
   await expect(page.locator('.message')).toContainText('Den Ball kennen wir schon: der Ball.');
+});
+
+test('after a right answer, the next task waits until the explanation has been read aloud', async ({ page }) => {
+  await holdSpeech(page);
+  await page.clock.install();
+  await startArticles(page);
+  await page.locator('.answer.suggested').click();
+  await expect(page.locator('.message')).toContainText('Genau!');
+  await page.locator('[data-ref="speak"]').click();
+  // Well past the usual 1.5 s: still the explanation.
+  await page.clock.runFor(5000);
+  await expect(page.locator('.message')).toContainText('Genau!');
+  await finishSpeech(page);
+  await expect(page.locator('.message')).toContainText('Schau mal');
+});
+
+test('speech that never reports its end holds the next task for 30 seconds at most', async ({ page }) => {
+  await holdSpeech(page);
+  await page.clock.install();
+  await startArticles(page);
+  await page.locator('.answer.suggested').click();
+  await page.locator('[data-ref="speak"]').click();
+  await page.clock.runFor(25_000);
+  await expect(page.locator('.message')).toContainText('Genau!');
+  await page.clock.runFor(10_000);
+  await expect(page.locator('.message')).toContainText('Schau mal');
 });
 
 test('the card, the question and all answers fit on the screen', async ({ page }) => {

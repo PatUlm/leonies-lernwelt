@@ -35,6 +35,38 @@ export async function nextTaskShown(page: Page): Promise<void> {
   await expect(page.locator('.answer').first()).toBeEnabled();
 }
 
+/**
+ * Speech that starts but only ends when the test calls finishSpeech() – or
+ * never, like engines that do not report the end.
+ */
+export async function holdSpeech(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    let current: SpeechSynthesisUtterance[] = [];
+    const synth = {
+      speak(u: SpeechSynthesisUtterance) {
+        current.push(u);
+        setTimeout(() => u.onstart?.(new Event('start') as SpeechSynthesisEvent), 0);
+      },
+      cancel() {
+        current = [];
+      },
+      getVoices: () => [],
+    };
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: synth });
+    Object.assign(window, {
+      __finishSpeech: () => {
+        const last = current.at(-1);
+        current = [];
+        last?.onend?.(new Event('end') as SpeechSynthesisEvent);
+      },
+    });
+  });
+}
+
+export async function finishSpeech(page: Page): Promise<void> {
+  await page.evaluate(() => (window as unknown as { __finishSpeech: () => void }).__finishSpeech());
+}
+
 /** Replaces speech synthesis with a recorder: window.__spoken lists every text spoken. */
 export async function recordSpeech(page: Page): Promise<void> {
   await page.addInitScript(() => {
