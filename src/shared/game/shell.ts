@@ -37,7 +37,7 @@ function frame(stage: string): string {
   return `
   ${skyLayer('game')}
   <header class="topbar">
-    <button class="tool back" type="button" data-ref="back">‹</button>
+    <button class="tool back" type="button" data-ref="back"><span class="back-arrow" aria-hidden="true">‹</span></button>
     <div class="score" aria-live="polite">
       <span class="stars" title="Sterne"><span class="score-icon">${plainStar('#fbbf24')}</span><span data-ref="stars">0</span></span>
       <span class="trophies" title="Pokale"><span class="score-icon">${trophy()}</span><span data-ref="trophies">0</span></span>

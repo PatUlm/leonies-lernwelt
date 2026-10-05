@@ -753,7 +753,7 @@ a.area-card:active {
   text-decoration: none;
 }
 
-/* Fredoka sets ‹ at x-height; next to the capital Ü it looks too low. */
+/* Fredoka sets ‹ at x-height: too low next to the capital Ü and in the round back button. */
 .back-arrow {
   position: relative;
   top: -0.12em;
@@ -947,7 +947,6 @@ a.area-card:active {
 .back {
   font-size: 36px;
   line-height: 1;
-  padding-bottom: 4px;
 }
 
 .round {
