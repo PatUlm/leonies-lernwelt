@@ -753,6 +753,12 @@ a.area-card:active {
   text-decoration: none;
 }
 
+/* Fredoka sets ‹ at x-height; next to the capital Ü it looks too low. */
+.back-arrow {
+  position: relative;
+  top: -0.12em;
+}
+
 .rewards.compact .reward {
   padding: 8px;
 }

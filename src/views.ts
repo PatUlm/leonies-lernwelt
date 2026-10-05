@@ -259,7 +259,7 @@ export function renderArea(app: HTMLElement, area: Area): void {
   app.innerHTML = `
     ${skyLayer('dashboard')}
     <header class="area-header">
-      <a class="back-link" href="#/">‹ Übersicht</a>
+      <a class="back-link" href="#/"><span class="back-arrow" aria-hidden="true">‹</span> Übersicht</a>
       <span class="area-candy big">${area.candy(area.color)}</span>
       <h1>${areaTitle(area)}</h1>
     </header>
