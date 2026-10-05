@@ -21,7 +21,7 @@ export const AREAS: Area[] = [
   { id: 'deutsch', title: 'Deutsch', color: '#f29bc1', candy: wrappedCandy, modules: [articleModule] },
   { id: 'musik', title: 'Musik', color: '#b39ddb', candy: cupcakeCandy, modules: [] },
   { id: 'hsu', title: 'HSU', subtitle: 'Heimat- und Sachunterricht', color: '#56c5b8', candy: gummyBear, modules: [] },
-  { id: 'englisch', title: 'Englisch', color: '#b98260', candy: chocolateBar, modules: [englishModule] },
+  { id: 'englisch', title: 'Englisch', color: '#cc9a76', candy: chocolateBar, modules: [englishModule] },
 ];
 
 export interface ModuleEntry {
