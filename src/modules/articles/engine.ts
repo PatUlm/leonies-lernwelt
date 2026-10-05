@@ -1,5 +1,5 @@
 import {
-  ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES, STORY_ENDS, STORY_STARTS, indefinite,
+  ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES, STORY_ENDS, STORY_STARTS, capitalize, indefinite,
   type Article, type Sentence,
 } from './words';
 
@@ -484,7 +484,8 @@ export class Engine {
     const story: StoryGap = { gap: gap === '1' ? 1 : 0, start: Number(start), end: Number(end) };
     if (!noun || !STORY_STARTS[story.start] || !STORY_ENDS[story.end]) return null;
     // Always "der" before "ein", so the place of a button never gives the answer away.
-    const options = [noun.article, indefinite(noun.article)];
+    // A gap at the start of a sentence shows both capitalised, as they will stand there.
+    const options = [noun.article, indefinite(noun.article)].map((o) => (story.gap === 1 ? capitalize(o) : o));
     return {
       ...base,
       variant: 'story',

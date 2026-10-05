@@ -75,11 +75,11 @@ test('a sentence: the words are the buttons, in capitals', async ({ page }) => {
   await expect(page.locator('.message')).toContainText('Richtig! Die Wolke – WOLKE ist das Nomen.');
 });
 
-test('a story: the known thing takes der, the gap is filled with a capital at the start', async ({ page }) => {
+test('a story: the known thing takes der, buttons and gap are capitalised at the start', async ({ page }) => {
   await startArticles(page, [{ stage: 4, key: 't:Ball:1:1:0', dueAt: 0 }]);
   await expect(page.locator('.story-line')).toHaveText(['Hier ist ein Ball.', '___ Ball ist schön.']);
-  await expect(page.locator('.answer')).toHaveText(['der', 'ein']);
-  await page.locator('.answer', { hasText: 'der' }).click();
+  await expect(page.locator('.answer')).toHaveText(['Der', 'Ein']);
+  await page.locator('.answer', { hasText: 'Der' }).click();
   await expect(page.locator('.story-line').nth(1)).toHaveText('Der Ball ist schön.');
   await expect(page.locator('.message')).toContainText('Den Ball kennen wir schon: der Ball.');
 });

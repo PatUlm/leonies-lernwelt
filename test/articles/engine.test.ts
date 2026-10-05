@@ -3,7 +3,7 @@ import {
   EXAMPLES_PER_STAGE, Engine, HELP_POINTS, MASTERY_CORRECT, RECENT_SPAN, ROUND_TASKS, SESSION_GAP_MS, STAGE_POINTS,
   freshProgress, type Stage, type Task,
 } from '../../src/modules/articles/engine';
-import { indefinite } from '../../src/modules/articles/words';
+import { capitalize, indefinite } from '../../src/modules/articles/words';
 import { seeded } from '../rng';
 
 const T0 = 1_700_000_000_000;
@@ -192,8 +192,10 @@ describe('articles engine', () => {
     expect(stories.some((t) => t.story!.gap === 0)).toBe(true);
     expect(stories.some((t) => t.story!.gap === 1)).toBe(true);
     for (const t of stories) {
-      expect(t.options).toEqual([t.article, indefinite(t.article!)]);
-      expect(t.options[t.correctIndex]).toBe(t.story!.gap === 0 ? indefinite(t.article!) : t.article);
+      // The gap of a known thing starts the sentence: both buttons are capitalised.
+      const shown = (s: string) => (t.story!.gap === 1 ? capitalize(s) : s);
+      expect(t.options).toEqual([t.article!, indefinite(t.article!)].map(shown));
+      expect(t.options[t.correctIndex]).toBe(shown(t.story!.gap === 0 ? indefinite(t.article!) : t.article!));
     }
   });
 
