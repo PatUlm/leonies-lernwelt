@@ -110,7 +110,7 @@ export function statsFromProgress(progress: Progress, now: number): ModuleStats 
     badges: clockBadges(engine),
     level: started ? `Stufe ${newest} von 6: ${TIER_NAMES[newest]}` : 'Noch nicht gestartet',
     goals: { done: secure, total: TIERS.length, label: `${secure} von ${TIERS.length} Stufen sicher` },
-    round: p.round.tasks > 0 ? { points: p.round.points, target: p.round.target } : null,
+    round: p.round.tasks > 0 ? { done: p.round.points, target: p.round.target, unit: 'Punkte' } : null,
     started,
     lastPlayed: p.lastAnswered,
     suggestion: suggestionFor(engine, now),

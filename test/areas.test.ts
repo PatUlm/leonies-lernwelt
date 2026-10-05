@@ -97,5 +97,6 @@ describe('areas', () => {
   it('has the five school subjects with the clock in maths', () => {
     expect(AREAS.map((a) => a.title)).toEqual(['Mathe', 'Deutsch', 'Musik', 'HSU', 'Englisch']);
     expect(AREAS[0].modules.map((m) => m.id)).toEqual(['uhr']);
+    expect(AREAS[1].modules.map((m) => m.id)).toEqual(['artikel']);
   });
 });

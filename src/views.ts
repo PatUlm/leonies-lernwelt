@@ -234,7 +234,7 @@ export function renderArea(app: HTMLElement, area: Area): void {
           <span class="module-desc">${escapeHtml(module.description)}</span>
           <span class="goals" aria-label="${escapeHtml(stats.goals.label)}">${goalCandies(entry)}</span>
           <span class="module-level">${escapeHtml(stats.goals.label)}${
-            stats.round ? ` · ${stats.round.points} / ${stats.round.target} Punkte` : ''
+            stats.round ? ` · ${stats.round.done} / ${stats.round.target} ${stats.round.unit}` : ''
           }</span>
           ${badge}
         </span>

@@ -5,6 +5,17 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Versionsnamen, sondern den Zeitstempel ihres Deploys (siehe [DEPLOY.md](DEPLOY.md));
 deshalb ist dieses Changelog nach Datum gegliedert.
 
+## 2026-10-05
+
+### Hinzugefügt
+
+- **Deutsch: „Der, die, das“** – das erste Deutsch-Modul, nach den Schulbuchseiten zu
+  bestimmtem und unbestimmtem Artikel. Vier Stufen: „der, die oder das?“, „ein oder
+  eine?“ (anfangs mit „der Apfel“ als Brücke), „Nomen entdecken“ (einzelne Wörter, später
+  im Satz) und „Kennen wir es schon?“ (Da ist ein Ball. Der Ball ist schön.). Wörter mit
+  Bild, Fehler ohne Punktabzug, ein Pokal nach zehn Aufgaben, Sterne, Abzeichen und
+  Wochenpunkte wie bei der Uhr.
+
 ## 2026-10-04
 
 ### Hinzugefügt

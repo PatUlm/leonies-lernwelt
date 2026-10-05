@@ -1,0 +1,96 @@
+import { expect, test, type Page } from '@playwright/test';
+
+type Review = { stage: number; key: string; dueAt: number };
+
+/**
+ * Fresh device playing locally. With `reviews`, the given items come first and
+ * the stages up to the highest one are open (no guided examples).
+ */
+async function startArticles(page: Page, reviews: Review[] = []): Promise<void> {
+  await page.goto('/');
+  await page.evaluate(async (reviews) => {
+    localStorage.clear();
+    const load = (path: string) => import(/* @vite-ignore */ path);
+    const { freshProgress } = await load('/src/modules/articles/engine.ts');
+    const { saveProgress } = await load('/src/modules/articles/storage.ts');
+    const { sync } = await load('/src/shared/sync.ts');
+    const p = freshProgress(Date.now());
+    if (reviews.length) {
+      const top = Math.max(...reviews.map((r) => r.stage));
+      p.stages.forEach((s: { unlocked: boolean }, i: number) => (s.unlocked = i < top));
+      p.forced = [];
+      p.reviewQueue = reviews;
+    }
+    saveProgress(p);
+    sync.playLocally();
+  }, reviews);
+  await page.goto('/#/deutsch/artikel');
+  await expect(page.locator('.answer').first()).toBeEnabled();
+}
+
+test('the Deutsch area offers "Der, die, das"', async ({ page }) => {
+  await startArticles(page);
+  await page.goto('/#/deutsch');
+  await expect(page.locator('.module-title')).toHaveText('Der, die, das');
+  await page.locator('.module-tile').click();
+  await expect(page.locator('.word-card')).toBeVisible();
+});
+
+test('guided examples, then a mistake shows the right article in the gap', async ({ page }) => {
+  await startArticles(page);
+  for (let i = 0; i < 2; i++) {
+    await expect(page.locator('.message')).toContainText('Schau mal');
+    await page.locator('.answer.suggested').click();
+    await expect(page.locator('.message')).toContainText('Genau!');
+    await expect(page.locator('.answer.correct')).toHaveCount(0, { timeout: 10_000 });
+  }
+
+  await expect(page.locator('.message')).toHaveText('Welcher Artikel passt?');
+  await expect(page.locator('.answer')).toHaveText(['der', 'die', 'das']);
+  await expect(page.locator('.gap')).toHaveText('___');
+  const word = (await page.locator('.word-line').textContent())!.replace('___', '').trim();
+
+  // Pick a wrong one: the gap shows the right article, "Weiter" waits for her.
+  const right = await page.evaluate(async (w) => {
+    const load = (path: string) => import(/* @vite-ignore */ path);
+    const { NOUNS } = await load('/src/modules/articles/words.ts');
+    return NOUNS.find((n: { word: string }) => n.word === w).article as string;
+  }, word);
+  const wrong = ['der', 'die', 'das'].find((a) => a !== right)!;
+  await page.locator('.answer', { hasText: new RegExp(`^${wrong}$`) }).click();
+  await expect(page.locator('.message')).toContainText(`Schauen wir zusammen. Es heißt ${right} ${word}.`);
+  await expect(page.locator('.gap.filled')).toHaveText(right);
+  await expect(page.locator('.answer.wrong')).toHaveText(wrong);
+  await page.locator('.next').click();
+  await expect(page.locator('.answer.wrong')).toHaveCount(0);
+  await expect(page.locator('.round-label')).toHaveText('1 / 10 Aufgaben');
+});
+
+test('a sentence: the words are the buttons, in capitals', async ({ page }) => {
+  await startArticles(page, [{ stage: 3, key: 's:0', dueAt: 0 }]);
+  await expect(page.locator('.message')).toHaveText('Tippe auf das Nomen.');
+  await expect(page.locator('.word-card .word-chip')).toHaveText(['DIE', 'WOLKE', 'IST', 'SEHR', 'DUNKEL']);
+  await page.locator('.word-chip', { hasText: 'WOLKE' }).click();
+  await expect(page.locator('.message')).toContainText('Richtig! Die Wolke – WOLKE ist das Nomen.');
+});
+
+test('a story: the known thing takes der, the gap is filled with a capital at the start', async ({ page }) => {
+  await startArticles(page, [{ stage: 4, key: 't:Ball:1:1:0', dueAt: 0 }]);
+  await expect(page.locator('.story-line')).toHaveText(['Hier ist ein Ball.', '___ Ball ist schön.']);
+  await expect(page.locator('.answer')).toHaveText(['der', 'ein']);
+  await page.locator('.answer', { hasText: 'der' }).click();
+  await expect(page.locator('.story-line').nth(1)).toHaveText('Der Ball ist schön.');
+  await expect(page.locator('.message')).toContainText('Den Ball kennen wir schon: der Ball.');
+});
+
+test('the card, the question and all answers fit on the screen', async ({ page }) => {
+  await startArticles(page, [{ stage: 4, key: 't:Schlüssel:0:2:1', dueAt: 0 }]);
+  const viewport = page.viewportSize()!;
+  for (const selector of ['.word-card', '.message', '.answer']) {
+    for (const box of await page.locator(selector).evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {
+      expect(box.left, selector).toBeGreaterThanOrEqual(0);
+      expect(box.right, selector).toBeLessThanOrEqual(viewport.width + 0.5);
+      expect(box.bottom, selector).toBeLessThanOrEqual(viewport.height + 0.5);
+    }
+  }
+});

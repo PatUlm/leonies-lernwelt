@@ -845,7 +845,8 @@ a.area-card:active {
 
 /* ---------- clock module ---------- */
 
-.clock-game {
+.clock-game,
+.word-game {
   height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1494,6 +1495,155 @@ a.area-card:active {
   }
 }
 
+/* ---------- word module (der, die, das) ---------- */
+
+/* Picture and word in place of the clock; it never grows taller than its content needs. */
+.word-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: min(100%, 620px);
+  min-height: 0;
+  padding: 18px 20px;
+  border-radius: 28px;
+  border: 4px solid var(--candy-soft);
+  background: var(--card);
+  box-shadow: 0 6px 0 #f9a8d4;
+  text-align: center;
+  overflow: auto;
+}
+
+.word-emoji {
+  font-size: clamp(64px, 13vh, 128px);
+  line-height: 1.1;
+}
+
+.word-line {
+  font-size: clamp(36px, 6vw, 56px);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.word-shout {
+  letter-spacing: 0.06em;
+}
+
+/* "der Apfel" above "___ Apfel" while ein/eine is new. */
+.word-bridge {
+  font-size: clamp(22px, 3.2vw, 28px);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.gap {
+  color: var(--accent);
+  letter-spacing: 0.05em;
+}
+
+.gap.filled {
+  color: var(--good);
+  letter-spacing: normal;
+}
+
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: clamp(24px, 3.8vw, 34px);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.sentence {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.answer.word-chip {
+  min-height: 60px;
+  padding: 6px 14px;
+  font-size: clamp(22px, 3.4vw, 30px);
+  letter-spacing: 0.04em;
+}
+
+.answers.options-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.word-answers .answer {
+  font-size: clamp(24px, 4vw, 34px);
+}
+
+@media (max-width: 600px) {
+  .word-card {
+    padding: 12px 14px;
+    border-radius: 22px;
+  }
+
+  .word-emoji {
+    font-size: clamp(56px, 11vh, 96px);
+  }
+
+  .word-line {
+    font-size: 34px;
+  }
+
+  .story {
+    font-size: 22px;
+  }
+
+  .answer.word-chip {
+    min-height: 50px;
+    padding: 4px 10px;
+    font-size: 20px;
+  }
+
+  .word-answers .answer {
+    font-size: 24px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .word-card {
+    padding: 8px 10px;
+    gap: 2px;
+  }
+
+  .word-emoji {
+    font-size: 52px;
+  }
+
+  .word-line {
+    font-size: 30px;
+  }
+
+  .word-bridge {
+    font-size: 18px;
+  }
+
+  .story {
+    font-size: 18px;
+    gap: 4px;
+  }
+
+  .sentence {
+    gap: 6px;
+  }
+
+  .answer.word-chip {
+    min-height: 42px;
+    font-size: 17px;
+  }
+
+  .word-answers .answer {
+    font-size: 21px;
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {
@@ -1645,7 +1795,8 @@ a.area-card:active {
 
 /* Phones: the sweets at the bottom edge would sit behind the answer buttons. */
 @media (max-width: 600px), (orientation: landscape) and (max-height: 500px) {
-  .clock-game .sky .bob {
+  .clock-game .sky .bob,
+  .word-game .sky .bob {
     display: none;
   }
 }
@@ -1746,7 +1897,8 @@ a.area-card:active {
  * on the left, everything else on the right; .stage dissolves into the grid.
  */
 @media (orientation: landscape) and (max-height: 500px) {
-  .clock-game {
+  .clock-game,
+  .word-game {
     grid-template-columns: minmax(0, 42%) minmax(0, 1fr) auto;
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     column-gap: 14px;
@@ -1820,7 +1972,8 @@ a.area-card:active {
     display: contents;
   }
 
-  .clock-wrap {
+  .clock-wrap,
+  .word-card {
     grid-column: 1;
     grid-row: 1 / 6;
     width: 100%;

@@ -48,8 +48,8 @@ export interface ModuleStats {
   level: string;
   /** Learning goals reached so far, e.g. 2 of 6 clock tiers secure. */
   goals: { done: number; total: number; label: string };
-  /** Points of a round in progress, if any. */
-  round: { points: number; target: number } | null;
+  /** A round in progress, if any: e.g. 40 of 120 "Punkte" or 4 of 10 "Aufgaben". */
+  round: { done: number; target: number; unit: string } | null;
   started: boolean;
   /** Epoch ms of the last practice, null if never. */
   lastPlayed: number | null;

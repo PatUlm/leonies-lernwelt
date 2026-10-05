@@ -5,7 +5,8 @@ einfach im Browser – ohne Installation, ohne Konto, ohne Werbung.
 
 Die Module sind nach Schulfächern sortiert – Leonies Idee: Jeder **Lernbereich** ist eine
 eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8) lernt damit, die
-Zeigeruhr zu lesen. Weitere Module folgen.
+Zeigeruhr zu lesen. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
+Artikel. Weitere Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
 
@@ -48,7 +49,7 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 | Bereich | Süßigkeit | Module |
 |---|---|---|
 | Mathe | Lolli | Die Uhr |
-| Deutsch | Bonbon | folgt |
+| Deutsch | Bonbon | Der, die, das |
 | Musik | Cupcake | folgt |
 | HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
 | Englisch | Schokolade | folgt |
