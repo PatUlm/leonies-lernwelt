@@ -1,6 +1,6 @@
 import { confetti, plainStar, skyLayer, trophy } from '../decor';
 import { escapeHtml } from '../html';
-import { canSpeak, speak, stopSpeaking } from '../speech';
+import { canSpeak, speak, stopSpeaking, type SpeechPart } from '../speech';
 import { sync } from '../sync';
 
 /**
@@ -172,7 +172,7 @@ export class GameShell {
    * Reads the parts aloud; `onPart` reports the index being spoken, -1 when
    * done. A follow-up passed to whenIdle() waits until the end.
    */
-  speak(parts: string[], onPart: (index: number) => void = () => {}): void {
+  speak(parts: SpeechPart[], onPart: (index: number) => void = () => {}): void {
     const id = ++this.speech;
     this.speaking = true;
     speak(parts, (i) => {

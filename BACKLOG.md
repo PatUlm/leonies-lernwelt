@@ -30,6 +30,15 @@ Vom Game-Designer bewusst für später vorgesehen; beides steht auf den Schulbuc
   keine Mehrzahl gibt, sie aber trotzdem Nomen sind. Dabei auch Nomen für Dinge, die man nicht
   anfassen kann.
 
+## Englisch: Farben, Zahlen, Tiere
+
+Vom Game-Designer bewusst für später vorgesehen:
+
+- **Kombinationen:** „the red cat“, „three dogs“ – braucht eindeutige Bilder und bringt die
+  Mehrzahl mit.
+- **Mengenbilder:** kleine Mengen bis fünf als Punkte oder Tiere statt nur als Ziffer.
+- **Nachsprechen:** freiwillig „Magst du es auch sagen?“, ohne Bewertung.
+
 ## Weitere Module
 
-- Musik, HSU und Englisch: Bereiche sind angelegt, Inhalte fehlen noch.
+- Musik und HSU: Bereiche sind angelegt, Inhalte fehlen noch.

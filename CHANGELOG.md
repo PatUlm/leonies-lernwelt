@@ -9,6 +9,12 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 
 ### Hinzugefügt
 
+- **Englisch: „Farben, Zahlen, Tiere“** – das erste Englisch-Modul. Sieben kleine Stufen:
+  Farben, Zahlen 1–5, Haustiere, Zahlen 6–10, Zootiere, weitere Farben mit 11 und 12,
+  Zahlen 13–20. Wort hören (britisches Englisch) und das Bild antippen; bekannte Wörter
+  auch lesen oder zum Bild das Wort wählen. Neue Wörter kommen zu zweit oder dritt mit
+  einem Beispiel. Ohne englische Stimme auf dem Gerät werden die Wörter gelesen.
+
 - **Deutsch: „Der, die, das“** – das erste Deutsch-Modul, nach den Schulbuchseiten zu
   bestimmtem und unbestimmtem Artikel. Vier Stufen: „der, die oder das?“, „ein oder
   eine?“ (anfangs mit „der Apfel“ als Brücke), „Nomen entdecken“ (einzelne Wörter, später
@@ -25,7 +31,8 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 - Nach einer richtigen Antwort wartet die nächste Aufgabe, bis das Vorlesen fertig ist –
   die Erklärung wird nicht mehr mittendrin abgeschnitten (Uhr und Deutsch).
 - Die Ziele eines Moduls zeigen die Süßigkeit seines Bereichs (in Mathe Lollies statt
-  Bonbons), und jedes Abzeichen trägt neben der Medaille die Süßigkeit seines Bereichs.
+  Bonbons), und jedes Abzeichen in der Liste trägt die Süßigkeit seines Bereichs statt
+  der Medaille.
 
 ## 2026-10-04
 

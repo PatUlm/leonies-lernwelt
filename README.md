@@ -6,7 +6,8 @@ einfach im Browser – ohne Installation, ohne Konto, ohne Werbung.
 Die Module sind nach Schulfächern sortiert – Leonies Idee: Jeder **Lernbereich** ist eine
 eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8) lernt damit, die
 Zeigeruhr zu lesen. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
-Artikel. Weitere Module folgen.
+Artikel. In Englisch lernt **„Farben, Zahlen, Tiere“** die ersten englischen Wörter. Weitere
+Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
 
@@ -52,12 +53,13 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 | Deutsch | Bonbon | Der, die, das |
 | Musik | Cupcake | folgt |
 | HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
-| Englisch | Schokolade | folgt |
+| Englisch | Schokolade | Farben, Zahlen, Tiere |
 
 Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
 **„Hier weiter“** zeigt immer genau eine Empfehlung – zum Beispiel einen angefangenen
 Durchgang fortsetzen, Fehler von neulich wiederholen oder nach ein paar Tagen Pause
-auffrischen. Kleine Bonbons zeigen, wie viele Stufen eines Moduls schon sicher sitzen.
+auffrischen. Kleine Süßigkeiten des Bereichs zeigen, wie viele Stufen eines Moduls schon
+sicher sitzen.
 
 <p align="center">
   <img src="docs/screenshots/area.png" alt="Bereich Mathe mit dem Modul 'Die Uhr', Fortschritts-Bonbons und Empfehlung 'Hier weiter'" width="720">
@@ -252,6 +254,31 @@ Vorlesen funktionieren wie bei der Uhr.
   &nbsp;
   <img src="docs/screenshots/articles-story.png" alt="Mini-Geschichte: 'Schau, da ist eine Ente. ___ Ente ist schön.' mit den Knöpfen die und eine" width="360">
 </p>
+
+## Englisch: Farben, Zahlen, Tiere
+
+Erste englische Wörter für die dritte Klasse: Farben, Zahlen bis 20, Haustiere und Zootiere.
+Leonie hört das Wort (britisches Englisch, über die Sprachausgabe des Geräts) und tippt auf
+das passende Bild – eine Farbfläche, eine Ziffer oder ein Tier. Wörter, die sie schon
+kennt, kommen ab und zu auch geschrieben: Wort lesen und Bild antippen, oder zum Bild das
+englische Wort wählen. Anweisungen und Erklärungen bleiben deutsch („red heißt rot.“).
+
+| Stufe | Wörter |
+|:-:|---|
+| 1 | red, blue, yellow, green, black, white |
+| 2 | one bis five |
+| 3 | cat, dog, fish, bird, rabbit, hamster |
+| 4 | six bis ten |
+| 5 | lion, elephant, monkey, giraffe, tiger, zebra |
+| 6 | orange, purple, pink, brown, grey, eleven, twelve |
+| 7 | thirteen bis twenty |
+
+Neue Wörter kommen zu zweit oder dritt, jedes zuerst als erklärtes Beispiel. Zur Auswahl
+stehen anfangs zwei, später drei Bilder derselben Art; ähnlich klingende Zahlen (six und
+sixteen) erst, wenn beide sitzen. Hilfe nimmt bei drei Bildern eine falsche Antwort weg;
+beim Hören und Lesen spielt sie das Wort langsam vor, beim Wort-Wählen verrät sie den ersten
+Buchstaben. Hat das Gerät keine englische Stimme, werden die Wörter gelesen statt gehört.
+Stufen, Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Ideen für später
 

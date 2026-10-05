@@ -1667,6 +1667,143 @@ a.area-card:active {
   }
 }
 
+/* ---------- English module (Farben, Zahlen, Tiere) ---------- */
+
+/* English words inside the German messages. */
+.message .en {
+  color: var(--hour);
+  font-weight: 800;
+}
+
+.en-word {
+  font-size: clamp(36px, 6vw, 56px);
+  font-weight: 800;
+  color: var(--hour);
+}
+
+.english-card .swatch {
+  width: clamp(96px, 16vh, 150px);
+  height: auto;
+}
+
+.english-card .digit {
+  font-size: clamp(72px, 14vh, 128px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.english-card .animal {
+  font-size: clamp(64px, 13vh, 128px);
+  line-height: 1.1;
+}
+
+.listen-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border: 3px solid var(--candy-soft);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 4px 0 #f9a8d4;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.listen-button.big {
+  padding: 18px 30px;
+  font-size: clamp(24px, 3.6vw, 30px);
+}
+
+.listen-button.big span {
+  font-size: 1.6em;
+}
+
+.listen-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #f9a8d4;
+}
+
+.picture-answer {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+}
+
+/* Fading must not turn a colour grey: in a colour game that would read as "grey". */
+.picture-answer.faded {
+  filter: none;
+}
+
+.picture-answer .swatch {
+  width: 84px;
+  height: auto;
+}
+
+.picture-answer .digit {
+  font-size: 60px;
+  line-height: 1;
+}
+
+.picture-answer .animal {
+  font-size: 72px;
+  line-height: 1;
+}
+
+@media (max-width: 600px) {
+  .picture-answer {
+    min-height: 96px;
+  }
+
+  .picture-answer .swatch {
+    width: 64px;
+  }
+
+  .picture-answer .digit {
+    font-size: 48px;
+  }
+
+  .picture-answer .animal {
+    font-size: 56px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .english-card .swatch {
+    width: 72px;
+  }
+
+  .english-card .digit,
+  .english-card .animal {
+    font-size: 56px;
+  }
+
+  .en-word {
+    font-size: 30px;
+  }
+
+  .listen-button.big {
+    padding: 10px 18px;
+    font-size: 20px;
+  }
+
+  .picture-answer {
+    min-height: 64px;
+  }
+
+  .picture-answer .swatch {
+    width: 44px;
+  }
+
+  .picture-answer .digit {
+    font-size: 34px;
+  }
+
+  .picture-answer .animal {
+    font-size: 40px;
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {

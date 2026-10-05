@@ -98,5 +98,6 @@ describe('areas', () => {
     expect(AREAS.map((a) => a.title)).toEqual(['Mathe', 'Deutsch', 'Musik', 'HSU', 'Englisch']);
     expect(AREAS[0].modules.map((m) => m.id)).toEqual(['uhr']);
     expect(AREAS[1].modules.map((m) => m.id)).toEqual(['artikel']);
+    expect(AREAS[4].modules.map((m) => m.id)).toEqual(['woerter']);
   });
 });
