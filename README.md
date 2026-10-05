@@ -226,6 +226,33 @@ des Profils mit.
   <img src="docs/screenshots/dashboard.png" alt="Startseite mit Pokalen, Sternen, Abzeichen und den fünf Lernbereichen als Süßigkeiten" width="720">
 </p>
 
+## Deutsch: Der, die, das
+
+Das erste Deutsch-Modul folgt den Schulbuchseiten zu bestimmtem und unbestimmtem Artikel.
+Beim Artikel-Wählen und in den Mini-Geschichten steht das Wort mit einem Bild auf einer
+Karte; beim Nomen-Entdecken gibt es kein Bild, weil es die Lösung verraten würde. Der
+Artikel wird immer zusammen mit dem Nomen gelernt („der Igel“), denn eine Regel zum Raten
+gibt es nicht.
+
+| Stufe | Aufgabe | Beispiel |
+|:-:|---|---|
+| 1 | der, die oder das? | ___ Igel → der |
+| 2 | ein oder eine? | der Igel → ein Igel (am Anfang mit „der Igel“ als Brücke) |
+| 3 | Nomen entdecken | Ist TISCH ein Nomen? Später: Tippe auf das Nomen im Satz. |
+| 4 | Kennen wir es schon? | Schau, da ist eine Ente. ___ Ente ist schön. → die |
+
+Fehler ziehen keine Lernpunkte ab, und es gibt keinen Tempo-Bonus – Lesen braucht Zeit.
+Ein Durchgang hat immer zehn Übungsaufgaben; die erklärten Beispiele zu einer neuen Stufe
+zählen nicht mit. Sicher (mit Abzeichen) ist eine Stufe erst, wenn sie auch in einer
+späteren Übungsrunde – nach mehr als einer halben Stunde Pause – noch klappt. Sterne, Pokale, Wochenpunkte, Hilfe und
+Vorlesen funktionieren wie bei der Uhr.
+
+<p align="center">
+  <img src="docs/screenshots/articles-article.png" alt="Der, die, das: Karte mit Igel, Lücke vor dem Wort und drei Knöpfen der, die, das" width="360">
+  &nbsp;
+  <img src="docs/screenshots/articles-story.png" alt="Mini-Geschichte: 'Schau, da ist eine Ente. ___ Ente ist schön.' mit den Knöpfen die und eine" width="360">
+</p>
+
 ## Ideen für später
 
 Gesammelt im [Backlog](BACKLOG.md) – zum Beispiel Zeitspannen („Wie lange noch?“), weitere

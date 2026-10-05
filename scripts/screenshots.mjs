@@ -12,9 +12,12 @@ const LANDSCAPE = { width: 1180, height: 820 };
 const PORTRAIT = { width: 820, height: 1180 };
 
 /** Runs inside the page: plays simulated sessions with the real engine and stores the progress. */
-async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, daytimeHeavy = false, nearTrophy = false }) {
+async function seedProgress(
+  page,
+  { tasks, accuracy, seed, textHeavy = false, daytimeHeavy = false, nearTrophy = false, articleTasks = 60, articleDays = true },
+) {
   await page.evaluate(
-    async ({ tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy }) => {
+    async ({ tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy, articleTasks, articleDays }) => {
       const { Engine, freshProgress, SESSION_GAP_MS } = await import('/src/modules/clock/engine.ts');
       let a = seed >>> 0;
       const rng = () => {
@@ -53,6 +56,26 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, da
       }
       else p.round.points = Math.round((p.round.target * 0.45) / 5) * 5;
       localStorage.setItem('lernwelt.uhr.progress.v1', JSON.stringify(p));
+
+      // "Der, die, das": a few days of practice too, so Deutsch shows progress.
+      const articles = await import('/src/modules/articles/engine.ts');
+      let then = Date.now() - (articleTasks / 10 + 2) * (SESSION_GAP_MS + 1);
+      const words = new articles.Engine(articles.freshProgress(then), rng);
+      for (let i = 0; i < articleTasks; i++) {
+        // Without days in between, no stage becomes secure (that needs a later session).
+        if (i % 10 === 0 && articleDays) then += SESSION_GAP_MS + 1;
+        words.touch(then);
+        const t = words.nextTask();
+        const ok = t.kind === 'example' || !articleDays || rng() < accuracy;
+        words.answer(t, ok ? t.correctIndex : (t.correctIndex + 1) % t.options.length, false);
+      }
+      const w = words.progress;
+      w.forced = [];
+      w.reviewQueue = [];
+      w.lastActive = Date.now();
+      w.round.tasks = 4;
+      localStorage.setItem('lernwelt.artikel.progress.v1', JSON.stringify(w));
+
       // Sign in as Leonie, so title and greeting carry her name. The seeded progress
       // counts as her newer unsaved change and replaces the one on the server.
       localStorage.setItem('lernwelt.sync.v1', JSON.stringify({ revision: 0, dirty: true, updatedAt: Date.now(), profile: 'Leonie' }));
@@ -62,8 +85,25 @@ async function seedProgress(page, { tasks, accuracy, seed, textHeavy = false, da
         throw err;
       });
     },
-    { tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy },
+    { tasks, accuracy, seed, textHeavy, daytimeHeavy, nearTrophy, articleTasks, articleDays },
   );
+}
+
+/** Opens "Der, die, das" with the given item as the next task (stage must be open). */
+async function openArticles(page, review) {
+  await page.goto(`${BASE}/#/`);
+  await page.evaluate(async (review) => {
+    const { loadProgress, saveProgress } = await import('/src/modules/articles/storage.ts');
+    const p = loadProgress(Date.now());
+    if (!p.stages[review.stage - 1].unlocked) throw new Error(`stage ${review.stage} not open`);
+    p.forced = [];
+    p.recent = [];
+    p.reviewQueue = [{ ...review, dueAt: 0 }];
+    saveProgress(p);
+  }, review);
+  await page.goto(`${BASE}/#/deutsch/artikel`);
+  await page.waitForSelector('.answer');
+  await page.waitForTimeout(300);
 }
 
 async function openClock(page, predicate, attempts = 40) {
@@ -131,6 +171,18 @@ async function context(viewport, reducedMotion = 'reduce') {
   await seedProgress(page, { tasks: 700, accuracy: 0.95, seed: 3, textHeavy: true });
   await openClock(page, isTextQuestion, 80);
   await page.screenshot({ path: `${OUT}/clock-text.png` });
+  await ctx.close();
+}
+
+// "Der, die, das": an article to choose and a mini story (portrait tablet).
+{
+  const { ctx, page } = await context(PORTRAIT);
+  // All stages open, none secure yet: plain questions without "Das kannst du schon!".
+  await seedProgress(page, { tasks: 300, accuracy: 0.92, seed: 13, articleTasks: 40, articleDays: false });
+  await openArticles(page, { stage: 1, key: 'Igel' });
+  await page.screenshot({ path: `${OUT}/articles-article.png` });
+  await openArticles(page, { stage: 4, key: 't:Ente:1:0:0' });
+  await page.screenshot({ path: `${OUT}/articles-story.png` });
   await ctx.close();
 }
 
