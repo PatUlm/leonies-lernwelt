@@ -3,7 +3,7 @@ import { GameShell } from '../../shared/game/shell';
 import { escapeHtml } from '../../shared/html';
 import type { ModuleContext, ModuleStats } from '../types';
 import {
-  CORRECT_PER_STAR, Engine, MASTERY_CORRECT, READY_MASTERY, READY_WINDOW_CORRECT, ROUND_TASKS, SECURE_MASTERY, STAGES,
+  CORRECT_PER_STAR, Engine, MASTERY_CORRECT, READY_MASTERY, READY_WINDOW_CORRECT, ROUND_TASKS, SECURE_MASTERY, SECURE_WINDOW_CORRECT, SESSION_GAP_MS, STAGES,
   WINDOW,
   type AnswerResult, type RoundState, type Task,
 } from './engine';
@@ -280,7 +280,8 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
        <p class="legend">„übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je selbstständig richtige Antwort,
        Fehler ziehen nichts ab. „gelernt“ = nächste Stufe frei: ab ${READY_MASTERY} Lernpunkten, wenn zuletzt
        mindestens ${READY_WINDOW_CORRECT} von ${WINDOW} Antworten mit verschiedenen Wörtern richtig waren. „sicher“ ab ${SECURE_MASTERY}
-       Lernpunkten an einem späteren Übungstag. Ein Stern je ${CORRECT_PER_STAR} richtige Antworten,
+       Lernpunkten und mindestens ${SECURE_WINDOW_CORRECT} von ${WINDOW} richtigen Antworten, sobald die Stufe nach mehr als
+       ${SESSION_GAP_MS / 60_000} Minuten Pause wieder ohne Hilfe richtig gelöst wird. Ein Stern je ${CORRECT_PER_STAR} richtige Antworten,
        ein Pokal je ${ROUND_TASKS} Aufgaben.</p>
        <label class="setting"><input type="checkbox" data-ref="soundToggle" ${ctx.settings.sound ? 'checked' : ''}/> Töne</label>
        <p><button type="button" class="btn danger" data-ref="reset">Fortschritt löschen (3 Sek. halten)</button></p>`,

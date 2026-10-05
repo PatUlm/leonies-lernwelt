@@ -17,6 +17,19 @@ Offene Fragen:
 - **Alltag und Zeitspannen:** „Der Film beginnt um halb vier. Wie lange noch?“ – erst wenn das
   Uhrlesen sicher sitzt.
 
+## Deutsch: Der, die, das
+
+Vom Game-Designer bewusst für später vorgesehen; beides steht auf den Schulbuchseiten
+(„Sprache untersuchen“, S. 10 und S. 110/111).
+
+- **Einzahl und Mehrzahl:** Nomen aller drei Artikel in die Mehrzahl setzen – dort heißt es
+  immer „die“ (die Wolke → die Wolken, das Fahrrad → die Fahrräder). Zuerst einfache Endungen (-n, -en, -e, -s), danach Umlaute
+  und unveränderte Formen (der Koffer → die Koffer). Erst wenn die vier Artikel-Stufen sicher
+  sitzen.
+- **Nomen nur in der Einzahl:** Wut, Hunger, Butter, Glück, Schnee – erkennen, dass es dazu
+  keine Mehrzahl gibt, sie aber trotzdem Nomen sind. Dabei auch Nomen für Dinge, die man nicht
+  anfassen kann.
+
 ## Weitere Module
 
-- Deutsch, Musik, HSU und Englisch: Bereiche sind angelegt, Inhalte fehlen noch.
+- Musik, HSU und Englisch: Bereiche sind angelegt, Inhalte fehlen noch.
