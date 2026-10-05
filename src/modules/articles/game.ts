@@ -10,7 +10,7 @@ import {
 import { BADGE_NAMES, STAGE_NAMES, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import { cardSpeech, confirmation, explanation, help, mistake, question, storyLines } from './texts';
-import { capitalize, shout } from './words';
+import { shout } from './words';
 
 const CORRECT_DELAY_MS = 1500;
 const STAR_DELAY_MS = 900;
@@ -113,10 +113,9 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   /** The card with picture and word; `filled` puts the right article into the gap. */
   function renderCard(filled: string | null): void {
     const emoji = task.emoji ? `<span class="word-emoji" aria-hidden="true">${task.emoji}</span>` : '';
-    const gap = (atStart = false) =>
-      filled === null
-        ? `<span class="gap">${GAP}</span>`
-        : `<span class="gap filled">${escapeHtml(atStart ? capitalize(filled) : filled)}</span>`;
+    // At the start of a sentence the options are already capitalised.
+    const gap = () =>
+      filled === null ? `<span class="gap">${GAP}</span>` : `<span class="gap filled">${escapeHtml(filled)}</span>`;
     const word = escapeHtml(task.word);
     switch (task.variant) {
       case 'article':
@@ -139,9 +138,12 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
         break;
       }
       case 'story': {
-        const at = task.story!.gap;
-        const [first, second] = storyLines(task, '\u0000').map((s) => escapeHtml(s).replace('\u0000', gap(at === 1)));
-        ui.card.innerHTML = `${emoji}<span class="story"><span class="story-line">${first}</span><span class="story-line">${second}</span></span>`;
+        // Each sentence with the picture of its thing: twice the same, or a second one joining.
+        const lines = storyLines(task, '\u0000').map((s) => escapeHtml(s).replace('\u0000', gap()));
+        const emojis = [task.story!.before?.emoji ?? task.emoji, task.emoji];
+        const rows = lines.map((line, i) =>
+          `<span class="story-row"><span class="story-emoji" aria-hidden="true">${emojis[i]}</span><span class="story-line">${line}</span></span>`);
+        ui.card.innerHTML = `<span class="story">${rows.join('')}</span>`;
         break;
       }
     }

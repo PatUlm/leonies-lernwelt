@@ -3,7 +3,9 @@ import { Engine, freshProgress, type Task } from '../../src/modules/articles/eng
 import { sanitizeProgress } from '../../src/modules/articles/storage';
 import { REFRESH_AFTER_MS, statsFromProgress } from '../../src/modules/articles/stats';
 import { cardSpeech, confirmation, mistake, storyLines } from '../../src/modules/articles/texts';
-import { ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES } from '../../src/modules/articles/words';
+import {
+  ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES, STORY_INTROS, STORY_KNOWN, STORY_NEW, storyPairFits,
+} from '../../src/modules/articles/words';
 import { SUGGESTION_PRIORITY } from '../../src/modules/types';
 import { seeded } from '../rng';
 
@@ -49,14 +51,33 @@ describe('texts', () => {
     expect(mistake(task(3, 'w:weich'))).toBe('„der weich“, „die weich“, „das weich“ – das passt nicht. WEICH ist kein Nomen.');
   });
 
-  it('tells first mention from a known thing in a story', () => {
-    const first = task(4, 't:Ball:0:0:0');
-    expect(storyLines(first, '___')).toEqual(['Schau, da ist ___ Ball.', 'Der Ball ist schön.']);
+  it('tells a new thing from the same thing again in a story', () => {
+    const first = task(4, 't:first:Ball:4:0');
+    expect(storyLines(first, '___')).toEqual(['___ Ball ist hier zu sehen.', 'Der Ball gefällt mir.']);
+    expect(first.options).toEqual(['Der', 'Ein']);
     expect(confirmation(first)).toBe('Der Ball kommt zum ersten Mal vor: ein Ball.');
-    const known = task(4, 't:Ball:1:1:1');
-    expect(storyLines(known, '___')).toEqual(['Hier ist ein Ball.', '___ Ball gefällt mir.']);
-    expect(confirmation(known)).toBe('Den Ball kennen wir schon: der Ball.');
-    expect(cardSpeech(known)).toBe('Hier ist ein Ball. Lücke Ball gefällt mir.');
+    const known = task(4, 't:known:Katze:0:3');
+    expect(storyLines(known, '___')).toEqual(['Auf dem Bild ist eine Katze.', 'Mir gefällt ___ Katze.']);
+    expect(known.options).toEqual(['die', 'eine']);
+    expect(confirmation(known)).toBe('Es ist noch dieselbe Katze. Deshalb heißt es jetzt: die Katze.');
+    expect(cardSpeech(known)).toBe('Auf dem Bild ist eine Katze. Mir gefällt Lücke Katze.');
+    const joining = task(4, 't:new:Katze:3:0:Hund');
+    expect(storyLines(joining, '___')).toEqual(['Ein Hund ist auf dem Bild.', '___ Katze ist auch auf dem Bild.']);
+    expect(joining.options[joining.correctIndex]).toBe('Eine');
+    expect(confirmation(joining)).toBe('Zuerst war ein Hund da. Jetzt kommt eine Katze dazu.');
+  });
+
+  it('builds every story sentence around one gap, half of them with the article first', () => {
+    for (const list of [STORY_INTROS, STORY_KNOWN, STORY_NEW]) {
+      for (const t of list) expect(t.split('_')).toHaveLength(2);
+      expect(list.filter((t) => t.startsWith('_'))).toHaveLength(list.length / 2);
+    }
+    // Each intro has known sentences that do not repeat its words, at the start and in the middle.
+    for (const intro of STORY_INTROS) {
+      const fitting = STORY_KNOWN.filter((k) => storyPairFits(intro, k));
+      expect(fitting.some((k) => k.startsWith('_'))).toBe(true);
+      expect(fitting.some((k) => !k.startsWith('_'))).toBe(true);
+    }
   });
 });
 

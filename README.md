@@ -239,7 +239,7 @@ gibt es nicht.
 | 1 | der, die oder das? | ___ Igel → der |
 | 2 | ein oder eine? | der Igel → ein Igel (am Anfang mit „der Igel“ als Brücke) |
 | 3 | Nomen entdecken | Ist TISCH ein Nomen? Später: Tippe auf das Nomen im Satz. |
-| 4 | Kennen wir es schon? | Schau, da ist eine Ente. ___ Ente ist schön. → die |
+| 4 | Kennen wir es schon? | Auf dem Bild ist ein Hund. ___ Hund gefällt mir. → Der<br>Ein Hund ist auf dem Bild. Außerdem ist ___ Katze auf dem Bild. → eine |
 
 Fehler ziehen keine Lernpunkte ab, und es gibt keinen Tempo-Bonus – Lesen braucht Zeit.
 Ein Durchgang hat immer zehn Übungsaufgaben; die erklärten Beispiele zu einer neuen Stufe

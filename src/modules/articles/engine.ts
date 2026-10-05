@@ -1,12 +1,12 @@
 import {
-  ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES, STORY_ENDS, STORY_STARTS, capitalize, indefinite,
-  type Article, type Sentence,
+  ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES, STORY_INTROS, STORY_KNOWN, STORY_NEW, capitalize, indefinite,
+  storyPairFits, type Article, type Noun, type Sentence,
 } from './words';
 
 /**
  * 1: "der, die oder das?"; 2: "ein oder eine?"; 3: "Nomen entdecken" (single
- * words, later in a sentence); 4: first mention or known thing ("Da ist ein
- * Ball. Der Ball ist schön.").
+ * words, later in a sentence); 4: a new thing or the same one again ("Auf dem
+ * Bild ist ein Hund. Der Hund gefällt mir." / "Eine Katze ist auch auf dem Bild.").
  */
 export type Stage = 1 | 2 | 3 | 4;
 export const STAGES: readonly Stage[] = [1, 2, 3, 4];
@@ -46,6 +46,13 @@ export const SESSION_GAP_MS = 30 * 60 * 1000;
 /** Tasks between two uses of the same word. */
 export const RECENT_SPAN = 5;
 export const STREAK_PRAISE = 3;
+/**
+ * Stories: the gap in the first sentence (ein), the same thing again in the
+ * second (der) or a new thing joining there (ein). Definite and indefinite
+ * answers come equally often, and the place of the gap gives nothing away.
+ */
+export const STORY_FIRST_SHARE = 1 / 6;
+export const STORY_NEW_SHARE = 1 / 3;
 
 export type Variant = 'article' | 'indefinite' | 'noun' | 'sentence' | 'story';
 export type Rng = () => number;
@@ -111,11 +118,23 @@ export interface Progress {
 
 export type TaskKind = 'example' | 'practice' | 'review';
 
+/** first: the gap introduces the thing; known: the same thing again; new: a second thing joins. */
+export type StoryKind = 'first' | 'known' | 'new';
+const STORY_KINDS: readonly StoryKind[] = ['first', 'known', 'new'];
+
 export interface StoryGap {
-  start: number;
-  end: number;
-  /** 0: the gap is the first mention (ein/eine), 1: the thing is known (der/die/das). */
-  gap: 0 | 1;
+  kind: StoryKind;
+  /** Index into STORY_INTROS. */
+  intro: number;
+  /** Index into STORY_KNOWN, for "new" into STORY_NEW. */
+  next: number;
+  /** For "new": the thing of the first sentence; the gap belongs to the task's word. */
+  before?: Noun;
+}
+
+/** Templates of the two story sentences. */
+export function storyTemplates(story: StoryGap): [string, string] {
+  return [STORY_INTROS[story.intro], (story.kind === 'new' ? STORY_NEW : STORY_KNOWN)[story.next]];
 }
 
 export interface Task {
@@ -123,7 +142,7 @@ export interface Task {
   stage: Stage;
   kind: TaskKind;
   variant: Variant;
-  /** Identifies the item for a later review, e.g. "Apfel", "w:weich", "s:3", "t:Ball:1:0:1". */
+  /** Identifies the item for a later review, e.g. "Apfel", "w:weich", "s:3", "t:known:Ball:0:1", "t:new:Katze:2:4:Hund". */
   key: string;
   /** The word the task is about (for "Nomen entdecken" possibly no noun). */
   word: string;
@@ -418,10 +437,19 @@ export class Engine {
       }
       case 4: {
         const noun = this.fresh(NOUNS, (n) => n.word, stage);
-        const gap = this.rng() < 0.5 ? 0 : 1;
-        const start = Math.floor(this.rng() * STORY_STARTS.length);
-        const end = Math.floor(this.rng() * STORY_ENDS.length);
-        return `t:${noun.word}:${gap}:${start}:${end}`;
+        // Examples stay with one thing; a second one joins only in practice.
+        const r = this.rng();
+        const kind: StoryKind = example
+          ? (r < 0.5 ? 'first' : 'known')
+          : r < STORY_FIRST_SHARE ? 'first' : r < STORY_FIRST_SHARE + STORY_NEW_SHARE ? 'new' : 'known';
+        const intro = Math.floor(this.rng() * STORY_INTROS.length);
+        if (kind === 'new') {
+          const next = Math.floor(this.rng() * STORY_NEW.length);
+          const before = pick(NOUNS.filter((n) => n !== noun), this.rng);
+          return `t:new:${noun.word}:${intro}:${next}:${before.word}`;
+        }
+        const fitting = STORY_KNOWN.flatMap((t, i) => (storyPairFits(STORY_INTROS[intro], t) ? [i] : []));
+        return `t:${kind}:${noun.word}:${intro}:${pick(fitting, this.rng)}`;
       }
     }
   }
@@ -479,13 +507,19 @@ export class Engine {
         correctIndex: noun ? 0 : 1,
       };
     }
-    const [, word, gap, start, end] = key.split(':');
+    // Stories of an older version ("t:Ball:1:0:1") have no kind and are dropped.
+    const [, storyKind, word, intro, next, beforeWord] = key.split(':') as [string, StoryKind, ...string[]];
     const noun = NOUNS.find((n) => n.word === word);
-    const story: StoryGap = { gap: gap === '1' ? 1 : 0, start: Number(start), end: Number(end) };
-    if (!noun || !STORY_STARTS[story.start] || !STORY_ENDS[story.end]) return null;
+    const before = storyKind === 'new' ? NOUNS.find((n) => n.word === beforeWord && n !== noun) : undefined;
+    if (!noun || !STORY_KINDS.includes(storyKind) || (storyKind === 'new' && !before)) return null;
+    const index = (s: string | undefined) => (s && /^\d+$/.test(s) ? Number(s) : -1);
+    const story: StoryGap = { kind: storyKind, intro: index(intro), next: index(next), before };
+    const templates = storyTemplates(story);
+    if (!templates.every(Boolean)) return null;
     // Always "der" before "ein", so the place of a button never gives the answer away.
     // A gap at the start of a sentence shows both capitalised, as they will stand there.
-    const options = [noun.article, indefinite(noun.article)].map((o) => (story.gap === 1 ? capitalize(o) : o));
+    const atStart = templates[storyKind === 'first' ? 0 : 1].startsWith('_');
+    const options = [noun.article, indefinite(noun.article)].map((o) => (atStart ? capitalize(o) : o));
     return {
       ...base,
       variant: 'story',
@@ -494,7 +528,7 @@ export class Engine {
       emoji: noun.emoji,
       story,
       options,
-      correctIndex: story.gap === 0 ? 1 : 0,
+      correctIndex: storyKind === 'known' ? 0 : 1,
     };
   }
 }

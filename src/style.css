@@ -1566,6 +1566,19 @@ a.area-card:active {
   line-height: 1.3;
 }
 
+.story-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  text-align: left;
+}
+
+.story-emoji {
+  flex: none;
+  font-size: 1.8em;
+  line-height: 1;
+}
+
 .sentence {
   display: flex;
   flex-wrap: wrap;

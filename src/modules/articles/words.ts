@@ -129,16 +129,34 @@ export const SENTENCES: readonly Sentence[] = [
 ];
 
 /** Mini stories: the first sentence introduces the thing, the second knows it. */
-export const STORY_STARTS: readonly string[] = ['Schau, da ist', 'Hier ist', 'Da drüben ist'];
-export const STORY_ENDS: readonly string[] = ['ist schön.', 'gefällt mir.'];
+/**
+ * Story sentences about a picture; "_" stands for article and noun, always in
+ * the nominative. The picture frame lets even "der Mond" come in with "ein".
+ * Half of each list puts the article at the start of the sentence.
+ */
+export const STORY_INTROS: readonly string[] = [
+  'Auf dem Bild ist _.', 'Hier ist _ zu sehen.', 'Da ist _ abgebildet.',
+  '_ ist auf dem Bild.', '_ ist hier zu sehen.', '_ ist dort abgebildet.',
+];
+/** The same thing again: der, die, das. */
+export const STORY_KNOWN: readonly string[] = [
+  '_ gefällt mir.', '_ sieht schön aus.', '_ ist gut zu sehen.',
+  'Mir gefällt _.', 'Auf dem Bild gefällt mir _.', 'Wie schön _ aussieht!',
+];
+/** A second, new thing joins: ein, eine. */
+export const STORY_NEW: readonly string[] = [
+  '_ ist auch auf dem Bild.', '_ ist auch zu sehen.', '_ ist ebenfalls abgebildet.',
+  'Außerdem ist _ auf dem Bild.', 'Hier ist auch _ zu sehen.', 'Und dort ist _ abgebildet.',
+];
+/** A known-thing sentence must not repeat these from the intro ("… zu sehen. … gut zu sehen."). */
+const STORY_PHRASES = ['Bild', 'sehen', 'abgebildet'];
+
+export function storyPairFits(intro: string, known: string): boolean {
+  return !STORY_PHRASES.some((p) => intro.includes(p) && known.includes(p));
+}
 
 export function indefinite(article: Article): 'ein' | 'eine' {
   return article === 'die' ? 'eine' : 'ein';
-}
-
-/** "den Ball", "die Katze", "das Ei": as object of "kennen". */
-export function accusative(article: Article): string {
-  return article === 'der' ? 'den' : article;
 }
 
 export function capitalize(s: string): string {

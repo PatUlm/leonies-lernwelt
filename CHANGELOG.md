@@ -18,6 +18,10 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 
 ### Geändert
 
+- **Mehr Abwechslung in „Kennen wir es schon?“:** viele verschiedene Sätze über ein Bild,
+  der Artikel mal am Satzanfang, mal mitten im Satz. In jeder dritten Geschichte kommt im
+  zweiten Satz etwas Neues dazu („Eine Katze ist auch auf dem Bild.“) – die Stelle der
+  Lücke verrät die Lösung nicht mehr. Jeder Satz zeigt das Bild seiner Sache.
 - Nach einer richtigen Antwort wartet die nächste Aufgabe, bis das Vorlesen fertig ist –
   die Erklärung wird nicht mehr mittendrin abgeschnitten (Uhr und Deutsch).
 

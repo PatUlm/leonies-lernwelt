@@ -181,7 +181,7 @@ async function context(viewport, reducedMotion = 'reduce') {
   await seedProgress(page, { tasks: 300, accuracy: 0.92, seed: 13, articleTasks: 40, articleDays: false });
   await openArticles(page, { stage: 1, key: 'Igel' });
   await page.screenshot({ path: `${OUT}/articles-article.png` });
-  await openArticles(page, { stage: 4, key: 't:Ente:1:0:0' });
+  await openArticles(page, { stage: 4, key: 't:known:Ente:1:1' });
   await page.screenshot({ path: `${OUT}/articles-story.png` });
   await ctx.close();
 }

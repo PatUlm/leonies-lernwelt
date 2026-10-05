@@ -185,25 +185,42 @@ describe('articles engine', () => {
     }
   });
 
-  it('fills a story gap with ein/eine for a first mention and der/die/das for a known thing', () => {
+  it('mixes the stories: ein/eine for something new, der/die/das for the same thing again', () => {
     const engine = new Engine(freshProgress(T0), seeded(13));
     reach(engine, 4);
-    const stories = play(engine, 60).filter((t) => t.variant === 'story');
-    expect(stories.some((t) => t.story!.gap === 0)).toBe(true);
-    expect(stories.some((t) => t.story!.gap === 1)).toBe(true);
-    for (const t of stories) {
-      // The gap of a known thing starts the sentence: both buttons are capitalised.
-      const shown = (s: string) => (t.story!.gap === 1 ? capitalize(s) : s);
-      expect(t.options).toEqual([t.article!, indefinite(t.article!)].map(shown));
-      expect(t.options[t.correctIndex]).toBe(shown(t.story!.gap === 0 ? indefinite(t.article!) : t.article!));
+    const stories = play(engine, 150).filter((t) => t.variant === 'story' && t.kind !== 'example');
+    for (const kind of ['first', 'known', 'new']) expect(stories.some((t) => t.story!.kind === kind)).toBe(true);
+    const atStart = (t: Task) => t.options[0] !== t.options[0].toLowerCase();
+    // Neither the sentence nor the place in it gives the answer away.
+    for (const answer of ['known', 'new']) {
+      const some = stories.filter((t) => t.story!.kind === answer);
+      expect(some.some(atStart)).toBe(true);
+      expect(some.some((t) => !atStart(t))).toBe(true);
     }
+    for (const t of stories) {
+      const shown = (s: string) => (atStart(t) ? capitalize(s) : s);
+      expect(t.options).toEqual([t.article!, indefinite(t.article!)].map(shown));
+      expect(t.options[t.correctIndex]).toBe(shown(t.story!.kind === 'known' ? t.article! : indefinite(t.article!)));
+      if (t.story!.kind === 'new') expect(t.story!.before!.word).not.toBe(t.word);
+    }
+  });
+
+  it('keeps the examples of a story to one thing', () => {
+    const engine = new Engine(freshProgress(T0), seeded(15));
+    reach(engine, 4);
+    const examples = play(engine, 10).filter((t) => t.stage === 4 && t.kind === 'example');
+    expect(examples).toHaveLength(EXAMPLES_PER_STAGE);
+    for (const t of examples) expect(t.story!.kind).not.toBe('new');
   });
 
   it('drops reviews whose word no longer exists', () => {
     const engine = new Engine(freshProgress(T0), seeded(14));
     expect(engine.makeTask(1, 'review', 'Dinosaurier')).toBeNull();
     expect(engine.makeTask(3, 'review', 's:999')).toBeNull();
-    expect(engine.makeTask(4, 'review', 't:Ball:1:9:0')).toBeNull();
+    // Stories of the older format, unknown sentences, a missing or repeated second thing.
+    for (const key of ['t:Ball:1:0:1', 't:known:Ball:9:0', 't:known:Ball:0:', 't:new:Ball:0:0', 't:new:Ball:0:0:Ball']) {
+      expect(engine.makeTask(4, 'review', key), key).toBeNull();
+    }
     engine.progress.forced = [];
     engine.progress.reviewQueue = [{ stage: 1, key: 'Dinosaurier', dueAt: 0 }];
     expect(engine.nextTask().kind).toBe('practice');

@@ -76,12 +76,23 @@ test('a sentence: the words are the buttons, in capitals', async ({ page }) => {
 });
 
 test('a story: the known thing takes der, buttons and gap are capitalised at the start', async ({ page }) => {
-  await startArticles(page, [{ stage: 4, key: 't:Ball:1:1:0', dueAt: 0 }]);
-  await expect(page.locator('.story-line')).toHaveText(['Hier ist ein Ball.', '___ Ball ist schön.']);
+  await startArticles(page, [{ stage: 4, key: 't:known:Ball:1:0', dueAt: 0 }]);
+  await expect(page.locator('.story-line')).toHaveText(['Hier ist ein Ball zu sehen.', '___ Ball gefällt mir.']);
+  await expect(page.locator('.story-emoji')).toHaveText(['⚽', '⚽']);
   await expect(page.locator('.answer')).toHaveText(['Der', 'Ein']);
   await page.locator('.answer', { hasText: 'Der' }).click();
-  await expect(page.locator('.story-line').nth(1)).toHaveText('Der Ball ist schön.');
-  await expect(page.locator('.message')).toContainText('Den Ball kennen wir schon: der Ball.');
+  await expect(page.locator('.story-line').nth(1)).toHaveText('Der Ball gefällt mir.');
+  await expect(page.locator('.message')).toContainText('Es ist noch derselbe Ball.');
+});
+
+test('a story: a second thing joins with eine, in the middle of the sentence', async ({ page }) => {
+  await startArticles(page, [{ stage: 4, key: 't:new:Katze:3:3:Hund', dueAt: 0 }]);
+  await expect(page.locator('.story-line')).toHaveText(['Ein Hund ist auf dem Bild.', 'Außerdem ist ___ Katze auf dem Bild.']);
+  await expect(page.locator('.story-emoji')).toHaveText(['🐶', '🐱']);
+  await expect(page.locator('.answer')).toHaveText(['die', 'eine']);
+  await page.locator('.answer', { hasText: 'eine' }).click();
+  await expect(page.locator('.story-line').nth(1)).toHaveText('Außerdem ist eine Katze auf dem Bild.');
+  await expect(page.locator('.message')).toContainText('Zuerst war ein Hund da. Jetzt kommt eine Katze dazu.');
 });
 
 test('after a right answer, the next task waits until the explanation has been read aloud', async ({ page }) => {
@@ -111,7 +122,8 @@ test('speech that never reports its end holds the next task for 30 seconds at mo
 });
 
 test('the card, the question and all answers fit on the screen', async ({ page }) => {
-  await startArticles(page, [{ stage: 4, key: 't:Schlüssel:0:2:1', dueAt: 0 }]);
+  // The longest story: two long nouns in long sentences.
+  await startArticles(page, [{ stage: 4, key: 't:new:Schlüssel:1:4:Fahrrad', dueAt: 0 }]);
   const viewport = page.viewportSize()!;
   for (const selector of ['.word-card', '.message', '.answer']) {
     for (const box of await page.locator(selector).evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {

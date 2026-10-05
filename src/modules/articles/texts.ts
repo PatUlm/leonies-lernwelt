@@ -1,5 +1,5 @@
-import type { Task } from './engine';
-import { STORY_ENDS, STORY_STARTS, accusative, capitalize, indefinite, shout } from './words';
+import { storyTemplates, type Task } from './engine';
+import { capitalize, indefinite, shout } from './words';
 
 /**
  * Everything the child reads or hears in "der, die, das". Article and noun
@@ -10,7 +10,9 @@ import { STORY_ENDS, STORY_STARTS, accusative, capitalize, indefinite, shout } f
 const SWAP_RULE = 'Aus der und das wird ein, aus die wird eine.';
 const NOUN_PROBE = 'Passt der, die oder das davor? Dann ist es ein Nomen.';
 const STORY_RULE =
-  'Kommt etwas zum ersten Mal vor, heißt es ein oder eine. Kennen wir es schon, heißt es der, die oder das.';
+  'Kommt etwas Neues dazu, heißt es ein oder eine. Geht es um dieselbe Sache, heißt es der, die oder das.';
+const STORY_HELP =
+  'Erzählen wir gerade von etwas Neuem? Dann passt ein oder eine. Geht es um dieselbe Sache wie vorher? Dann passt der, die oder das.';
 
 /** "der Apfel" */
 function definite(task: Task): string {
@@ -47,10 +49,12 @@ export function confirmation(task: Task): string {
         : `Kein Artikel passt davor: ${shout(w)} ist kein Nomen.`;
     case 'sentence':
       return `${capitalize(definite(task))} – ${shout(w)} ist das Nomen.`;
-    case 'story':
-      return task.story!.gap === 0
-        ? `${capitalize(definite(task))} kommt zum ersten Mal vor: ${indefinite(task.article!)} ${w}.`
-        : `${capitalize(accusative(task.article!))} ${w} kennen wir schon: ${definite(task)}.`;
+    case 'story': {
+      const { kind, before } = task.story!;
+      if (kind === 'first') return `${capitalize(definite(task))} kommt zum ersten Mal vor: ${indefinite(task.article!)} ${w}.`;
+      if (kind === 'known') return `Es ist noch ${task.article}selbe ${w}. Deshalb heißt es jetzt: ${definite(task)}.`;
+      return `Zuerst war ${indefinite(before!.article)} ${before!.word} da. Jetzt kommt ${indefinite(task.article!)} ${w} dazu.`;
+    }
   }
 }
 
@@ -100,16 +104,27 @@ export function help(task: Task): string {
     case 'sentence':
       return `${NOUN_PROBE} Auch die Mehrzahl hilft oft: ein Tisch – viele Tische.`;
     case 'story':
-      return STORY_RULE;
+      return STORY_HELP;
   }
 }
 
 /** The two sentences of a story; `gap` is replaced by the given text. */
 export function storyLines(task: Task, gap: string): [string, string] {
-  const { start, end, gap: at } = task.story!;
-  const first = at === 0 ? gap : indefinite(task.article!);
-  const second = at === 1 ? gap : capitalize(task.article!);
-  return [`${STORY_STARTS[start]} ${first} ${task.word}.`, `${second} ${task.word} ${STORY_ENDS[end]}`];
+  const story = task.story!;
+  const [intro, next] = storyTemplates(story);
+  const article = task.article!;
+  // "_" at the start of a template starts the sentence: capitalised.
+  const fill = (template: string, words: string) => {
+    const s = template.replace('_', words);
+    return template.startsWith('_') ? capitalize(s) : s;
+  };
+  if (story.kind === 'new') {
+    return [fill(intro, `${indefinite(story.before!.article)} ${story.before!.word}`), fill(next, `${gap} ${task.word}`)];
+  }
+  return [
+    fill(intro, `${story.kind === 'first' ? gap : indefinite(article)} ${task.word}`),
+    fill(next, `${story.kind === 'known' ? gap : article} ${task.word}`),
+  ];
 }
 
 /** What the card says when read aloud; "Lücke" stands for the gap. */
