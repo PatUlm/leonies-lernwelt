@@ -174,6 +174,16 @@ button {
   text-shadow: 0 3px 0 #fff, 0 6px 0 rgba(30, 58, 95, 0.08);
 }
 
+/* Headings without a card sit directly on the sky decor; a white outline
+   keeps them legible over candies. */
+.area-header h1,
+.areas-more h2,
+.leaderboard h2,
+.badges h2 {
+  -webkit-text-stroke: 5px #fff;
+  paint-order: stroke fill;
+}
+
 .greeting {
   margin: 6px 0 0;
   font-size: clamp(20px, 3vw, 26px);
