@@ -114,7 +114,8 @@ describe('stats', () => {
   it('invites to discover the module, then to continue the round, then to refresh', () => {
     const fresh = statsFromProgress(freshProgress(T0), T0);
     expect(fresh.suggestion).toEqual({ priority: SUGGESTION_PRIORITY.practice, label: 'Artikel entdecken' });
-    expect(fresh.goals).toEqual({ done: 0, total: 4, label: '0 von 4 Stufen sicher' });
+    expect(fresh.goals).toEqual({ done: 0, total: 4, label: '0 von 4 Lernzielen sicher', sweets: [0, 0, 0, 0] });
+    expect(fresh.nextGoal).toBe('Nächstes Ziel: der, die oder das?');
 
     const engine = new Engine(freshProgress(T0), seeded(3));
     for (let i = 0; i < 5; i++) {

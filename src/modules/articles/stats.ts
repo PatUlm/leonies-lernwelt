@@ -35,19 +35,32 @@ function suggestionFor(engine: Engine, now: number): Suggestion {
   return { priority: practice, label: 'Weiterüben' };
 }
 
+/** A stage still being learnt, the most advanced first; otherwise one learnt but not yet secure. */
+function nextGoal(engine: Engine): string {
+  const open = STAGES.filter((s) => engine.stageState(s).unlocked && !engine.stageState(s).secure);
+  const learning = open.filter((s) => !engine.stageState(s).ready);
+  const candidates = learning.length ? learning : open;
+  if (!candidates.length) return 'Alles sicher gelernt';
+  const goal = candidates.reduce((a, b) => (engine.stageState(b).mastery > engine.stageState(a).mastery ? b : a));
+  return `Nächstes Ziel: ${STAGE_NAMES[goal]}`;
+}
+
 export function statsFromProgress(progress: Progress, now: number): ModuleStats {
   const engine = new Engine(progress);
   const p = engine.progress;
   const started = p.lastAnswered !== null;
-  const open = engine.unlockedStages();
-  const newest = open[open.length - 1];
   const secure = STAGES.filter((s) => engine.stageState(s).secure);
   return {
     stars: engine.stars,
     trophies: p.trophies,
     badges: secure.map((s) => BADGE_NAMES[s]),
-    level: started ? `Stufe ${newest} von ${STAGES.length}: ${STAGE_NAMES[newest]}` : 'Noch nicht gestartet',
-    goals: { done: secure.length, total: STAGES.length, label: `${secure.length} von ${STAGES.length} Stufen sicher` },
+    nextGoal: nextGoal(engine),
+    goals: {
+      done: secure.length,
+      total: STAGES.length,
+      label: `${secure.length} von ${STAGES.length} Lernzielen sicher`,
+      sweets: STAGES.map((s) => (engine.stageState(s).secure ? 1 : 0)),
+    },
     round: p.round.tasks > 0 ? { done: p.round.tasks, target: ROUND_TASKS, unit: 'Aufgaben' } : null,
     started,
     lastPlayed: p.lastAnswered,

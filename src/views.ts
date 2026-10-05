@@ -211,12 +211,19 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
   };
 }
 
-/** Six (or as many as there are goals) sweets of the area, filled per goal reached. */
+/**
+ * The module's sweets in the area's colour, each filled like a clock hand
+ * sweeping round (around the sweet's head) as far as its goals are secure.
+ */
 function goalCandies(entry: ModuleEntry): string {
-  const { done, total } = entry.stats.goals;
-  return Array.from({ length: total }, (_, i) =>
-    `<span class="goal${i < done ? ' done' : ''}">${entry.area.candy(i < done ? entry.area.color : '#e7e2da')}</span>`,
-  ).join('');
+  const { area } = entry;
+  return entry.stats.goals.sweets.map((fill) => {
+    const mask = `conic-gradient(at 50% 38%, #000 ${Math.round(fill * 360)}deg, transparent 0)`;
+    const filled = fill > 0 && fill < 1
+      ? `<span class="goal-fill" style="-webkit-mask-image: ${mask}; mask-image: ${mask}">${area.candy(area.color)}</span>`
+      : fill >= 1 ? `<span class="goal-fill">${area.candy(area.color)}</span>` : '';
+    return `<span class="goal${fill >= 1 ? ' done' : ''}">${area.candy('#e7e2da')}${filled}</span>`;
+  }).join('');
 }
 
 export function renderArea(app: HTMLElement, area: Area): void {
@@ -240,6 +247,7 @@ export function renderArea(app: HTMLElement, area: Area): void {
           <span class="module-level">${escapeHtml(stats.goals.label)}${
             stats.round ? ` · ${stats.round.done} / ${stats.round.target} ${stats.round.unit}` : ''
           }</span>
+          <span class="module-next">${escapeHtml(stats.nextGoal)}</span>
           ${badge}
         </span>
         <span class="module-start">${stats.round ? 'Fortsetzen' : 'Starten'}</span>

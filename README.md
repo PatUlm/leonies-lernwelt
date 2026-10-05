@@ -58,8 +58,10 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
 **„Hier weiter“** zeigt immer genau eine Empfehlung – zum Beispiel einen angefangenen
 Durchgang fortsetzen, Fehler von neulich wiederholen oder nach ein paar Tagen Pause
-auffrischen. Kleine Süßigkeiten des Bereichs zeigen, wie viele Stufen eines Moduls schon
-sicher sitzen.
+auffrischen. Kleine Süßigkeiten des Bereichs zeigen, wie viel eines Moduls schon sicher
+sitzt: bei der Uhr eine je Übungsart (Zahl, Text, Zeiger stellen …), die sich wie ein Zeiger
+füllt, bei Deutsch und Englisch eine je Stufe. Darunter stehen alle sicheren Lernziele
+(„8 von 35“) und das nächste Ziel.
 
 <p align="center">
   <img src="docs/screenshots/area.png" alt="Bereich Mathe mit dem Modul 'Die Uhr', Fortschritts-Bonbons und Empfehlung 'Hier weiter'" width="720">

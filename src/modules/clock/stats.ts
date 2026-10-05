@@ -1,6 +1,18 @@
 import { SUGGESTION_PRIORITY, type ModuleStats, type Suggestion } from '../types';
-import { Engine, SESSION_GAP_MS, TRACKS, type Progress, type Track } from './engine';
+import { Engine, SESSION_GAP_MS, SIDE_TRACKS, TRACK_TIERS, TRACKS, type Progress, type Track } from './engine';
 import { TIERS, type Tier } from './time';
+
+/** The tracks as named for parents and on the tile. */
+export const TRACK_NAMES: Record<Track, string> = {
+  digital: 'Zahl',
+  text: 'Text',
+  daytime: 'Tageszeit',
+  set: 'Zeiger stellen',
+  input: 'Eintippen',
+  halb: 'vor/nach halb',
+  daySet: 'Zeiger nach 24 h',
+  dayInput: 'Eintippen mit Tageszeit',
+};
 
 export const TIER_NAMES: Record<Tier, string> = {
   1: 'volle Stunden',
@@ -97,19 +109,49 @@ function suggestionFor(engine: Engine, now: number): Suggestion {
   return { priority: practice, label: 'Weiterüben' };
 }
 
+/** The tile's sweets: one per track, in the order the tracks are introduced. */
+const SWEET_TRACKS: readonly Track[] = ['digital', ...SIDE_TRACKS];
+
+/** "halbe Stunden"; the "vor/nach halb" tiers by their phrase. */
+function tierName(track: Track, tier: Tier): string {
+  if (track === 'halb') return tier === 4 ? '„zehn vor halb“' : '„fünf vor halb“';
+  return TIER_NAMES[tier];
+}
+
+/**
+ * The tier to name as the next goal: one still being learnt, the most
+ * advanced first; otherwise one that is learnt but not yet secure.
+ */
+function nextGoal(engine: Engine): string {
+  const cells = SWEET_TRACKS.flatMap((track) => TRACK_TIERS[track].map((tier) => ({ track, tier, s: engine.tierState(track, tier) })));
+  if (cells.every((c) => c.s.secure)) return 'Alles sicher gelernt';
+  const open = cells.filter((c) => c.s.unlocked && !c.s.secure);
+  const learning = open.filter((c) => !c.s.ready);
+  const candidates = learning.length ? learning : open;
+  // Everything open is secure: the next answers unlock something new.
+  if (!candidates.length) return 'Nächstes Ziel: etwas Neues entdecken';
+  const goal = candidates.reduce((a, b) => (b.s.mastery > a.s.mastery ? b : a));
+  return `Nächstes Ziel: ${TRACK_NAMES[goal.track]} – ${tierName(goal.track, goal.tier)}`;
+}
+
+/** Whether every tier of the track is secure (a completed skill). */
+export function trackSecure(engine: Engine, track: Track): boolean {
+  return TRACK_TIERS[track].every((t) => engine.tierState(track, t).secure);
+}
+
 export function statsFromProgress(progress: Progress, now: number): ModuleStats {
   const engine = new Engine(progress);
   const p = engine.progress;
   const started = p.lastAnswered !== null;
-  const digital = engine.unlockedTiers('digital');
-  const newest = digital[digital.length - 1];
-  const secure = TIERS.filter((t) => engine.tierState('digital', t).secure).length;
+  const sweets = SWEET_TRACKS.map((track) => TRACK_TIERS[track].filter((t) => engine.tierState(track, t).secure).length / TRACK_TIERS[track].length);
+  const secure = SWEET_TRACKS.reduce((n, track) => n + TRACK_TIERS[track].filter((t) => engine.tierState(track, t).secure).length, 0);
+  const total = SWEET_TRACKS.reduce((n, track) => n + TRACK_TIERS[track].length, 0);
   return {
     stars: engine.stars,
     trophies: p.trophies,
     badges: clockBadges(engine),
-    level: started ? `Stufe ${newest} von 6: ${TIER_NAMES[newest]}` : 'Noch nicht gestartet',
-    goals: { done: secure, total: TIERS.length, label: `${secure} von ${TIERS.length} Stufen sicher` },
+    nextGoal: nextGoal(engine),
+    goals: { done: secure, total, label: `${secure} von ${total} Lernzielen sicher`, sweets },
     round: p.round.tasks > 0 ? { done: p.round.points, target: p.round.target, unit: 'Punkte' } : null,
     started,
     lastPlayed: p.lastAnswered,

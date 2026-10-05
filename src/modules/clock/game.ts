@@ -13,7 +13,7 @@ import {
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
 import { confirmation, contextRule } from './hints';
 import { clearProgress, loadProgress, saveProgress } from './storage';
-import { BADGE_NAMES, TIER_NAMES, statsFromProgress } from './stats';
+import { BADGE_NAMES, TIER_NAMES, TRACK_NAMES, statsFromProgress, trackSecure } from './stats';
 import { TIERS, formatDigital, wrapHour, type ClockTime, type Tier } from './time';
 
 const CORRECT_DELAY_MS = 1300;
@@ -64,17 +64,6 @@ function practicedName(track: Track, tier: Tier): string {
   }
 }
 
-const TRACK_NAMES: Record<Track, string> = {
-  digital: 'Zahl',
-  text: 'Text',
-  daytime: 'Tageszeit',
-  set: 'Zeiger stellen',
-  input: 'Eintippen',
-  halb: 'vor/nach halb',
-  daySet: 'Zeiger nach 24 h',
-  dayInput: 'Eintippen mit Tageszeit',
-};
-
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`;
 }
@@ -116,6 +105,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   const { sound } = ctx;
   let engine = new Engine(loadProgress(Date.now()), Math.random, { sayFirst: ctx.settings.sayFirst });
+  /** Tracks secure in every tier; a new one is named after the round. */
+  const secureTracks = () => new Set(TRACKS.filter((t) => trackSecure(engine, t)));
+  let completeTracks = secureTracks();
   const clock = new AnalogClock();
   ui.clock.appendChild(clock.svg);
 
@@ -381,6 +373,14 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       pendingToast = `Neu: ${result.unlocked.map((u) => practicedName(u.track, u.tier)).join(', ')}!`;
     }
     round.secured.push(...result.secured.flatMap((s) => BADGE_NAMES[s.track][s.tier] ?? []));
+    // A whole track secure is a skill of its own: its sweet on the tile is full now.
+    // Compared with before the answer, as a tier can become ready and secure at once.
+    for (const track of TRACKS) {
+      if (!completeTracks.has(track) && trackSecure(engine, track)) {
+        completeTracks.add(track);
+        round.secured.push(`${TRACK_NAMES[track]}: alle Stufen sicher!`);
+      }
+    }
 
     if (result.ok) {
       const lead = task.kind === 'example' ? 'Genau!' : helpUsed ? 'Gemeinsam geschafft!' : 'Richtig!';
@@ -560,6 +560,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       clearProgress();
       shell.cancelPending();
       engine = new Engine(loadProgress(Date.now()), Math.random, { sayFirst: ctx.settings.sayFirst });
+      completeTracks = secureTracks();
       round = newRoundStats();
       shell.closeDialog(nextTask);
     });

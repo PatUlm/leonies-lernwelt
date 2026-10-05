@@ -83,7 +83,8 @@ describe('stats', () => {
   it('suggests discovering English before the first answer', () => {
     const s = statsFromProgress(freshProgress(T0), T0);
     expect(s.started).toBe(false);
-    expect(s.goals).toEqual({ done: 0, total: 7, label: '0 von 7 Stufen sicher' });
+    expect(s.goals).toEqual({ done: 0, total: 7, label: '0 von 7 Lernzielen sicher', sweets: [0, 0, 0, 0, 0, 0, 0] });
+    expect(s.nextGoal).toBe('Nächstes Ziel: Farben');
     expect(s.suggestion).toEqual({ priority: SUGGESTION_PRIORITY.practice, label: 'Englisch entdecken' });
   });
 

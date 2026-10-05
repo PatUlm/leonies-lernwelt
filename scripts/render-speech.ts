@@ -5,6 +5,8 @@
  *
  *   node scripts/render-speech.ts            # renders what is missing
  *   node scripts/render-speech.ts red blue   # renders these words again
+ *   TTS_MODEL=gemini-3.8-flash-lite-tts node scripts/render-speech.ts   # another model
+ *     (the daily request limit counts per model)
  *
  * The API key is read from ~/.config/lernwelt/gemini-api-key (or GEMINI_API_KEY).
  * Needs ffmpeg.
@@ -15,7 +17,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { WORDS } from '../src/modules/english/words.ts';
 
-const MODEL = 'gemini-3.8-flash-tts';
+const MODEL = process.env.TTS_MODEL ?? 'gemini-3.8-flash-tts';
 const VOICE = 'en-gb-tutor-13';
 const STYLE = {
   normal: "Say this English word clearly and naturally, in a friendly British English teacher's voice, for an eight-year-old child learning English.",

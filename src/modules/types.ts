@@ -44,10 +44,14 @@ export interface ModuleStats {
   trophies: number;
   /** Learning badges, phrased for the child. */
   badges: string[];
-  /** Short progress line for the tile. */
-  level: string;
-  /** Learning goals reached so far, e.g. 2 of 6 clock tiers secure. */
-  goals: { done: number; total: number; label: string };
+  /** What to practise next, for the tile: "Nächstes Ziel: Zeiger stellen – halbe Stunden". */
+  nextGoal: string;
+  /**
+   * Learning goals secure so far, counting all of them (8 of 35 for the clock),
+   * so the tile only looks finished when everything is secure. `sweets`: the
+   * sweets on the tile, each filled from 0 to 1.
+   */
+  goals: { done: number; total: number; label: string; sweets: number[] };
   /** A round in progress, if any: e.g. 40 of 120 "Punkte" or 4 of 10 "Aufgaben". */
   round: { done: number; target: number; unit: string } | null;
   started: boolean;

@@ -336,6 +336,11 @@ button {
   font-weight: 700;
 }
 
+.module-next {
+  font-size: 15px;
+  color: var(--ink-soft);
+}
+
 .install {
   position: relative;
   z-index: 1;
@@ -766,10 +771,20 @@ a.area-card:active {
   flex-wrap: wrap;
 }
 
+.goal {
+  position: relative;
+}
+
 .goal svg {
   display: block;
   width: 42px;
   height: auto;
+}
+
+/* The coloured sweet over the grey one, masked to the share of secure goals. */
+.goal-fill {
+  position: absolute;
+  inset: 0;
 }
 
 .area-page .module-tile {

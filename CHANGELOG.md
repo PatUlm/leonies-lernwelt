@@ -29,6 +29,14 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 
 ### Geändert
 
+- **Die Uhr sieht erst fertig aus, wenn sie es ist:** Die Modulkarte zählt alle 35
+  Lernziele der Uhr statt nur der sechs Stufen beim Ablesen („8 von 35 Lernzielen
+  sicher“); „Sicher gelernt“ erscheint erst bei allen. Je Übungsart ein Lolly, der sich
+  wie ein Uhrzeiger füllt, und darunter das nächste Ziel („Zeiger stellen – halbe
+  Stunden“). Eine ganz sichere Übungsart wird nach dem Durchgang eigens genannt. Deutsch
+  und Englisch zeigen ebenso „Lernziele“ und das nächste Ziel. Abzeichen, Sterne und
+  Pokale bleiben, wie sie sind.
+
 - **Mehr Abwechslung in „Kennen wir es schon?“:** viele verschiedene Sätze über ein Bild,
   der Artikel mal am Satzanfang, mal mitten im Satz. In jeder dritten Geschichte kommt im
   zweiten Satz etwas Neues dazu („Eine Katze ist auch auf dem Bild.“) – die Stelle der
