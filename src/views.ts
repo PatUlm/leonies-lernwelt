@@ -1,6 +1,6 @@
 import { AREAS, collectModules, pickRecommendation, type Area, type ModuleEntry } from './areas';
 import { appTitle } from './config';
-import { STATUS_ICONS, wrappedCandy } from './shared/candy';
+import { STATUS_ICONS } from './shared/candy';
 import { TROPHY_BRONZE, TROPHY_GOLD, TROPHY_SILVER, medal, plainStar, skyLayer, trophy } from './shared/decor';
 import { escapeHtml } from './shared/html';
 import { canInstall, onInstallChange, promptInstall } from './shared/install';
@@ -64,11 +64,15 @@ function leaderboardHtml(board: Leaderboard): string {
     ${own ? `<p class="lb-own">${escapeHtml(own)}</p>` : ''}`;
 }
 
+/** Each badge with its medal and the sweet of its learning area. */
 function badgeList(entries: ModuleEntry[], heading: string): string {
-  const badges = entries.flatMap((e) => e.stats.badges);
+  const badges = entries.flatMap((e) => e.stats.badges.map((text) => ({ area: e.area, text })));
   if (!badges.length) return '';
   return `<section class="badges" aria-label="Abzeichen"><h2>${escapeHtml(heading)}</h2><ul>${badges
-    .map((b) => `<li><span class="badge-icon">${medal()}</span>${escapeHtml(b)}</li>`)
+    .map(
+      ({ area, text }) =>
+        `<li><span class="badge-icon">${area.candy(area.color)}</span><span class="badge-icon">${medal()}</span>${escapeHtml(text)}</li>`,
+    )
     .join('')}</ul></section>`;
 }
 
@@ -207,11 +211,11 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
   };
 }
 
-/** Six (or as many as there are goals) small sweets, filled per goal reached. */
+/** Six (or as many as there are goals) sweets of the area, filled per goal reached. */
 function goalCandies(entry: ModuleEntry): string {
   const { done, total } = entry.stats.goals;
   return Array.from({ length: total }, (_, i) =>
-    `<span class="goal${i < done ? ' done' : ''}">${wrappedCandy(i < done ? entry.area.color : '#e7e2da')}</span>`,
+    `<span class="goal${i < done ? ' done' : ''}">${entry.area.candy(i < done ? entry.area.color : '#e7e2da')}</span>`,
   ).join('');
 }
 

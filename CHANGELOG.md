@@ -24,6 +24,8 @@ deshalb ist dieses Changelog nach Datum gegliedert.
   Lücke verrät die Lösung nicht mehr. Jeder Satz zeigt das Bild seiner Sache.
 - Nach einer richtigen Antwort wartet die nächste Aufgabe, bis das Vorlesen fertig ist –
   die Erklärung wird nicht mehr mittendrin abgeschnitten (Uhr und Deutsch).
+- Die Ziele eines Moduls zeigen die Süßigkeit seines Bereichs (in Mathe Lollies statt
+  Bonbons), und jedes Abzeichen trägt neben der Medaille die Süßigkeit seines Bereichs.
 
 ## 2026-10-04
 
