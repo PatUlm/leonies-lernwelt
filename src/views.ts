@@ -64,14 +64,14 @@ function leaderboardHtml(board: Leaderboard): string {
     ${own ? `<p class="lb-own">${escapeHtml(own)}</p>` : ''}`;
 }
 
-/** Each badge with its medal and the sweet of its learning area. */
+/** Each badge with the sweet of its learning area. */
 function badgeList(entries: ModuleEntry[], heading: string): string {
   const badges = entries.flatMap((e) => e.stats.badges.map((text) => ({ area: e.area, text })));
   if (!badges.length) return '';
   return `<section class="badges" aria-label="Abzeichen"><h2>${escapeHtml(heading)}</h2><ul>${badges
     .map(
       ({ area, text }) =>
-        `<li><span class="badge-icon">${area.candy(area.color)}</span><span class="badge-icon">${medal()}</span>${escapeHtml(text)}</li>`,
+        `<li><span class="badge-icon">${area.candy(area.color)}</span>${escapeHtml(text)}</li>`,
     )
     .join('')}</ul></section>`;
 }
