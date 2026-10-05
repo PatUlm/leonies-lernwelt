@@ -1,4 +1,7 @@
-/** Read-aloud via the browser's speech synthesis (German voice if available, English for English words). */
+/**
+ * Read-aloud via the browser's speech synthesis (German voice if available,
+ * English for English words); English words play a server recording first.
+ */
 export function canSpeak(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window;
 }
@@ -40,32 +43,120 @@ export function voicesReady(maxMs = 1500): Promise<void> {
   });
 }
 
+/** Waiting longer for a recording than this, the device voice speaks instead. */
+const RECORDING_TIMEOUT_MS = 4000;
+
+/** English words recorded on the server (Piper); the device voice is the fallback. */
+function recordingUrl(part: { en: string; slow?: boolean }): string {
+  return `./api/tts?lang=en&text=${encodeURIComponent(part.en)}${part.slow ? '&slow=1' : ''}`;
+}
+
+/** One element for all recordings: mobile browsers allow sound on it after the first tap. */
+let player: HTMLAudioElement | null = null;
+/** The speech in progress; stopSpeaking() ends it and reports -1 to its caller. */
+let current: { onPart: (index: number) => void } | null = null;
+/** Stops the recording in progress without reporting back. */
+let dropRecording: (() => void) | null = null;
+
+/**
+ * Plays a recording. `fail` runs instead of `done` when it cannot be played
+ * (offline, no server voice, blocked sound, too slow to load).
+ */
+function playRecording(url: string, started: () => void, done: () => void, fail: () => void): void {
+  dropRecording?.();
+  player ??= new Audio();
+  const audio = player;
+  let playing = false;
+  let settled = false;
+  const release = () => {
+    settled = true;
+    window.clearTimeout(timer);
+    audio.onplaying = audio.onended = audio.onerror = null;
+    dropRecording = null;
+  };
+  const finish = (next: () => void, stop = false) => {
+    if (settled) return;
+    release();
+    if (stop) audio.pause();
+    next();
+  };
+  const timer = window.setTimeout(() => finish(fail, true), RECORDING_TIMEOUT_MS);
+  dropRecording = () => finish(() => {}, true);
+  audio.onplaying = () => {
+    window.clearTimeout(timer);
+    if (!playing) started();
+    playing = true;
+  };
+  audio.onended = () => finish(done);
+  audio.onerror = () => finish(fail);
+  audio.src = url;
+  audio.play().catch(() => finish(fail, true));
+}
+
 /**
  * Speaks the parts one after another; `onPart` reports the index being spoken
- * (or -1 when done) so the UI can highlight it.
+ * (or -1 when done) so the UI can highlight it. German parts in a row go to
+ * the device voice together; an English word plays its recording and falls
+ * back to the device voice.
  */
 export function speak(parts: SpeechPart[], onPart: (index: number) => void = () => {}): void {
   if (!canSpeak()) return;
+  // The new speech replaces the old one without reporting its end: a caller
+  // that paused for the old speech stays paused for the new one.
+  halt();
+  const run = { onPart };
+  current = run;
   const synth = window.speechSynthesis;
-  synth.cancel();
   const german = germanVoice();
   const english = englishVoice();
-  parts.forEach((part, i) => {
+  const active = () => current === run;
+  const utterance = (i: number): SpeechSynthesisUtterance => {
+    const part = parts[i];
     const en = typeof part !== 'string';
     const u = new SpeechSynthesisUtterance(en ? part.en : part);
     u.lang = en ? (english ? langOf(english) : 'en-GB') : 'de-DE';
     const voice = en ? english : german;
     if (voice) u.voice = voice;
     u.rate = en && part.slow ? 0.6 : 0.9;
-    u.onstart = () => onPart(i);
-    if (i === parts.length - 1) {
-      u.onend = () => onPart(-1);
-      u.onerror = () => onPart(-1);
+    u.onstart = () => active() && onPart(i);
+    return u;
+  };
+  /** Speaks parts i..end-1 with the device voice, then continues at `end`. */
+  const viaDevice = (i: number, end: number) => {
+    for (let j = i; j < end; j++) {
+      const u = utterance(j);
+      if (j === end - 1) u.onend = u.onerror = () => next(end);
+      synth.speak(u);
     }
-    synth.speak(u);
-  });
+  };
+  const next = (i: number): void => {
+    if (!active()) return;
+    if (i === parts.length) {
+      current = null;
+      onPart(-1);
+      return;
+    }
+    const part = parts[i];
+    if (typeof part === 'string') {
+      let end = i + 1;
+      while (end < parts.length && typeof parts[end] === 'string') end++;
+      viaDevice(i, end);
+      return;
+    }
+    playRecording(recordingUrl(part), () => active() && onPart(i), () => next(i + 1), () => active() && viaDevice(i, i + 1));
+  };
+  next(0);
+}
+
+/** Ends the speech in progress and returns it. */
+function halt(): { onPart: (index: number) => void } | null {
+  const run = current;
+  current = null;
+  dropRecording?.();
+  if (canSpeak()) window.speechSynthesis.cancel();
+  return run;
 }
 
 export function stopSpeaking(): void {
-  if (canSpeak()) window.speechSynthesis.cancel();
+  halt()?.onPart(-1);
 }

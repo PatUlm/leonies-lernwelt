@@ -17,6 +17,11 @@ variable "api_image" {
   description = "Local image tag of the API, e.g. lernwelt-api:20261004-120000"
 }
 
+variable "tts_image" {
+  type        = string
+  description = "Local image tag of the speech service, e.g. lernwelt-tts:<content hash>"
+}
+
 terraform {
   required_version = ">= 1.6.0"
 
@@ -90,12 +95,40 @@ resource "docker_volume" "data" {
   }
 }
 
+# API to speech service only: internal, so the speech container has neither
+# internet access nor a route from Traefik.
+resource "docker_network" "internal" {
+  name     = "${local.project}_internal"
+  internal = true
+}
+
+# Piper text-to-speech (tts/); the API caches its recordings in lernwelt_data.
+resource "docker_container" "tts" {
+  name    = "${local.project}_tts"
+  image   = var.tts_image
+  restart = "unless-stopped"
+
+  labels {
+    label = "project"
+    value = local.project
+  }
+  labels {
+    label = "traefik.enable"
+    value = "false"
+  }
+
+  network_mode = "bridge"
+  networks_advanced {
+    name = docker_network.internal.name
+  }
+}
+
 resource "docker_container" "api" {
   name    = "${local.project}_api"
   image   = var.api_image
   restart = "unless-stopped"
 
-  env = ["TZ=Europe/Berlin", "MAX_PROFILES=200"]
+  env = ["TZ=Europe/Berlin", "MAX_PROFILES=200", "TTS_URL=http://${docker_container.tts.name}:5000"]
 
   volumes {
     volume_name    = docker_volume.data.name
@@ -139,5 +172,8 @@ resource "docker_container" "api" {
   network_mode = "bridge"
   networks_advanced {
     name = local.proxy_network
+  }
+  networks_advanced {
+    name = docker_network.internal.name
   }
 }

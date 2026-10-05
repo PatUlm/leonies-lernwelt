@@ -9,8 +9,8 @@ Runbook für das Ausrollen auf **netcup1**. Für die Entwicklung reicht `npm run
 |-----|------|
 | Domain | `lernwelt.nieda.de` (öffentlich) |
 | Server | `netcup1` (SSH-Host aus `~/.ssh/config`) |
-| Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite) und `lernwelt_api` (Node, Port 8081, Pfad `/api`) |
-| Daten | Docker-Volume `lernwelt_data` (Profile als JSON-Dateien), in Terraform mit `prevent_destroy` geschützt |
+| Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite), `lernwelt_api` (Node, Port 8081, Pfad `/api`) und `lernwelt_tts` (Piper, Port 5000, nur im internen Netz `lernwelt_internal` ohne Internet, erreichbar nur für die API) |
+| Daten | Docker-Volume `lernwelt_data` (Profile als JSON-Dateien, Sprachaufnahmen unter `tts/`), in Terraform mit `prevent_destroy` geschützt |
 | Reverse-Proxy | Traefik im Docker-Netz `proxy-manager`, TLS via Certresolver `production` |
 | Verwaltung | Terraform (`terraform/main.tf`), State im S3-Bucket (`terraform/backend.hcl`) |
 
@@ -21,7 +21,9 @@ Es gibt **keine Container-Registry**. `bin/release.sh` baut beide Images (`lernw
 `DOCKER_HOST=ssh://netcup1` direkt auf dem Server (nur der per `.dockerignore`
 gefilterte Build-Kontext geht über SSH; `DOCKER_BUILDKIT=0`, weil buildx über `ssh://`
 eine SSH-Verbindungsflut auslöst). Der Build führt `npm test` aus und bricht bei roten
-Tests ab. Danach steht der neue Tag in `terraform/image.auto.tfvars`.
+Tests ab. Das Sprach-Image `lernwelt-tts` (aus `tts/`, mit der Stimme, ~400 MB) trägt als Tag
+einen Hash über `tts/` und wird nur gebaut, wenn sich dort etwas ändert. Danach stehen die
+neuen Tags in `terraform/image.auto.tfvars`.
 
 `bin/tunnel.sh` öffnet einen SSH-Tunnel auf den Docker-Socket des Servers und lässt
 `terraform plan`/`apply` dagegen laufen. Jedes Release hat einen eindeutigen Tag

@@ -10,3 +10,4 @@ terraform
 Taskfile.yml
 *.md
 *.sock
+tts

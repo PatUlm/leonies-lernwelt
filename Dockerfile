@@ -15,6 +15,8 @@ RUN npm test && npm run build \
 FROM node:24-slim AS api
 WORKDIR /app
 COPY --from=build /app/server/src ./server/src
+# The English words the API may have recorded (server/src/tts.ts).
+COPY --from=build /app/src/modules/english/words.ts ./src/modules/english/words.ts
 RUN mkdir -p /data/profiles && chown -R node:node /data
 ENV NODE_ENV=production PORT=8081 DATA_DIR=/data/profiles
 USER node

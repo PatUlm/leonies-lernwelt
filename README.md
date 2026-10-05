@@ -258,7 +258,8 @@ Vorlesen funktionieren wie bei der Uhr.
 ## Englisch: Farben, Zahlen, Tiere
 
 Erste englische Wörter für die dritte Klasse: Farben, Zahlen bis 20, Haustiere und Zootiere.
-Leonie hört das Wort (britisches Englisch, über die Sprachausgabe des Geräts) und tippt auf
+Leonie hört das Wort (britisches Englisch, als Aufnahme vom Server, ohne Verbindung über die
+Sprachausgabe des Geräts) und tippt auf
 das passende Bild – eine Farbfläche, eine Ziffer oder ein Tier. Wörter, die sie schon
 kennt, kommen ab und zu auch geschrieben: Wort lesen und Bild antippen, oder zum Bild das
 englische Wort wählen. Anweisungen und Erklärungen bleiben deutsch („red heißt rot.“).
@@ -298,6 +299,10 @@ Für alle, die mitbauen möchten.
 - Fortschritt liegt im `localStorage` des Browsers und wird mit dem eigenen kleinen
   **API-Server** ([`server/src`](server/src), Node ohne Framework, JSON-Dateien) synchronisiert.
   Profile: Name + 4-stellige PIN (scrypt), Geräte-Token, Rate-Limits.
+- Englische Wörter spricht [Piper](https://github.com/OHF-Voice/piper1-gpl) in einem eigenen
+  Container ([`tts/`](tts)). Die API (`GET /api/tts`) nimmt nur Wörter aus
+  [`words.ts`](src/modules/english/words.ts) an und legt jede Aufnahme einmal als MP3 ab.
+  Fehlt sie, spricht die Sprachausgabe des Geräts (auch lokal ohne `TTS_URL`).
 - Installierbar als **PWA** (Vollbild, offline, automatische Updates).
 - Die Schrift [Fredoka](https://fonts.google.com/specimen/Fredoka) ist eingebettet
   (kein Abruf bei Google).
@@ -327,3 +332,8 @@ Das Deployment (Docker + Terraform) beschreibt [`DEPLOY.md`](DEPLOY.md).
 ## Lizenz
 
 [MIT](LICENSE)
+
+Die englische Stimme („southern_english_female“ für Piper, Datensatz
+[OpenSLR 83](https://www.openslr.org/83/)) steht unter
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Piper selbst unter GPL-3.0
+und läuft als eigener Dienst.

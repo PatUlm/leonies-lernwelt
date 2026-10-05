@@ -4,12 +4,32 @@ type Spoken = { text: string; lang: string };
 
 /**
  * Speech synthesis with the given voices that ends each part at once;
- * window.__spoken lists every part with its language.
+ * window.__spoken lists every part with its language. Server recordings play
+ * at once with `recordings` (window.__played lists their URLs) and fail
+ * without, so the device voice takes over.
  */
-async function fakeVoices(page: Page, langs: string[]): Promise<void> {
-  await page.addInitScript((langs) => {
+async function fakeVoices(page: Page, langs: string[], recordings = false): Promise<void> {
+  await page.addInitScript(({ langs, recordings }) => {
     const spoken: { text: string; lang: string }[] = [];
-    Object.assign(window, { __spoken: spoken });
+    const played: string[] = [];
+    Object.assign(window, { __spoken: spoken, __played: played });
+    // No real loading: the UI tests run without the speech service.
+    Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+      configurable: true,
+      get() {
+        return (this as HTMLMediaElement).dataset.src ?? '';
+      },
+      set(url: string) {
+        (this as HTMLMediaElement).dataset.src = new URL(url, location.href).href;
+      },
+    });
+    HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+      if (!recordings) return Promise.reject(new DOMException('no recording', 'NotSupportedError'));
+      played.push(this.src);
+      setTimeout(() => this.dispatchEvent(new Event('playing')), 0);
+      setTimeout(() => this.dispatchEvent(new Event('ended')), 1);
+      return Promise.resolve();
+    };
     // Real utterances accept only real voices; the fake one takes any.
     class Utterance {
       lang = '';
@@ -35,11 +55,15 @@ async function fakeVoices(page: Page, langs: string[]): Promise<void> {
     };
     Object.defineProperty(window, 'SpeechSynthesisUtterance', { configurable: true, value: Utterance });
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: synth });
-  }, langs);
+  }, { langs, recordings });
 }
 
 function spoken(page: Page): Promise<Spoken[]> {
   return page.evaluate(() => (window as unknown as { __spoken: Spoken[] }).__spoken);
+}
+
+function played(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as { __played: string[] }).__played.map((url) => new URL(url).pathname + new URL(url).search));
 }
 
 /** Fresh device playing locally; with `skipExamples` the three first examples are already done. */
@@ -78,6 +102,16 @@ test('a new word is shown, spoken in English and tapped with help of the glowing
   expect(await spoken(page)).toContainEqual({ text: 'red', lang: 'en-GB' });
   await page.locator('.answer.suggested').click();
   await expect(page.locator('.message')).toContainText('Genau! red heißt rot.');
+});
+
+test('English words play the server recording, the German parts stay with the device voice', async ({ page }) => {
+  await fakeVoices(page, ['de-DE', 'en-GB'], true);
+  await startEnglish(page);
+  await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Tippe auf den leuchtenden Knopf.');
+  await page.locator('[data-ref="speak"]').click();
+  await expect.poll(async () => (await spoken(page)).map((s) => s.text)).toContain(' Tippe auf den leuchtenden Knopf.');
+  expect(await played(page)).toContain('/api/tts?lang=en&text=red');
+  expect((await spoken(page)).filter((s) => s.lang !== 'de-DE')).toEqual([]);
 });
 
 test('listening: only the speaker on the card; a mistake names the word and waits', async ({ page }) => {

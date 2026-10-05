@@ -3,6 +3,7 @@ import {
   FailureLimiter, hashPin, hashToken, isValidPin, newToken, normalizeName, profileId, verifyPin,
 } from './auth.ts';
 import type { Profile, ProfileStore } from './store.ts';
+import { speakable, type SpeechCache } from './tts.ts';
 
 export interface AppOptions {
   store: ProfileStore;
@@ -13,6 +14,15 @@ export interface AppOptions {
   /** Largest accepted request body (saved progress included). */
   maxBodyBytes?: number;
   now?: () => number;
+  /** Recorded English words; without it the app uses the device voice. */
+  speech?: SpeechCache;
+}
+
+interface RouteResult {
+  status: number;
+  body: unknown;
+  /** Sent as MP3 instead of the JSON body. */
+  audio?: Buffer;
 }
 
 const MAX_TOKENS_PER_PROFILE = 10;
@@ -83,6 +93,33 @@ function serial(): <T>(job: () => Promise<T>) => Promise<T> {
     tail = run.catch(() => undefined);
     return run;
   };
+}
+
+/**
+ * Recordings change only with a new voice, so browsers may keep them a week.
+ * Single byte ranges are answered, as Safari requires for media.
+ */
+function sendAudio(req: IncomingMessage, res: ServerResponse, audio: Buffer): void {
+  const headers = {
+    'Content-Type': 'audio/mpeg',
+    'Cache-Control': 'public, max-age=604800',
+    'Accept-Ranges': 'bytes',
+    'X-Content-Type-Options': 'nosniff',
+  };
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+  if (!range || (!range[1] && !range[2])) {
+    res.writeHead(200, { ...headers, 'Content-Length': String(audio.length) }).end(audio);
+    return;
+  }
+  const last = audio.length - 1;
+  const start = range[1] ? Number(range[1]) : Math.max(0, audio.length - Number(range[2]));
+  const end = range[1] && range[2] ? Math.min(Number(range[2]), last) : last;
+  if (start > end) {
+    res.writeHead(416, { ...headers, 'Content-Range': `bytes */${audio.length}` }).end();
+    return;
+  }
+  res.writeHead(206, { ...headers, 'Content-Range': `bytes ${start}-${end}/${audio.length}`, 'Content-Length': String(end - start + 1) })
+    .end(audio.subarray(start, end + 1));
 }
 
 function bearer(req: IncomingMessage): string | null {
@@ -312,7 +349,22 @@ export function createApp(options: AppOptions) {
     });
   }
 
-  const routes: Record<string, (req: IncomingMessage) => Promise<{ status: number; body: unknown }>> = {
+  /** A recorded English word (no sign-in: the words are fixed, see tts.ts). */
+  async function recording(req: IncomingMessage): Promise<RouteResult> {
+    const params = new URL(req.url ?? '/', 'http://localhost').searchParams;
+    const lang = params.get('lang') ?? '';
+    const text = params.get('text') ?? '';
+    if (!speakable(lang, text)) throw new HttpError(400, 'invalid_speech');
+    if (!options.speech) throw new HttpError(503, 'tts_unavailable');
+    try {
+      return { status: 200, body: null, audio: await options.speech.get(lang, text, params.get('slow') === '1') };
+    } catch (err) {
+      console.error(err);
+      throw new HttpError(503, 'tts_unavailable');
+    }
+  }
+
+  const routes: Record<string, (req: IncomingMessage) => Promise<RouteResult>> = {
     'POST /api/profiles': signup,
     'POST /api/login': login,
     'GET /api/progress': getProgress,
@@ -321,6 +373,7 @@ export function createApp(options: AppOptions) {
     'GET /api/leaderboard': leaderboard,
     'POST /api/logout': logout,
     'DELETE /api/profile': deleteProfile,
+    'GET /api/tts': recording,
     'GET /api/health': async () => ({ status: 200, body: { ok: true } }),
   };
 
@@ -329,8 +382,10 @@ export function createApp(options: AppOptions) {
     const route = routes[`${req.method} ${path}`];
     try {
       if (!route) throw new HttpError(404, 'not_found');
-      const { status, body } = await route(req);
-      if (status === 204) {
+      const { status, body, audio } = await route(req);
+      if (audio) {
+        sendAudio(req, res, audio);
+      } else if (status === 204) {
         res.writeHead(204, { 'Cache-Control': 'no-store' }).end();
       } else {
         send(res, status, body);
