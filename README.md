@@ -299,10 +299,12 @@ Für alle, die mitbauen möchten.
 - Fortschritt liegt im `localStorage` des Browsers und wird mit dem eigenen kleinen
   **API-Server** ([`server/src`](server/src), Node ohne Framework, JSON-Dateien) synchronisiert.
   Profile: Name + 4-stellige PIN (scrypt), Geräte-Token, Rate-Limits.
-- Englische Wörter spricht [Piper](https://github.com/OHF-Voice/piper1-gpl) in einem eigenen
-  Container ([`tts/`](tts)). Die API (`GET /api/tts`) nimmt nur Wörter aus
-  [`words.ts`](src/modules/english/words.ts) an und legt jede Aufnahme einmal als MP3 ab.
-  Fehlt sie, spricht die Sprachausgabe des Geräts (auch lokal ohne `TTS_URL`).
+- Die englischen Wörter sind vorab mit Gemini TTS aufgenommen
+  ([`scripts/render-speech.ts`](scripts/render-speech.ts)), angehört und dann mit
+  `bin/tts-upload.sh` auf den Server gelegt; sie gehören nicht ins Repo. Die API
+  (`GET /api/tts`) liefert nur Wörter aus [`words.ts`](src/modules/english/words.ts).
+  Fehlt eine Aufnahme, spricht die Sprachausgabe des Geräts. `npm run api` liest die
+  Aufnahmen aus `.data/tts`.
 - Installierbar als **PWA** (Vollbild, offline, automatische Updates).
 - Die Schrift [Fredoka](https://fonts.google.com/specimen/Fredoka) ist eingebettet
   (kein Abruf bei Google).
@@ -332,8 +334,3 @@ Das Deployment (Docker + Terraform) beschreibt [`DEPLOY.md`](DEPLOY.md).
 ## Lizenz
 
 [MIT](LICENSE)
-
-Die englische Stimme („southern_english_female“ für Piper, Datensatz
-[OpenSLR 83](https://www.openslr.org/83/)) steht unter
-[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Piper selbst unter GPL-3.0
-und läuft als eigener Dienst.

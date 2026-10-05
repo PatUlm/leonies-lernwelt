@@ -1,9 +1,10 @@
+import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   FailureLimiter, hashPin, hashToken, isValidPin, newToken, normalizeName, profileId, verifyPin,
 } from './auth.ts';
 import type { Profile, ProfileStore } from './store.ts';
-import { speakable, type SpeechCache } from './tts.ts';
+import { speakable, type Recordings } from './tts.ts';
 
 export interface AppOptions {
   store: ProfileStore;
@@ -14,8 +15,8 @@ export interface AppOptions {
   /** Largest accepted request body (saved progress included). */
   maxBodyBytes?: number;
   now?: () => number;
-  /** Recorded English words; without it the app uses the device voice. */
-  speech?: SpeechCache;
+  /** Recorded English words; without them the app uses the device voice. */
+  recordings?: Recordings;
 }
 
 interface RouteResult {
@@ -96,17 +97,26 @@ function serial(): <T>(job: () => Promise<T>) => Promise<T> {
 }
 
 /**
- * Recordings change only with a new voice, so browsers may keep them a week.
- * Single byte ranges are answered, as Safari requires for media.
+ * Browsers keep a recording but ask again each time (ETag), so a re-recorded
+ * word arrives at once. Single byte ranges are answered, as Safari requires
+ * for media.
  */
 function sendAudio(req: IncomingMessage, res: ServerResponse, audio: Buffer): void {
+  const etag = `"${createHash('sha256').update(audio).digest('hex').slice(0, 32)}"`;
   const headers = {
     'Content-Type': 'audio/mpeg',
-    'Cache-Control': 'public, max-age=604800',
+    'Cache-Control': 'no-cache',
+    ETag: etag,
     'Accept-Ranges': 'bytes',
     'X-Content-Type-Options': 'nosniff',
   };
-  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+  if (req.headers['if-none-match'] === etag) {
+    res.writeHead(304, headers).end();
+    return;
+  }
+  // A range of an older recording (If-Range) gets the whole new one.
+  const ifRange = req.headers['if-range'];
+  const range = ifRange && ifRange !== etag ? null : /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
   if (!range || (!range[1] && !range[2])) {
     res.writeHead(200, { ...headers, 'Content-Length': String(audio.length) }).end(audio);
     return;
@@ -353,15 +363,11 @@ export function createApp(options: AppOptions) {
   async function recording(req: IncomingMessage): Promise<RouteResult> {
     const params = new URL(req.url ?? '/', 'http://localhost').searchParams;
     const lang = params.get('lang') ?? '';
-    const text = params.get('text') ?? '';
-    if (!speakable(lang, text)) throw new HttpError(400, 'invalid_speech');
-    if (!options.speech) throw new HttpError(503, 'tts_unavailable');
-    try {
-      return { status: 200, body: null, audio: await options.speech.get(lang, text, params.get('slow') === '1') };
-    } catch (err) {
-      console.error(err);
-      throw new HttpError(503, 'tts_unavailable');
-    }
+    const word = params.get('word') ?? '';
+    if (!speakable(lang, word)) throw new HttpError(400, 'invalid_word');
+    const audio = await options.recordings?.get(lang, word, params.get('slow') === '1');
+    if (!audio) throw new HttpError(404, 'no_recording');
+    return { status: 200, body: null, audio };
   }
 
   const routes: Record<string, (req: IncomingMessage) => Promise<RouteResult>> = {

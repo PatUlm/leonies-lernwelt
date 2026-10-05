@@ -46,9 +46,9 @@ export function voicesReady(maxMs = 1500): Promise<void> {
 /** Waiting longer for a recording than this, the device voice speaks instead. */
 const RECORDING_TIMEOUT_MS = 4000;
 
-/** English words recorded on the server (Piper); the device voice is the fallback. */
+/** English words recorded on the server; the device voice is the fallback. */
 function recordingUrl(part: { en: string; slow?: boolean }): string {
-  return `./api/tts?lang=en&text=${encodeURIComponent(part.en)}${part.slow ? '&slow=1' : ''}`;
+  return `./api/tts?lang=en&word=${encodeURIComponent(part.en)}${part.slow ? '&slow=1' : ''}`;
 }
 
 /** One element for all recordings: mobile browsers allow sound on it after the first tap. */

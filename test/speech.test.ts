@@ -77,7 +77,7 @@ describe('speak', () => {
     speak(['Neues Wort: ', { en: 'red' }, ' heißt rot.'], (i) => parts.push(i));
     expect(queue.map((u) => u.text)).toEqual(['Neues Wort: ']);
     endUtterance();
-    expect(audio!.src).toBe('./api/tts?lang=en&text=red');
+    expect(audio!.src).toBe('./api/tts?lang=en&word=red');
     audio!.onplaying!();
     audio!.onended!();
     expect(queue.map((u) => u.text)).toEqual([' heißt rot.']);
@@ -88,7 +88,7 @@ describe('speak', () => {
   it('asks for the slow recording', async () => {
     const { speak } = await load();
     speak([{ en: 'seventeen', slow: true }]);
-    expect(audio!.src).toBe('./api/tts?lang=en&text=seventeen&slow=1');
+    expect(audio!.src).toBe('./api/tts?lang=en&word=seventeen&slow=1');
   });
 
   it('lets the device voice speak the word when the recording fails', async () => {

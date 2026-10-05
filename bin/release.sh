@@ -36,17 +36,7 @@ docker build -f Dockerfile --target web --build-arg "APP_VERSION=${APP_VERSION}"
 # Same build stage (cached), so the tests do not run twice.
 docker build -f Dockerfile --target api --build-arg "APP_VERSION=${APP_VERSION}" -t "${API_IMAGE}" -t "${REPO}-api:latest" .
 
-# Speech service: tagged by the content of tts/, so it is only rebuilt and
-# replaced when that changes (the image holds the voice, ~400 MB).
-TTS_IMAGE="${REPO}-tts:$(sha256sum tts/* | sha256sum | cut -c1-12)"
-if docker image inspect "${TTS_IMAGE}" >/dev/null 2>&1; then
-  echo "==> ${TTS_IMAGE} exists, keeping it"
-else
-  echo "==> Building ${TTS_IMAGE} on the server"
-  docker build -f tts/Dockerfile -t "${TTS_IMAGE}" tts
-fi
-
-printf 'image     = "%s"\napi_image = "%s"\ntts_image = "%s"\n' "${IMAGE}" "${API_IMAGE}" "${TTS_IMAGE}" > terraform/image.auto.tfvars
+printf 'image     = "%s"\napi_image = "%s"\n' "${IMAGE}" "${API_IMAGE}" > terraform/image.auto.tfvars
 echo
-echo "==> ${IMAGE}, ${API_IMAGE} and ${TTS_IMAGE} built (kept on the netcup1 daemon, no registry push)"
+echo "==> ${IMAGE} and ${API_IMAGE} built (kept on the netcup1 daemon, no registry push)"
 echo "    terraform/image.auto.tfvars updated - now run: task plan && task deploy"

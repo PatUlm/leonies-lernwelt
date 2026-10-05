@@ -10,8 +10,9 @@ deshalb ist dieses Changelog nach Datum gegliedert.
 ### Hinzugefügt
 
 - **Englische Wörter mit eigener Stimme:** Die Wörter in „Farben, Zahlen, Tiere“ kommen
-  als Aufnahme vom Server (britische Stimme von Piper) statt aus der oft blechernen
-  Sprachausgabe des Geräts. Ohne Verbindung spricht wie bisher das Gerät.
+  als Aufnahme vom Server (britische Lehrerinnen-Stimme, erzeugt mit Gemini TTS) statt
+  aus der oft blechernen Sprachausgabe des Geräts. Ohne Verbindung spricht wie bisher das
+  Gerät.
 
 - **Englisch: „Farben, Zahlen, Tiere“** – das erste Englisch-Modul. Sieben kleine Stufen:
   Farben, Zahlen 1–5, Haustiere, Zahlen 6–10, Zootiere, weitere Farben mit 11 und 12,

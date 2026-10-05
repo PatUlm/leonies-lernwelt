@@ -28,7 +28,7 @@ export default defineConfig({
   webServer: [
     {
       // Every test run signs up a profile per project and repetition.
-      command: `rm -rf .data/e2e && DATA_DIR=.data/e2e PORT=${API_PORT} SIGNUPS_PER_CLIENT=100 node server/src/main.ts`,
+      command: `rm -rf .data/e2e && DATA_DIR=.data/e2e TTS_DIR=.data/e2e/tts PORT=${API_PORT} SIGNUPS_PER_CLIENT=100 node server/src/main.ts`,
       url: `http://127.0.0.1:${API_PORT}/api/health`,
       reuseExistingServer: false,
     },

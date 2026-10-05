@@ -110,7 +110,7 @@ test('English words play the server recording, the German parts stay with the de
   await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Tippe auf den leuchtenden Knopf.');
   await page.locator('[data-ref="speak"]').click();
   await expect.poll(async () => (await spoken(page)).map((s) => s.text)).toContain(' Tippe auf den leuchtenden Knopf.');
-  expect(await played(page)).toContain('/api/tts?lang=en&text=red');
+  expect(await played(page)).toContain('/api/tts?lang=en&word=red');
   expect((await spoken(page)).filter((s) => s.lang !== 'de-DE')).toEqual([]);
 });
 
