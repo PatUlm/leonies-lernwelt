@@ -88,9 +88,11 @@ bin/tts-upload.sh                        # ersetzt alle Aufnahmen auf dem Server
 
 Die deutschen Sätze (geführte Beispiele, Hilfe, feste Sätze; Liste in
 `scripts/german-texts.ts`) liegen unter `/data/tts/de/` mit `manifest.json` (Text →
-Datei), gesprochen von `en-us-varo`. Jeder Satz ist eine eigene Anfrage (mehrere Sätze
-pro Anfrage ließen sich nicht zuverlässig an den Pausen trennen). Bei etwa 100 Anfragen
-am Tag hört ein Lauf am Limit auf, der nächste macht weiter:
+Datei, dazu das Modell jeder Aufnahme), gesprochen von `en-us-varo`. Jeder Satz ist eine
+eigene Anfrage (mehrere Sätze pro Anfrage ließen sich nicht zuverlässig an den Pausen
+trennen). Jedes Modell erlaubt etwa 100 Anfragen am Tag: Fehlendes kommt erst von
+`gemini-3.8-flash-tts`, danach von `gemini-3.8-flash-lite-tts`; übrige Flash-Anfragen
+ersetzen Lite-Aufnahmen. Ein Lauf hört an den Limits auf, der nächste macht weiter:
 
 ```bash
 node scripts/render-german.ts --dry-run       # zählt, was fehlt
