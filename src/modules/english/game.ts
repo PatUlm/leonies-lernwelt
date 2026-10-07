@@ -63,6 +63,8 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
   let shape: Shape = 'circle';
   let phase: 'question' | 'feedback' = 'question';
   let helpUsed = false;
+  /** An example's answers react only after a moment: she listens before tapping. */
+  let locked = false;
   let buttons: HTMLButtonElement[] = [];
   let message: Text = [];
   let pendingToast: string | null = null;
@@ -121,12 +123,19 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     ui.answers.className = `answers word-answers options-${task.options.length}`;
     ui.answers.replaceChildren(...buttons);
     if (task.kind === 'example') {
-      buttons[task.correctIndex].classList.add('suggested');
+      // Explanation and word in one go; the right answer lights up once it has been read.
+      const shown = task;
+      locked = true;
       setMessage(example(task), 'explain');
+      shell.explain(spoken(message), {
+        unlock: () => task === shown && (locked = false),
+        reveal: () => task === shown && phase === 'question' && buttons[task.correctIndex].classList.add('suggested'),
+      });
     } else {
+      locked = false;
       setMessage(question(task), 'question');
+      if (task.variant === 'listen') sayWord();
     }
-    if (task.variant === 'listen') sayWord();
 
     if (pendingToast) {
       shell.toast(pendingToast);
@@ -156,9 +165,12 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   function onChoice(index: number): void {
-    if (phase !== 'question') return;
+    if (phase !== 'question' || locked) return;
     if (task.kind === 'example' && index !== task.correctIndex) {
-      setMessage(['Schau noch mal: Der leuchtende Knopf ist richtig.'], 'explain');
+      // Before the mark the explanation goes on; it is no mistake.
+      if (buttons[task.correctIndex].classList.contains('suggested')) {
+        setMessage(['Schau noch mal: Der leuchtende Knopf ist richtig.'], 'explain');
+      }
       return;
     }
     phase = 'feedback';
@@ -179,10 +191,10 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     if (result.unlocked.length) pendingToast = `Neu: ${result.unlocked.map((s) => STAGE_NAMES[s]).join(', ')}`;
     round.secured.push(...result.secured.map((s) => BADGE_NAMES[s]));
     renderCard(true);
-    // Every answer ends with the word heard once more.
-    sayWord();
 
     if (result.ok) {
+      // Every answer ends with the word heard once more; after a mistake within the explanation.
+      sayWord();
       const lead = task.kind === 'example' ? 'Genau! ' : helpUsed ? 'Gemeinsam geschafft! ' : 'Richtig! ';
       setMessage([lead, ...meaning(task.word)], 'good');
       if (result.streak) shell.toast(`${result.streak} hintereinander geschafft!`);
@@ -198,8 +210,21 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
       return;
     }
     setMessage(['Schauen wir zusammen. ', ...mistake(task)], 'explain');
-    afterFeedback = () => afterAnswer(result);
+    const heard = task.variant === 'listen' && engine.listen ? [{ en: task.word.en }] : [];
+    showNext(() => afterAnswer(result), [...spoken(message), ...heard]);
+  }
+
+  /** "Weiter" after a mistake, active after a moment; the explanation is read meanwhile. */
+  function showNext(then: () => void, speech: Text): void {
+    afterFeedback = then;
     ui.next.hidden = false;
+    ui.next.disabled = true;
+    shell.explain(speech, { unlock: () => afterFeedback === then && (ui.next.disabled = false) });
+  }
+
+  /** The message as spoken: without an English voice the English word is left out. */
+  function spoken(text: Text): Text {
+    return engine.listen ? text : [withoutEnglish(text)];
   }
 
   function afterAnswer(result: AnswerResult): void {
@@ -275,15 +300,16 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     const dropped = dropWrongOption() ? ' Eine falsche Antwort ist schon weg.' : '';
     if (task.variant === 'listen') {
       setMessage([`Hör noch einmal ganz genau hin.${dropped}`], 'explain');
-      sayWord(true);
     } else if (task.variant === 'read' && engine.listen) {
       setMessage([`Ich lese dir das Wort vor.${dropped}`], 'explain');
-      sayWord(true);
     } else if (task.variant === 'read') {
       setMessage([`Auf Deutsch fängt es mit „${task.word.de[0]}“ an.${dropped}`], 'explain');
     } else {
       setMessage([`Das Wort fängt mit „${task.word.en[0]}“ an.${dropped}`], 'explain');
     }
+    // The help is read aloud; a word to hear or read follows slowly.
+    const word = engine.listen && task.variant !== 'word' ? [{ en: task.word.en, slow: true }] : [];
+    shell.speak([...spoken(message), ...word]);
   }
 
   /**
@@ -297,7 +323,7 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
       shell.speak(task.variant === 'listen' && engine.listen ? [...message, { en: task.word.en }] : message);
       return;
     }
-    shell.speak(engine.listen ? message : [withoutEnglish(message)]);
+    shell.speak(spoken(message));
   }
 
   function showParents(): void {

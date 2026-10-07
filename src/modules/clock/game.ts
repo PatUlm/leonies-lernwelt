@@ -114,6 +114,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   let task: Task;
   let phase: 'question' | 'feedback' = 'question';
   let helpUsed = false;
+  /** An example's answer counts only after a moment: she listens before tapping. */
+  let locked = false;
   /** Setting the hands at the 1-minute tier: one friendly "a little further" first. */
   let nudged = false;
   /** Active answer time for the (invisible) fluency bonus. */
@@ -221,9 +223,23 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     return task.familiar ? `Das kannst du schon! ${q}` : q;
   }
 
+  /**
+   * An example is read aloud at once; its marked answer lights up once it has
+   * been read. Hands and digits can be tried meanwhile, only "Fertig" waits.
+   */
   function showQuestion(): void {
-    if (task.kind === 'example') setMessage(`Schau mal: ${task.explanation}`, 'explain');
-    else setMessage(questionText(), 'question');
+    if (task.kind !== 'example') {
+      locked = false;
+      setMessage(questionText(), 'question');
+      return;
+    }
+    const shown = task;
+    locked = true;
+    setMessage(`Schau mal: ${task.explanation}`, 'explain');
+    shell.explain([messageSpeech()], {
+      unlock: () => task === shown && (locked = false),
+      reveal: () => task === shown && phase === 'question' && task.mode === 'choice' && buttons[task.correctIndex]?.classList.add('suggested'),
+    });
   }
 
   function renderChoices(): void {
@@ -236,7 +252,6 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       return b;
     });
     ui.answers.replaceChildren(...buttons);
-    if (task.kind === 'example') buttons[task.correctIndex].classList.add('suggested');
     showQuestion();
   }
 
@@ -310,9 +325,12 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onChoice(index: number): void {
-    if (phase !== 'question') return;
+    if (phase !== 'question' || locked) return;
     if (task.kind === 'example' && index !== task.correctIndex) {
-      setMessage('Schau noch mal: Der leuchtende Knopf ist richtig.', 'explain');
+      // Before the mark the explanation goes on; it is no mistake.
+      if (buttons[task.correctIndex].classList.contains('suggested')) {
+        setMessage('Schau noch mal: Der leuchtende Knopf ist richtig.', 'explain');
+      }
       return;
     }
     phase = 'feedback';
@@ -326,7 +344,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onSetDone(): void {
-    if (phase !== 'question') return;
+    if (phase !== 'question' || locked) return;
     const set = clock.setTimeValue();
     if (!set) return;
     // 1-minute tier: one strike off gets a friendly nudge instead of a mistake.
@@ -348,7 +366,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onInputDone(): void {
-    if (phase !== 'question' || typed.length < 3) return;
+    if (phase !== 'question' || locked || typed.length < 3) return;
     const parts = typedParts();
     const given: GivenTime = { hour: Number(parts.hour), minute: Number(parts.minute) };
     if (given.hour > 23 || given.minute > 59) {
@@ -411,8 +429,15 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     setMessage(`Schauen wir zusammen. ${result.hint ?? ''}${shown}`, 'explain');
     clock.setFocus(result.hintFocus ?? null, task.time);
     if (result.hintFocus === 'minute') clock.setHelpers({ minuteLabels: true, quarters: false });
-    afterFeedback = () => afterAnswer(result);
+    showNext(() => afterAnswer(result));
+  }
+
+  /** "Weiter" after a mistake, active after a moment; the explanation is read meanwhile. */
+  function showNext(then: () => void): void {
+    afterFeedback = then;
     ui.next.hidden = false;
+    ui.next.disabled = true;
+    shell.explain([messageSpeech()], { unlock: () => afterFeedback === then && (ui.next.disabled = false) });
   }
 
   function afterAnswer(result: AnswerResult): void {
@@ -496,18 +521,32 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
           ? ' Der lange orange Zeiger steht schon auf der 12. Zieh den kurzen blauen Zeiger zur Stunde.'
           : ' Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen Zeiger zur Stunde. Die kleinen Zahlen außen zeigen die Minuten.';
       setMessage(`Stelle die Uhr auf ${targetText()}:${rule}${hands}`, 'explain');
-      return;
+    } else {
+      setMessage(
+        `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`,
+        'explain',
+      );
     }
-    setMessage(
-      `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`,
-      'explain',
-    );
+    speakMessage();
+  }
+
+  /** The message as spoken, after the time of day when it is shown. */
+  function messageSpeech(): string {
+    const context = task.context && !ui.daytime.hidden ? `${contextSentence(task.context, task.time)} ` : '';
+    return context + (ui.message.textContent ?? '');
+  }
+
+  function speakMessage(): void {
+    // Listening is not answering time.
+    stopwatch.pause('speech');
+    shell.speak([messageSpeech()], (i) => {
+      if (i === -1) stopwatch.resume('speech');
+    });
   }
 
   function readAloud(): void {
-    const context = task.context && !ui.daytime.hidden ? `${contextSentence(task.context, task.time)} ` : '';
     if (phase === 'question' && task.mode === 'choice' && buttons.length && task.kind !== 'example') {
-      const parts = [context + (ui.message.textContent ?? ''), ...buttons.map((b) => b.textContent ?? '')];
+      const parts = [messageSpeech(), ...buttons.map((b) => b.textContent ?? '')];
       // Listening is not answering time.
       stopwatch.pause('speech');
       shell.speak(parts, (i) => {
@@ -515,10 +554,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
         if (i === -1) stopwatch.resume('speech');
       });
     } else {
-      stopwatch.pause('speech');
-      shell.speak([context + (ui.message.textContent ?? '')], (i) => {
-        if (i === -1) stopwatch.resume('speech');
-      });
+      speakMessage();
     }
   }
 

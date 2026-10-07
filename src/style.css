@@ -1303,6 +1303,11 @@ a.area-card:active {
   box-shadow: 0 4px 0 #1d4ed8;
 }
 
+/* Right after a mistake: the explanation comes first. */
+.next:disabled {
+  opacity: 0.5;
+}
+
 /* Landscape has no room below the answers, but plenty beside the clock. */
 @media (orientation: landscape) and (min-width: 900px) {
   .next {

@@ -31,7 +31,7 @@ export function meaning(word: Word): Text {
 
 /** Guided example: the word with its meaning, then which button to tap. */
 export function example(task: Task): Text {
-  return [task.isNew ? 'Neues Wort: ' : 'Schau mal: ', ...meaning(task.word), ' Tippe auf den leuchtenden Knopf.'];
+  return [task.isNew ? 'Neues Wort: ' : 'Schau mal: ', ...meaning(task.word), ' Die richtige Antwort wird gleich hervorgehoben – tippe sie an.'];
 }
 
 /** After "Schauen wir zusammen.": the right word, heard once more when listening. */

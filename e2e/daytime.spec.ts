@@ -26,10 +26,12 @@ test('the time of day stands right above the answers, through the feedback, and 
   );
   expect(overflow).toEqual([]);
 
-  await page.locator('[data-ref="speak"]').click();
-  const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
-  expect(spoken.join(' ').match(/Es ist Nachmittag\./g)).toHaveLength(1);
-  expect(spoken[0]).toMatch(/^Es ist Nachmittag\. Schau mal:/);
+  // The example is read at once, the time of day in front of it.
+  const spoken = () => page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
+  await expect.poll(spoken).toHaveLength(1);
+  const [first] = await spoken();
+  expect(first.match(/Es ist Nachmittag\./g)).toHaveLength(1);
+  expect(first).toMatch(/^Es ist Nachmittag\. Schau mal:/);
 
   // Stays during the feedback ...
   await page.locator('.answer.suggested').click();

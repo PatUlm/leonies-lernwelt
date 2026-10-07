@@ -96,7 +96,7 @@ test('the Englisch area offers "Farben, Zahlen, Tiere"', async ({ page }) => {
 test('a new word is shown, spoken in English and tapped with help of the glowing button', async ({ page }) => {
   await fakeVoices(page, ['de-DE', 'en-GB']);
   await startEnglish(page);
-  await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Tippe auf den leuchtenden Knopf.');
+  await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Die richtige Antwort wird gleich hervorgehoben – tippe sie an.');
   await expect(page.locator('.word-card .en-word')).toHaveText('red');
   await expect(page.locator('.answer')).toHaveCount(2);
   expect(await spoken(page)).toContainEqual({ text: 'red', lang: 'en-GB' });
@@ -107,9 +107,9 @@ test('a new word is shown, spoken in English and tapped with help of the glowing
 test('English words play the server recording, the German parts stay with the device voice', async ({ page }) => {
   await fakeVoices(page, ['de-DE', 'en-GB'], true);
   await startEnglish(page);
-  await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Tippe auf den leuchtenden Knopf.');
+  await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Die richtige Antwort wird gleich hervorgehoben – tippe sie an.');
   await page.locator('[data-ref="speak"]').click();
-  await expect.poll(async () => (await spoken(page)).map((s) => s.text)).toContain(' Tippe auf den leuchtenden Knopf.');
+  await expect.poll(async () => (await spoken(page)).map((s) => s.text)).toContain(' Die richtige Antwort wird gleich hervorgehoben – tippe sie an.');
   expect(await played(page)).toContain('/api/tts?lang=en&word=red');
   expect((await spoken(page)).filter((s) => s.lang !== 'de-DE')).toEqual([]);
 });
@@ -151,7 +151,7 @@ test('without an English voice, reading aloud leaves the English word to the eye
   await startEnglish(page);
   await page.locator('[data-ref="speak"]').click();
   await expect.poll(async () => (await spoken(page)).at(-1)).toEqual({
-    text: 'Neues Wort: Das englische Wort heißt rot. Tippe auf den leuchtenden Knopf.',
+    text: 'Neues Wort: Das englische Wort heißt rot. Die richtige Antwort wird gleich hervorgehoben – tippe sie an.',
     lang: 'de-DE',
   });
 });

@@ -57,6 +57,8 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   let task: Task;
   let phase: 'question' | 'feedback' = 'question';
   let helpUsed = false;
+  /** An example's answers react only after a moment: she listens before tapping. */
+  let locked = false;
   let buttons: HTMLButtonElement[] = [];
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
@@ -98,9 +100,16 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
     ui.answers.className = `answers word-answers options-${task.options.length}`;
     ui.answers.replaceChildren(...(task.variant === 'sentence' ? [] : buttons));
     if (task.kind === 'example') {
-      buttons[task.correctIndex].classList.add('suggested');
+      // The right answer lights up only once the explanation has been read.
+      const shown = task;
+      locked = true;
       setMessage(`Schau mal: ${explanation(task)}`, 'explain');
+      shell.explain([ui.message.textContent ?? ''], {
+        unlock: () => task === shown && (locked = false),
+        reveal: () => task === shown && phase === 'question' && buttons[task.correctIndex].classList.add('suggested'),
+      });
     } else {
+      locked = false;
       setMessage(question(task), 'question');
     }
 
@@ -151,9 +160,12 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   function onChoice(index: number): void {
-    if (phase !== 'question') return;
+    if (phase !== 'question' || locked) return;
     if (task.kind === 'example' && index !== task.correctIndex) {
-      setMessage('Schau noch mal: Der leuchtende Knopf ist richtig.', 'explain');
+      // Before the mark the explanation goes on; it is no mistake.
+      if (buttons[task.correctIndex].classList.contains('suggested')) {
+        setMessage('Schau noch mal: Der leuchtende Knopf ist richtig.', 'explain');
+      }
       return;
     }
     phase = 'feedback';
@@ -193,8 +205,15 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
       return;
     }
     setMessage(`Schauen wir zusammen. ${mistake(task)}`, 'explain');
-    afterFeedback = () => afterAnswer(result);
+    showNext(() => afterAnswer(result));
+  }
+
+  /** "Weiter" after a mistake, active after a moment; the explanation is read meanwhile. */
+  function showNext(then: () => void): void {
+    afterFeedback = then;
     ui.next.hidden = false;
+    ui.next.disabled = true;
+    shell.explain([ui.message.textContent ?? ''], { unlock: () => afterFeedback === then && (ui.next.disabled = false) });
   }
 
   function afterAnswer(result: AnswerResult): void {
@@ -255,6 +274,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
     if (phase !== 'question' || task.kind === 'example') return;
     helpUsed = true;
     setMessage(help(task), 'explain');
+    shell.speak([help(task)]);
   }
 
   /** Question, then card and answers one after another, each highlighted while spoken. */

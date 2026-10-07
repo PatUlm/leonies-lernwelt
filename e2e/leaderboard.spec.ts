@@ -12,9 +12,9 @@ test('points played in the clock show up in the weekly leaderboard', async ({ pa
   const label = page.locator('[data-ref="roundLabel"]');
   for (let i = 0; ; i++) {
     expect(i, 'no right answer within 15 tasks').toBeLessThan(15);
-    // After two mistakes a guided example follows: only its marked answer counts.
-    const suggested = page.locator('.answer.suggested');
-    await ((await suggested.count()) ? suggested : page.locator('.answer').nth(i % 3)).click();
+    // After two mistakes a guided example follows: only its answer counts, marked once it has been read.
+    const example = (await page.locator('.message').textContent())?.includes('Schau mal');
+    await (example ? page.locator('.answer.suggested') : page.locator('.answer').nth(i % 3)).click();
     await expect(page.locator('.answer.correct')).toHaveCount(1);
     const next = page.locator('.next:not([hidden])');
     if (await next.count()) await next.click();

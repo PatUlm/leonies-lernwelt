@@ -32,6 +32,17 @@ export interface ShellOptions {
 
 /** Some speech engines never report the end: a follow-up waits at most this long. */
 const MAX_SPEECH_WAIT_MS = 30_000;
+/** An explanation's answers (or "Weiter") react only after this: no reflex tap. */
+const EXPLAIN_LOCK_MS = 1500;
+/** Without sound the marked answer waits a short look at the text: per word, within bounds. */
+const LOOK_MS_PER_WORD = 300;
+const LOOK_MIN_MS = 2000;
+const LOOK_MAX_MS = 6000;
+
+function lookTime(parts: SpeechPart[]): number {
+  const words = parts.map((p) => (typeof p === 'string' ? p : p.en)).join(' ').split(/\s+/).filter(Boolean).length;
+  return Math.min(LOOK_MAX_MS, Math.max(LOOK_MIN_MS, words * LOOK_MS_PER_WORD));
+}
 
 function frame(stage: string): string {
   return `
@@ -71,6 +82,8 @@ export class GameShell {
   private speech = 0;
   private speaking = false;
   private afterSpeech: (() => void) | null = null;
+  /** Explanations waiting for the end of whatever is read aloud now. */
+  private untilQuiet: (() => void)[] = [];
   private readonly ui: {
     stars: HTMLElement;
     trophies: HTMLElement;
@@ -112,7 +125,8 @@ export class GameShell {
     back.addEventListener('click', options.onExit);
     this.ui.help.addEventListener('click', options.onHelp);
     this.ui.speak.hidden = !canSpeak();
-    this.ui.speak.addEventListener('click', options.onSpeak);
+    // While something is read aloud the speaker stops it: explanations start on their own.
+    this.ui.speak.addEventListener('click', () => (this.speaking ? this.stopSpeaking() : options.onSpeak()));
     this.ref('parents').addEventListener('click', options.onParents);
 
     // Escape / Android back: keep the dialog. Should the browser close it anyway,
@@ -166,6 +180,7 @@ export class GameShell {
     this.timers.clear();
     this.afterDialog = null;
     this.afterSpeech = null;
+    this.untilQuiet = [];
   }
 
   /**
@@ -174,11 +189,44 @@ export class GameShell {
    */
   speak(parts: SpeechPart[], onPart: (index: number) => void = () => {}): void {
     const id = ++this.speech;
-    this.speaking = true;
+    if (!canSpeak()) {
+      onPart(-1);
+      this.speechEnded();
+      return;
+    }
+    this.setSpeaking(true);
     speak(parts, (i) => {
       onPart(i);
       if (i === -1 && id === this.speech) this.speechEnded();
     });
+  }
+
+  /**
+   * Reads an explanation aloud at once. `unlock` runs after a short lock,
+   * `reveal` once it has been read (stopped, or read again, counts too) and
+   * there was time to look at it – the only wait on a device without sound.
+   * The caller checks that its task is still the current one.
+   */
+  explain(parts: SpeechPart[], steps: { unlock?: () => void; reveal?: () => void } = {}): void {
+    const { unlock, reveal } = steps;
+    if (unlock) this.later(unlock, EXPLAIN_LOCK_MS);
+    if (reveal) {
+      let waiting = 2;
+      const step = () => {
+        waiting -= 1;
+        if (waiting === 0) reveal();
+      };
+      let quiet = false;
+      const onQuiet = () => {
+        if (quiet) return;
+        quiet = true;
+        step();
+      };
+      this.later(step, lookTime(parts));
+      this.later(onQuiet, MAX_SPEECH_WAIT_MS);
+      this.untilQuiet.push(onQuiet);
+    }
+    this.speak(parts);
   }
 
   stopSpeaking(): void {
@@ -187,8 +235,17 @@ export class GameShell {
     this.speechEnded();
   }
 
+  private setSpeaking(on: boolean): void {
+    this.speaking = on;
+    this.ui.speak.textContent = on ? '⏹' : '🔊';
+    this.ui.speak.setAttribute('aria-label', on ? 'Vorlesen stoppen' : 'Vorlesen');
+  }
+
   private speechEnded(): void {
-    this.speaking = false;
+    this.setSpeaking(false);
+    const quiet = this.untilQuiet;
+    this.untilQuiet = [];
+    for (const fn of quiet) fn();
     const next = this.afterSpeech;
     this.afterSpeech = null;
     next?.();
@@ -312,6 +369,7 @@ export class GameShell {
   dispose(): void {
     this.disposed = true;
     this.afterSpeech = null;
+    this.untilQuiet = [];
     stopSpeaking();
     for (const id of this.timers) window.clearTimeout(id);
     if (this.ui.dialog.open) this.ui.dialog.close();
