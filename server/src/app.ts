@@ -4,7 +4,7 @@ import {
   FailureLimiter, hashPin, hashToken, isValidPin, newToken, normalizeName, profileId, verifyPin,
 } from './auth.ts';
 import type { Profile, ProfileStore } from './store.ts';
-import { speakable, type Recordings } from './tts.ts';
+import { MAX_TEXT_LENGTH, speakable, type Recordings } from './tts.ts';
 
 export interface AppOptions {
   store: ProfileStore;
@@ -359,15 +359,31 @@ export function createApp(options: AppOptions) {
     });
   }
 
-  /** A recorded English word (no sign-in: the words are fixed, see tts.ts). */
+  /**
+   * A recorded English word or German sentence (no sign-in: only recordings
+   * made beforehand, see tts.ts).
+   */
   async function recording(req: IncomingMessage): Promise<RouteResult> {
     const params = new URL(req.url ?? '/', 'http://localhost').searchParams;
     const lang = params.get('lang') ?? '';
-    const word = params.get('word') ?? '';
-    if (!speakable(lang, word)) throw new HttpError(400, 'invalid_word');
-    const audio = await options.recordings?.get(lang, word, params.get('slow') === '1');
+    let text: string;
+    if (lang === 'de') {
+      text = params.get('text') ?? '';
+      if (!text || text.length > MAX_TEXT_LENGTH) throw new HttpError(400, 'invalid_text');
+    } else {
+      text = params.get('word') ?? '';
+      if (!speakable(lang, text)) throw new HttpError(400, 'invalid_word');
+    }
+    const audio = await options.recordings?.get(lang, text, params.get('slow') === '1');
     if (!audio) throw new HttpError(404, 'no_recording');
     return { status: 200, body: null, audio };
+  }
+
+  /** The German sentences with a recording. */
+  async function recordedTexts(req: IncomingMessage): Promise<RouteResult> {
+    const lang = new URL(req.url ?? '/', 'http://localhost').searchParams.get('lang');
+    if (lang !== 'de') throw new HttpError(400, 'invalid_lang');
+    return { status: 200, body: { texts: (await options.recordings?.germanTexts()) ?? [] } };
   }
 
   const routes: Record<string, (req: IncomingMessage) => Promise<RouteResult>> = {
@@ -380,6 +396,7 @@ export function createApp(options: AppOptions) {
     'POST /api/logout': logout,
     'DELETE /api/profile': deleteProfile,
     'GET /api/tts': recording,
+    'GET /api/tts/texts': recordedTexts,
     'GET /api/health': async () => ({ status: 200, body: { ok: true } }),
   };
 

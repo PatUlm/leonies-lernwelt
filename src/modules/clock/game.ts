@@ -1,6 +1,6 @@
 import { afternoonScene, eveningScene, forenoonScene, nightScene, noonScene, plainStar } from '../../shared/decor';
 import { GameShell } from '../../shared/game/shell';
-import { ANSWER_FOLLOWS, MARKED_IS_RIGHT } from '../../shared/game/texts';
+import { MARKED_IS_RIGHT } from '../../shared/game/texts';
 import { createKeypad, type Keypad } from '../../shared/keypad';
 import { Stopwatch } from '../../shared/stopwatch';
 import type { ModuleContext, ModuleStats } from '../types';
@@ -12,7 +12,7 @@ import {
   type AnswerResult, type GivenTime, type RoundSummary, type Task, type Track,
 } from './engine';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
-import { confirmation, contextRule } from './hints';
+import { confirmation, exampleMessage, helpText, withContext } from './hints';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import { BADGE_NAMES, TIER_NAMES, TRACK_NAMES, statsFromProgress, trackSecure } from './stats';
 import { TIERS, formatDigital, wrapHour, type ClockTime, type Tier } from './time';
@@ -236,8 +236,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
     const shown = task;
     locked = true;
-    // Choosing: the answer lighting up completes the explanation.
-    setMessage(task.mode === 'choice' ? `${task.explanation} ${ANSWER_FOLLOWS}` : task.explanation ?? '', 'explain');
+    setMessage(exampleMessage(task.explanation ?? '', task.mode), 'explain');
     shell.explain([messageSpeech()], {
       unlock: () => task === shown && (locked = false),
       reveal: () => task === shown && phase === 'question' && task.mode === 'choice' && buttons[task.correctIndex]?.classList.add('suggested'),
@@ -485,9 +484,13 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   // --- UI helpers --------------------------------------------------------------
 
-  function setMessage(text: string, tone: 'question' | 'good' | 'explain'): void {
+  /** The message as read aloud when it differs from the shown one (help naming the target). */
+  let spokenMessage: string | null = null;
+
+  function setMessage(text: string, tone: 'question' | 'good' | 'explain', spoken: string | null = null): void {
     ui.message.textContent = text;
     ui.messageBox.className = `message ${tone}`;
+    spokenMessage = spoken;
   }
 
   function lockAnswers(): void {
@@ -509,34 +512,15 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     helpUsed = true;
     clock.setHelpers({ minuteLabels: true, quarters: true });
     if (task.mode !== 'set') clock.setFocus('hour', task.time);
-    let rule = '';
-    if (task.track === 'text') rule = ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.';
-    if (task.track === 'halb') rule = ' Bei „vor halb“ und „nach halb“ sagt man schon die nächste Stunde.';
-    if (task.track === 'daytime') rule = ' Nach zwölf Uhr mittags zählen wir weiter: aus 3 Uhr wird 15 Uhr.';
-    if (task.track === 'dayInput' && task.context) rule = ` ${contextRule(task.context)}`;
-    if (task.track === 'daySet') {
-      showContext();
-      rule = ' Ist die Stunde größer als 12, rechne zwölf weniger: aus 15 Uhr wird 3 Uhr. 0 Uhr ist die 12.';
-    }
-    if (task.mode === 'set') {
-      const hands =
-        setStep(task.tier) >= 60
-          ? ' Der lange orange Zeiger steht schon auf der 12. Zieh den kurzen blauen Zeiger zur Stunde.'
-          : ' Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen Zeiger zur Stunde. Die kleinen Zahlen außen zeigen die Minuten.';
-      setMessage(`Stelle die Uhr auf ${targetText()}:${rule}${hands}`, 'explain');
-    } else {
-      setMessage(
-        `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`,
-        'explain',
-      );
-    }
+    if (task.track === 'daySet') showContext();
+    const text = helpText({ ...task, hourOnly: setStep(task.tier) >= 60 }, targetText());
+    setMessage(text.shown, 'explain', text.spoken);
     speakMessage();
   }
 
   /** The message as spoken, after the time of day when it is shown. */
   function messageSpeech(): string {
-    const context = task.context && !ui.daytime.hidden ? `${contextSentence(task.context, task.time)} ` : '';
-    return context + (ui.message.textContent ?? '');
+    return withContext(ui.daytime.hidden ? undefined : task.context, task.time, spokenMessage ?? ui.message.textContent ?? '');
   }
 
   function speakMessage(): void {

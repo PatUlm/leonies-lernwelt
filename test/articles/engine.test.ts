@@ -134,7 +134,7 @@ describe('articles engine', () => {
     expect(engine.stageState(1).secure).toBe(false);
     const nextDay = T0 + SESSION_GAP_MS + 1;
     let secured = false;
-    for (let i = 0; i < 30 && !secured; i++) {
+    for (let i = 0; i < 60 && !secured; i++) {
       engine.touch(nextDay);
       const t = engine.nextTask();
       const result = engine.answer(t, t.correctIndex, false);

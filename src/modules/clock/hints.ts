@@ -1,6 +1,7 @@
-import { SUFFIX, contextConfirmation, hour24, type DayContext } from './daytime';
+import { ANSWER_FOLLOWS } from '../../shared/game/texts';
+import { SUFFIX, contextConfirmation, contextSentence, hour24, type DayContext } from './daytime';
 import type { AnswerOption } from './distractors';
-import type { Track } from './engine';
+import type { TaskMode, Track } from './engine';
 import { capitalize, formatSpoken, formatSpokenCapitalized, numberWord } from './german';
 import { formatDigital, wrapHour, type ClockTime } from './time';
 
@@ -258,4 +259,37 @@ export function explainExample(task: TaskInfo): string {
     minutePart = `Zähle in Fünferschritten bis zum langen Zeiger: ${steps}.`;
   } else minutePart = minuteHandSentence(minute);
   return `${minutePart} ${hourPart} Es ist ${digital} – ${formatSpokenCapitalized(t)}.`;
+}
+
+/** A guided example as shown and read: choosing ends with the answer that lights up then. */
+export function exampleMessage(explanation: string, mode: TaskMode): string {
+  return mode === 'choice' ? `${explanation} ${ANSWER_FOLLOWS}` : explanation;
+}
+
+/** Read aloud with the time of day in front, as it stands above the message. */
+export function withContext(context: DayContext | undefined, t: ClockTime, text: string): string {
+  return context ? `${contextSentence(context, t)} ${text}` : text;
+}
+
+/**
+ * Help while a task is open. Setting the hands names the target only on
+ * screen: read aloud, the help is the same for every time and can be recorded.
+ */
+export function helpText(task: { track: Track; mode: TaskMode; context?: DayContext; hourOnly: boolean }, target: string): { shown: string; spoken: string } {
+  if (task.mode === 'set') {
+    const rule = task.track === 'daySet'
+      ? 'Ist die Stunde größer als zwölf, rechne zwölf weniger. Zwölf bleibt zwölf. Bei null Uhr gehört der kurze Zeiger zur Zwölf. '
+      : '';
+    const hands = task.hourOnly
+      ? 'Der lange orange Zeiger steht schon auf der Zwölf. Zieh den kurzen blauen Zeiger zur richtigen Stunde. Tippe dann auf Fertig.'
+      : 'Zieh zuerst den langen orangen Zeiger zu den Minuten. Die kleinen Zahlen außen helfen dir. Stelle danach den kurzen blauen Zeiger zur Stunde. Tippe dann auf Fertig.';
+    return { shown: `Stelle die Uhr auf ${target}. ${rule}${hands}`, spoken: `Schau auf die Zielzeit. ${rule}${hands}` };
+  }
+  let rule = '';
+  if (task.track === 'text') rule = ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.';
+  if (task.track === 'halb') rule = ' Bei „vor halb“ und „nach halb“ sagt man schon die nächste Stunde.';
+  if (task.track === 'daytime') rule = ' Nach zwölf Uhr mittags zählen wir weiter: aus 3 Uhr wird 15 Uhr.';
+  if (task.track === 'dayInput' && task.context) rule = ` ${contextRule(task.context)}`;
+  const text = `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`;
+  return { shown: text, spoken: text };
 }

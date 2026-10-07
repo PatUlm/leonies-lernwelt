@@ -90,6 +90,42 @@ export const WINDOW = 8;
 /** Correct answers in the window must cover this many different hours. */
 export const MIN_DISTINCT_HOURS = 3;
 export const EXAMPLES_PER_TIER = 2;
+
+interface ExampleTime {
+  time: ClockTime;
+  context?: DayContext;
+}
+
+const at = (hour: number, minute: number, context?: DayContext): ExampleTime => ({ time: { hour, minute }, context });
+/** Reading, saying, setting and typing share their examples. */
+const CLOCK_EXAMPLES: Record<Tier, readonly ExampleTime[]> = {
+  1: [at(3, 0), at(7, 0), at(12, 0)],
+  2: [at(3, 30), at(7, 30), at(12, 30)],
+  3: [at(3, 15), at(7, 45), at(12, 45)],
+  4: [at(3, 10), at(7, 50), at(12, 40)],
+  5: [at(3, 5), at(7, 55), at(12, 35)],
+  6: [at(3, 7), at(7, 58), at(12, 1)],
+};
+/** The three time-of-day tracks share theirs; noon and night only once they are reached. */
+const DAY_EXAMPLES: Partial<Record<Tier, readonly ExampleTime[]>> = {
+  1: [at(3, 0, 'afternoon'), at(5, 0, 'afternoon'), at(1, 0, 'afternoon'), at(12, 0, 'noon'), at(12, 0, 'night')],
+  2: [at(3, 30, 'afternoon'), at(5, 30, 'afternoon'), at(1, 30, 'afternoon'), at(12, 30, 'noon'), at(12, 30, 'night')],
+  3: [at(7, 15, 'evening'), at(9, 45, 'forenoon'), at(5, 45, 'afternoon'), at(12, 15, 'noon'), at(12, 15, 'night')],
+};
+const HALB_EXAMPLES: Partial<Record<Tier, readonly ExampleTime[]>> = {
+  4: [at(3, 20), at(7, 40), at(12, 20)],
+  5: [at(3, 25), at(7, 35), at(12, 35)],
+};
+
+/**
+ * Guided examples come from fixed lists, so their explanations can be
+ * recorded beforehand: a new tier starts with the first ones, a mistake brings
+ * back one not seen recently.
+ */
+export function exampleTimes(track: Track, tier: Tier): readonly ExampleTime[] {
+  if (track === 'halb') return HALB_EXAMPLES[tier] ?? [];
+  return (DAY_TRACKS.includes(track) ? DAY_EXAMPLES[tier] : CLOCK_EXAMPLES[tier]) ?? [];
+}
 /** Tasks between two uses of the same time. */
 export const RECENT_SPAN = 4;
 /** Points for an independent correct answer, by tier. */
@@ -166,7 +202,8 @@ export interface RoundState {
 export type RoundSummary = RoundState;
 
 export type ForcedTask =
-  | { type: 'example'; track: Track; tier: Tier }
+  /** `pick`: index into exampleTimes(); without one an example not seen recently. */
+  | { type: 'example'; track: Track; tier: Tier; pick?: number }
   | { type: 'easy' };
 
 export interface Progress {
@@ -268,7 +305,7 @@ export function freshProgress(now: number): Progress {
     correctTotal: 0,
     tracks,
     reviewQueue: [],
-    forced: [{ type: 'example', track: 'digital', tier: 1 }, { type: 'example', track: 'digital', tier: 1 }],
+    forced: [{ type: 'example', track: 'digital', tier: 1, pick: 0 }, { type: 'example', track: 'digital', tier: 1, pick: 1 }],
     recent: [],
     newestRun: 0,
     warmup: 0,
@@ -567,9 +604,21 @@ export class Engine {
     const forced = this.progress.forced[0];
     if (!forced) return null;
     this.currentSource = 'forced';
-    if (forced.type === 'example') return this.makeTask(forced.track, forced.tier, 'example');
+    if (forced.type === 'example') return this.makeTask(forced.track, forced.tier, 'example', this.exampleTime(forced));
     const easyTiers = this.unlockedTiers('digital').filter((t) => t <= 2);
     return this.makeTask('digital', pick(easyTiers, this.rng), 'easy');
+  }
+
+  private exampleTime({ track, tier, pick: index }: { track: Track; tier: Tier; pick?: number }): ExampleTime | undefined {
+    const reached = this.dayContexts();
+    const pool = exampleTimes(track, tier).filter((e) => !e.context || reached.includes(e.context));
+    const recent = this.progress.recent;
+    const fresh = pool.filter((e) => !recent.includes(timeKey(e.time)));
+    // The given one unless it was just shown: a time never comes twice within a few tasks.
+    if (index !== undefined && pool[index] && fresh.includes(pool[index])) return pool[index];
+    if (fresh.length) return pick(fresh, this.rng);
+    // All of them were just shown (three times, four recent ones): the one shown longest ago.
+    return [...pool].sort((a, b) => recent.lastIndexOf(timeKey(a.time)) - recent.lastIndexOf(timeKey(b.time)))[0];
   }
 
   private pickReview(): Task | null {
@@ -680,7 +729,8 @@ export class Engine {
     // always "21:30" when converting, words would skip the conversion.
     let prompt: Task['prompt'];
     if (track === 'daySet') prompt = 'daytime';
-    else if (mode === 'set') prompt = this.tierState('text', tier).ready && this.rng() < 0.5 ? 'text' : 'digital';
+    // Examples always with the digital time: their explanation is recorded once.
+    else if (mode === 'set') prompt = kind !== 'example' && this.tierState('text', tier).ready && this.rng() < 0.5 ? 'text' : 'digital';
     // Minute numbers help with the first answers of the 10- and 5-minute tiers.
     const introPhase = kind !== 'review' && state.mastery < 2 * MASTERY_CORRECT && !state.ready;
     const sayFirst =
@@ -716,7 +766,7 @@ export class Engine {
       const s = this.tierState(track, tier);
       s.unlocked = true;
       unlocked.push({ track, tier });
-      for (let i = 0; i < EXAMPLES_PER_TIER; i++) p.forced.push({ type: 'example', track, tier });
+      for (let pick = 0; pick < EXAMPLES_PER_TIER; pick++) p.forced.push({ type: 'example', track, tier, pick });
     };
 
     for (const track of TRACKS) {

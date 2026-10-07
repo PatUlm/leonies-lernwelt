@@ -86,8 +86,24 @@ node scripts/render-speech.ts red blue   # einzelne Wörter neu aufnehmen
 bin/tts-upload.sh                        # ersetzt alle Aufnahmen auf dem Server in einem Schritt
 ```
 
-Ein Deploy ist dafür nicht nötig; Browser holen eine geänderte Aufnahme beim nächsten
-Abspielen (ETag).
+Die deutschen Sätze (geführte Beispiele, Hilfe, feste Sätze; Liste in
+`scripts/german-texts.ts`) liegen unter `/data/tts/de/` mit `manifest.json` (Text →
+Datei), gesprochen von `en-us-varo`. Jeder Satz ist eine eigene Anfrage (mehrere Sätze
+pro Anfrage ließen sich nicht zuverlässig an den Pausen trennen). Bei etwa 100 Anfragen
+am Tag hört ein Lauf am Limit auf, der nächste macht weiter:
+
+```bash
+node scripts/render-german.ts --dry-run       # zählt, was fehlt
+node scripts/render-german.ts                 # fehlende Sätze, bis zum Tageslimit
+MAX_REQUESTS=20 node scripts/render-german.ts # nur 20
+# .data/tts/de/index.html anhören
+node scripts/render-german.ts --again 12 57   # einzelne Nummern neu
+bin/tts-upload.sh de
+```
+
+Sätze ohne Aufnahme spricht die Gerätestimme. Ein Deploy ist für neue Aufnahmen nicht
+nötig; Browser holen eine geänderte Aufnahme beim nächsten Abspielen (ETag). Die Liste
+der deutschen Aufnahmen lädt die App beim Start.
 
 ## Rollback
 

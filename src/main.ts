@@ -6,6 +6,7 @@ import { Sound } from './shared/sound';
 import { DELETE_PROFILE_ROUTE, renderDeleteProfile } from './deleteProfile';
 import { renderLogin } from './login';
 import { listenForInstallPrompt } from './shared/install';
+import { prepareSpeech } from './shared/speech';
 import { loadSettings, saveSettings } from './shared/storage';
 import { sync } from './shared/sync';
 import { reloadIfPending, setupUpdates } from './shared/update';
@@ -99,4 +100,6 @@ function route(): void {
 }
 
 window.addEventListener('hashchange', route);
+// The list of recorded sentences, before the first explanation is read.
+prepareSpeech();
 route();

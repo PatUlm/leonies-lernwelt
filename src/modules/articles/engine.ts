@@ -27,6 +27,27 @@ export const SECURE_WINDOW_CORRECT = 7;
 /** Correct answers in the window must cover this many different words. */
 export const MIN_DISTINCT_WORDS = 5;
 export const EXAMPLES_PER_STAGE = 2;
+/**
+ * Guided examples come from fixed pools, so their explanations can be recorded
+ * beforehand: a new stage starts with the first ones, a mistake brings back
+ * one not seen recently. Story keys: the same dog first new, then known.
+ */
+export const EXAMPLE_KEYS: Record<Stage, readonly string[]> = {
+  1: ['Hund', 'Katze', 'Auto', 'Apfel', 'Blume', 'Buch'],
+  2: ['Hund', 'Katze', 'Auto', 'Blume', 'Apfel', 'Buch'],
+  3: ['w:Tisch', 'w:rennt', 'w:Pause', 'w:und', 'w:Lineal', 'w:weich'],
+  4: ['t:first:Hund:0:0', 't:known:Hund:0:0', 't:first:Katze:3:3', 't:known:Katze:3:3', 't:first:Auto:0:0', 't:known:Auto:0:0'],
+};
+
+/** The examples a new stage starts with. */
+function introExamples(stage: Stage): ForcedTask[] {
+  return Array.from({ length: EXAMPLES_PER_STAGE }, (_, pick) => ({ type: 'example', stage, pick }));
+}
+
+/** The word of an example key, as kept in the recent words. */
+function exampleWord(key: string): string {
+  return key.startsWith('t:') ? key.split(':')[2] : key.replace(/^w:/, '');
+}
 /** Below this, "ein oder eine?" still shows "der Apfel" and "Nomen entdecken" only single words. */
 export const INTRO_MASTERY = 30;
 /** Share of sentences in "Nomen entdecken" after the introduction. */
@@ -86,6 +107,8 @@ export interface ReviewItem {
 export interface ForcedTask {
   type: 'example';
   stage: Stage;
+  /** Index into EXAMPLE_KEYS; without one an example not seen recently. */
+  pick?: number;
 }
 
 export interface RoundState {
@@ -189,7 +212,7 @@ export function freshProgress(now: number): Progress {
     correctTotal: 0,
     stages: STAGES.map((s) => freshStage(s === 1)),
     reviewQueue: [],
-    forced: Array.from({ length: EXAMPLES_PER_STAGE }, () => ({ type: 'example', stage: 1 })),
+    forced: introExamples(1),
     recent: [],
     wrongStreak: 0,
     correctStreak: 0,
@@ -350,7 +373,7 @@ export class Engine {
         if (stage < 4 && !this.stageState(next).unlocked) {
           this.stageState(next).unlocked = true;
           unlocked.push(next);
-          for (let i = 0; i < EXAMPLES_PER_STAGE; i++) p.forced.push({ type: 'example', stage: next });
+          p.forced.push(...introExamples(next));
         }
       }
       // Secure only when solved again on another day, not in one long sitting.
@@ -375,7 +398,15 @@ export class Engine {
     const forced = this.progress.forced[0];
     if (!forced) return null;
     this.currentSource = 'forced';
-    return this.makeTask(forced.stage, 'example', this.chooseKey(forced.stage, true));
+    return this.makeTask(forced.stage, 'example', this.exampleKey(forced));
+  }
+
+  private exampleKey({ stage, pick: index }: ForcedTask): string {
+    const pool = EXAMPLE_KEYS[stage];
+    // The first examples of a stage as given: the story pair shows the same dog twice.
+    if (index !== undefined && pool[index]) return pool[index];
+    const fresh = pool.filter((key) => !this.progress.recent.includes(exampleWord(key)));
+    return pick(fresh.length ? fresh : pool, this.rng);
   }
 
   private pickReview(): Task | null {
@@ -394,7 +425,7 @@ export class Engine {
 
   private pickPractice(): Task {
     const stage = this.chooseStage();
-    return this.makeTask(stage, 'practice', this.chooseKey(stage, false))!;
+    return this.makeTask(stage, 'practice', this.chooseKey(stage))!;
   }
 
   /** The newest stage first, the one before as practice, older ones now and then. */
@@ -420,7 +451,7 @@ export class Engine {
   }
 
   /** Key of a new item for the stage. */
-  private chooseKey(stage: Stage, example: boolean): string {
+  private chooseKey(stage: Stage): string {
     const state = this.stageState(stage);
     const intro = !state.ready && state.mastery < INTRO_MASTERY;
     switch (stage) {
@@ -428,7 +459,7 @@ export class Engine {
       case 2:
         return this.fresh(NOUNS, (n) => n.word, stage).word;
       case 3: {
-        if (!example && !intro && this.rng() < SENTENCE_SHARE) {
+        if (!intro && this.rng() < SENTENCE_SHARE) {
           const i = SENTENCES.indexOf(this.fresh(SENTENCES, (s) => bare(s.words[s.noun]), stage));
           return `s:${i}`;
         }
@@ -437,11 +468,8 @@ export class Engine {
       }
       case 4: {
         const noun = this.fresh(NOUNS, (n) => n.word, stage);
-        // Examples stay with one thing; a second one joins only in practice.
         const r = this.rng();
-        const kind: StoryKind = example
-          ? (r < 0.5 ? 'first' : 'known')
-          : r < STORY_FIRST_SHARE ? 'first' : r < STORY_FIRST_SHARE + STORY_NEW_SHARE ? 'new' : 'known';
+        const kind: StoryKind = r < STORY_FIRST_SHARE ? 'first' : r < STORY_FIRST_SHARE + STORY_NEW_SHARE ? 'new' : 'known';
         const intro = Math.floor(this.rng() * STORY_INTROS.length);
         if (kind === 'new') {
           const next = Math.floor(this.rng() * STORY_NEW.length);

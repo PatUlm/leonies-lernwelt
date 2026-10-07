@@ -5,6 +5,26 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.3 – 2026-10-07
+
+### Hinzugefügt
+
+- **Deutsche Erklärungen mit eigener Stimme:** Die geführten Beispiele, die Hilfe und die
+  festen Sätze kommen als Aufnahme vom Server (männliche Lehrer-Stimme, erzeugt mit
+  Gemini TTS) statt von der Sprachausgabe des Geräts. Die rund 320 Sätze kommen in den
+  nächsten Tagen nach und nach dazu; was (noch) nicht aufgenommen ist, etwa
+  Fehlererklärungen, spricht wie bisher das Gerät.
+
+### Geändert
+
+- **Feste Beispiele:** Die geführten Beispiele kommen aus einer festen Auswahl je Stufe
+  (z. B. der Hund, die Katze, das Auto; bei der Uhr 3:00, 7:00, 12:00) statt zufällig –
+  so lassen sie sich vorab aufnehmen. Geübt wird weiter mit allen Wörtern und Uhrzeiten.
+- **Uhrzeiten werden eindeutig vorgelesen:** „7:30“ als „7 Uhr 30“ statt nach Gutdünken der
+  Stimme („halb sieben“).
+- **Hilfe beim Zeigerstellen** nennt die Zielzeit nur auf dem Bildschirm: „Schau auf die
+  Zielzeit. Zieh zuerst den langen orangen Zeiger …“.
+
 ## 2026.10.2 – 2026-10-07
 
 ### Geändert

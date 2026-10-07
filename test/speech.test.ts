@@ -75,12 +75,12 @@ describe('speak', () => {
     const { speak } = await load();
     const parts: number[] = [];
     speak(['Neues Wort: ', { en: 'red' }, ' heißt rot.'], (i) => parts.push(i));
-    expect(queue.map((u) => u.text)).toEqual(['Neues Wort: ']);
+    expect(queue.map((u) => u.text)).toEqual(['Neues Wort:']);
     endUtterance();
     expect(audio!.src).toBe('./api/tts?lang=en&word=red');
     audio!.onplaying!();
     audio!.onended!();
-    expect(queue.map((u) => u.text)).toEqual([' heißt rot.']);
+    expect(queue.map((u) => u.text)).toEqual(['heißt rot.']);
     endUtterance();
     expect(parts).toEqual([0, 1, 2, -1]);
   });
@@ -133,5 +133,43 @@ describe('speak', () => {
     old.onended?.();
     expect(first).toEqual([]);
     expect(audio!.paused).toBe(true);
+  });
+});
+
+describe('German recordings', () => {
+  /** Loads the list of recorded sentences from a fake server. */
+  async function prepared(texts: string[]) {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ texts }) })));
+    const speech = await load();
+    speech.prepareSpeech();
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+    return speech;
+  }
+
+  it('plays a recorded sentence, found by its spoken form', async () => {
+    const { speak } = await prepared(['Es ist 7 Uhr 30 – halb acht.']);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    speak(['Es ist 7:30 – halb acht.']);
+    expect(audio!.src).toBe(`./api/tts?lang=de&text=${encodeURIComponent('Es ist 7 Uhr 30 – halb acht.')}`);
+    expect(queue).toEqual([]);
+  });
+
+  it('leaves other sentences to the device voice, in their spoken form', async () => {
+    const { speak } = await prepared(['Der leuchtende Knopf ist richtig.']);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    speak(['Es ist 3:00 – drei Uhr.']);
+    expect(audio).toBeNull();
+    expect(queue.map((u) => u.text)).toEqual(['Es ist 3 Uhr.']);
+  });
+
+  it('waits for the list when a speech starts while it loads', async () => {
+    let answer: (v: unknown) => void = () => {};
+    vi.stubGlobal('fetch', vi.fn(() => new Promise((resolve) => (answer = resolve))));
+    const { prepareSpeech, speak } = await load();
+    prepareSpeech();
+    speak(['Der leuchtende Knopf ist richtig.']);
+    expect(queue).toEqual([]);
+    answer({ ok: true, json: async () => ({ texts: ['Der leuchtende Knopf ist richtig.'] }) });
+    await vi.waitFor(() => expect(audio?.src).toContain('lang=de'));
   });
 });

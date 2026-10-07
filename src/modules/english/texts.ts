@@ -35,6 +35,19 @@ export function example(task: Task): Text {
   return [...(task.isNew ? ['Neues Wort: '] : []), ...meaning(task.word), ` ${ANSWER_FOLLOWS}`];
 }
 
+/**
+ * Help (`dropped`: one wrong answer is gone): she hears the word again, or
+ * gets its first letter when there is nothing to hear.
+ */
+export function help(task: Task, listen: boolean, dropped: boolean): Text {
+  // A sentence of its own, so it is recorded once and not with every hint.
+  const gone = dropped ? [' Eine falsche Antwort ist schon weg.'] : [];
+  if (task.variant === 'listen') return ['Hör noch einmal ganz genau hin.', ...gone];
+  if (task.variant === 'read' && listen) return ['Ich lese dir das Wort vor.', ...gone];
+  if (task.variant === 'read') return [`Auf Deutsch fängt es mit „${task.word.de[0]}“ an.`, ...gone];
+  return [`Das Wort fängt mit „${task.word.en[0]}“ an.`, ...gone];
+}
+
 /** After "Schauen wir zusammen.": the right word, heard once more when listening. */
 export function mistake(task: Task): Text {
   return [...meaning(task.word), ...(task.variant === 'listen' ? [' Hör es dir noch einmal an.'] : [])];

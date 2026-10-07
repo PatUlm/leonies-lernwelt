@@ -100,6 +100,8 @@ describe('Engine', () => {
     const engine = new Engine(freshProgress(T0), seeded(7));
     const tasks = play(engine, 1500, 0.9, seeded(8));
     for (let i = 1; i < tasks.length; i++) {
+      // Examples come from three fixed times each and may come back.
+      if (tasks[i].kind === 'example') continue;
       const window = tasks.slice(Math.max(0, i - 4), i).map((t) => timeKey(t.time));
       expect(window).not.toContain(timeKey(tasks[i].time));
     }

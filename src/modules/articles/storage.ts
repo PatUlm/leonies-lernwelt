@@ -55,7 +55,9 @@ function reviewItem(v: unknown): ReviewItem | null {
 }
 
 function forcedTask(v: unknown): ForcedTask | null {
-  return isRecord(v) && v.type === 'example' && isStage(v.stage) ? { type: 'example', stage: v.stage } : null;
+  if (!isRecord(v) || v.type !== 'example' || !isStage(v.stage)) return null;
+  const pick = v.pick;
+  return typeof pick !== 'number' || !Number.isInteger(pick) || pick < 0 ? { type: 'example', stage: v.stage } : { type: 'example', stage: v.stage, pick };
 }
 
 /**

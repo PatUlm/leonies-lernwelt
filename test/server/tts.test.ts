@@ -15,7 +15,14 @@ beforeEach(async () => {
   await mkdir(join(dir, 'tts', 'en'), { recursive: true });
   await writeFile(join(dir, 'tts', 'en', 'red.mp3'), 'mp3:red:normal');
   await writeFile(join(dir, 'tts', 'en', 'red.slow.mp3'), 'mp3:red:slow');
+  await mkdir(join(dir, 'tts', 'de'), { recursive: true });
+  await writeFile(join(dir, 'tts', 'de', '0123456789abcdef.mp3'), 'mp3:de:knopf');
+  await writeGerman({ 'Der leuchtende Knopf ist richtig.': '0123456789abcdef.mp3', 'Böse.': '../en/red.mp3' });
 });
+
+function writeGerman(texts: Record<string, string>): Promise<void> {
+  return writeFile(join(dir, 'tts', 'de', 'manifest.json'), JSON.stringify({ voice: 'en-us-varo', texts }));
+}
 afterEach(() => rm(dir, { recursive: true, force: true }));
 
 describe('recordings', () => {
@@ -88,6 +95,25 @@ describe('GET /api/tts', () => {
     const changed = await fetch(`${base}/api/tts?lang=en&word=red`, { headers: { Range: 'bytes=0-3', 'If-Range': etag } });
     expect(changed.status).toBe(200);
     expect(await changed.text()).toBe('mp3:red:new take');
+  });
+
+  it('answers German sentences from the manifest, and lists them', async () => {
+    const res = await fetch(`${base}/api/tts?lang=de&text=${encodeURIComponent('Der leuchtende Knopf ist richtig.')}`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe('mp3:de:knopf');
+    expect((await fetch(`${base}/api/tts?lang=de&text=Hallo`)).status).toBe(404);
+    expect((await fetch(`${base}/api/tts?lang=de&text=${'a'.repeat(1001)}`)).status).toBe(400);
+    // Only file names the render script writes: no way out of the directory.
+    expect((await fetch(`${base}/api/tts?lang=de&text=B%C3%B6se.`)).status).toBe(404);
+    const list = await fetch(`${base}/api/tts/texts?lang=de`);
+    expect(await list.json()).toEqual({ texts: ['Der leuchtende Knopf ist richtig.'] });
+  });
+
+  it('reads the German manifest again after an upload', async () => {
+    expect((await fetch(`${base}/api/tts?lang=de&text=Neu.`)).status).toBe(404);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await writeGerman({ 'Neu.': '0123456789abcdef.mp3' });
+    expect((await fetch(`${base}/api/tts?lang=de&text=Neu.`)).status).toBe(200);
   });
 
   it('rejects other words and reports a missing recording', async () => {

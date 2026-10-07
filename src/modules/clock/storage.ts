@@ -72,8 +72,9 @@ function forcedTask(v: unknown): ForcedTask | null {
   if (!isRecord(v)) return null;
   if (v.type === 'easy') return { type: 'easy' };
   const tier = int(v.tier, 1, 6);
-  if (v.type === 'example' && isTrack(v.track) && tier !== null) return { type: 'example', track: v.track, tier: tier as Tier };
-  return null;
+  if (v.type !== 'example' || !isTrack(v.track) || tier === null) return null;
+  const pick = int(v.pick, 0, 99);
+  return pick === null ? { type: 'example', track: v.track, tier: tier as Tier } : { type: 'example', track: v.track, tier: tier as Tier, pick };
 }
 
 /**

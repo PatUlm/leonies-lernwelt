@@ -12,7 +12,7 @@ import {
 import { SHAPES, picture, type Shape } from './pictures';
 import { BADGE_NAMES, STAGE_NAMES, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
-import { example, meaning, mistake, question, withoutEnglish, type Text } from './texts';
+import { example, help, meaning, mistake, question, withoutEnglish, type Text } from './texts';
 
 const CORRECT_DELAY_MS = 1500;
 const STAR_DELAY_MS = 900;
@@ -298,16 +298,7 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     // `task` is still unset while the voice list loads.
     if (!task || phase !== 'question' || task.kind === 'example') return;
     helpUsed = true;
-    const dropped = dropWrongOption() ? ' Eine falsche Antwort ist schon weg.' : '';
-    if (task.variant === 'listen') {
-      setMessage([`Hör noch einmal ganz genau hin.${dropped}`], 'explain');
-    } else if (task.variant === 'read' && engine.listen) {
-      setMessage([`Ich lese dir das Wort vor.${dropped}`], 'explain');
-    } else if (task.variant === 'read') {
-      setMessage([`Auf Deutsch fängt es mit „${task.word.de[0]}“ an.${dropped}`], 'explain');
-    } else {
-      setMessage([`Das Wort fängt mit „${task.word.en[0]}“ an.${dropped}`], 'explain');
-    }
+    setMessage(help(task, engine.listen, dropWrongOption()), 'explain');
     // The help is read aloud; a word to hear or read follows slowly.
     const word = engine.listen && task.variant !== 'word' ? [{ en: task.word.en, slow: true }] : [];
     shell.speak([...spoken(message), ...word]);
