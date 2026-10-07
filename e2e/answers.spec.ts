@@ -14,7 +14,7 @@ test('a wrong choice turns red with a cross, the other wrong ones grey, the righ
   for (let i = 0; ; i++) {
     expect(i, 'no wrong answer within 15 tasks').toBeLessThan(15);
     // After two mistakes a guided example follows: only its answer counts, marked once it has been read.
-    const example = (await page.locator('.message').textContent())?.includes('Schau mal');
+    const example = (await page.locator('.message').textContent())?.includes('Die richtige Antwort ist …');
     await (example ? page.locator('.answer.suggested') : answers.first()).click();
     await expect(page.locator('.answer.correct')).toHaveCount(1);
     if (await answers.first().evaluate((b) => b.classList.contains('wrong'))) break;
@@ -64,7 +64,7 @@ test('after a right answer, the next time waits until the explanation has been r
   await page.clock.runFor(5000);
   await expect(page.locator('.message')).toContainText('Genau!');
   await finishSpeech(page);
-  await expect(page.locator('.message')).toContainText('Schau mal');
+  await expect(page.locator('.message')).toContainText('Die richtige Antwort ist …');
 });
 
 test('a guided example is read aloud first: taps wait a moment, the answer lights up once read', async ({ page }) => {
@@ -84,11 +84,18 @@ test('a guided example is read aloud first: taps wait a moment, the answer light
   // Stopping counts as read.
   await speaker.click();
   await expect(speaker).toHaveAttribute('aria-label', 'Vorlesen');
+  await expect(page.locator('.answer.suggested')).toHaveCount(1);
+  // A wrong tap now points to the marked answer, still without a mistake.
+  await page.locator('.answer:not(.suggested)').first().click();
+  await expect(page.locator('.message')).toContainText('Der leuchtende Knopf ist richtig.');
+  await expect(speaker).toHaveAttribute('aria-label', 'Vorlesen stoppen');
+  await expect(page.locator('.answer.wrong')).toHaveCount(0);
+  await speaker.click();
   await page.locator('.answer.suggested').click();
   await expect(page.locator('.message')).toContainText('Genau!');
 });
 
-test('after a mistake the explanation is read aloud and "Weiter" waits a moment', async ({ page }) => {
+test('after a mistake "Weiter" waits a moment, nothing is read aloud by itself', async ({ page }) => {
   await recordSpeech(page);
   await startDevice(page, { forced: [] });
   await openClock(page);
@@ -96,7 +103,7 @@ test('after a mistake the explanation is read aloud and "Weiter" waits a moment'
   for (let i = 0; ; i++) {
     expect(i, 'no wrong answer within 15 tasks').toBeLessThan(15);
     // After two mistakes a guided example follows: only its answer counts, marked once it has been read.
-    const example = (await page.locator('.message').textContent())?.includes('Schau mal');
+    const example = (await page.locator('.message').textContent())?.includes('Die richtige Antwort ist …');
     await (example ? page.locator('.answer.suggested') : answers.first()).click();
     await expect(page.locator('.answer.correct')).toHaveCount(1);
     if (await answers.first().evaluate((b) => b.classList.contains('wrong'))) break;
@@ -104,7 +111,7 @@ test('after a mistake the explanation is read aloud and "Weiter" waits a moment'
   }
   const next = page.locator('.next');
   await expect(next).toBeDisabled();
-  const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
-  expect(spoken.at(-1)).toMatch(/^Schauen wir zusammen\./);
   await expect(next).toBeEnabled();
+  const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
+  expect(spoken.filter((s) => s.includes('Schauen wir zusammen'))).toEqual([]);
 });

@@ -1,3 +1,4 @@
+import { ANSWER_FOLLOWS } from '../../shared/game/texts';
 import { storyTemplates, type Task } from './engine';
 import { capitalize, indefinite, shout } from './words';
 
@@ -58,9 +59,9 @@ export function confirmation(task: Task): string {
   }
 }
 
-/** Guided example: what to look at, then which button to tap. */
+/** Guided example: what to look at; the answer lighting up completes it. */
 export function explanation(task: Task): string {
-  const answer = `Tippe auf „${task.options[task.correctIndex]}“.`;
+  const answer = ANSWER_FOLLOWS;
   switch (task.variant) {
     case 'article':
       return `Es heißt ${definite(task)}. ${answer}`;

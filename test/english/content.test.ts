@@ -50,7 +50,7 @@ describe('texts', () => {
     expect(plain(question(task('l:red')))).toBe('Hör gut zu: Welche Farbe ist das?');
     expect(plain(question(task('w:red')))).toBe('Wie heißt das auf Englisch?');
     const ex = engine.makeTask(1, 'example', 'l:blue', true)!;
-    expect(plain(example(ex))).toBe('Neues Wort: blue heißt blau. Die richtige Antwort wird gleich hervorgehoben – tippe sie an.');
+    expect(plain(example(ex))).toBe('Neues Wort: blue heißt blau. Die richtige Antwort ist …');
   });
 
   it('leaves the English word out for a German voice', () => {

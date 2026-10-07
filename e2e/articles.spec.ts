@@ -40,7 +40,7 @@ test('the Deutsch area offers "Der, die, das"', async ({ page }) => {
 test('guided examples, then a mistake shows the right article in the gap', async ({ page }) => {
   await startArticles(page);
   for (let i = 0; i < 2; i++) {
-    await expect(page.locator('.message')).toContainText('Schau mal');
+    await expect(page.locator('.message')).toContainText('Die richtige Antwort ist …');
     await page.locator('.answer.suggested').click();
     await expect(page.locator('.message')).toContainText('Genau!');
     await expect(page.locator('.answer.correct')).toHaveCount(0, { timeout: 10_000 });
@@ -106,7 +106,7 @@ test('after a right answer, the next task waits until the explanation has been r
   await page.clock.runFor(5000);
   await expect(page.locator('.message')).toContainText('Genau!');
   await finishSpeech(page);
-  await expect(page.locator('.message')).toContainText('Schau mal');
+  await expect(page.locator('.message')).toContainText('Die richtige Antwort ist …');
 });
 
 test('speech that never reports its end holds the next task for 30 seconds at most', async ({ page }) => {
@@ -118,7 +118,7 @@ test('speech that never reports its end holds the next task for 30 seconds at mo
   await page.clock.runFor(25_000);
   await expect(page.locator('.message')).toContainText('Genau!');
   await page.clock.runFor(10_000);
-  await expect(page.locator('.message')).toContainText('Schau mal');
+  await expect(page.locator('.message')).toContainText('Die richtige Antwort ist …');
 });
 
 test('the card, the question and all answers fit on the screen', async ({ page }) => {

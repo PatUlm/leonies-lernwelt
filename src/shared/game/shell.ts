@@ -209,7 +209,7 @@ export class GameShell {
    */
   explain(parts: SpeechPart[], steps: { unlock?: () => void; reveal?: () => void } = {}): void {
     const { unlock, reveal } = steps;
-    if (unlock) this.later(unlock, EXPLAIN_LOCK_MS);
+    if (unlock) this.afterLock(unlock);
     if (reveal) {
       let waiting = 2;
       const step = () => {
@@ -227,6 +227,11 @@ export class GameShell {
       this.untilQuiet.push(onQuiet);
     }
     this.speak(parts);
+  }
+
+  /** Runs `fn` after the short lock against reflex taps, e.g. to enable "Weiter". */
+  afterLock(fn: () => void): void {
+    this.later(fn, EXPLAIN_LOCK_MS);
   }
 
   stopSpeaking(): void {

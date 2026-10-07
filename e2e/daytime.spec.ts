@@ -31,7 +31,7 @@ test('the time of day stands right above the answers, through the feedback, and 
   await expect.poll(spoken).toHaveLength(1);
   const [first] = await spoken();
   expect(first.match(/Es ist Nachmittag\./g)).toHaveLength(1);
-  expect(first).toMatch(/^Es ist Nachmittag\. Schau mal:/);
+  expect(first).toMatch(/^Es ist Nachmittag\. Das Bild zeigt die Tageszeit\..* Die richtige Antwort ist …$/);
 
   // Stays during the feedback ...
   await page.locator('.answer.suggested').click();

@@ -1,5 +1,6 @@
 import { plainStar } from '../../shared/decor';
 import { GameShell } from '../../shared/game/shell';
+import { MARKED_IS_RIGHT } from '../../shared/game/texts';
 import { escapeHtml } from '../../shared/html';
 import { englishVoice, voicesReady } from '../../shared/speech';
 import type { ModuleContext, ModuleStats } from '../types';
@@ -169,7 +170,8 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     if (task.kind === 'example' && index !== task.correctIndex) {
       // Before the mark the explanation goes on; it is no mistake.
       if (buttons[task.correctIndex].classList.contains('suggested')) {
-        setMessage(['Schau noch mal: Der leuchtende Knopf ist richtig.'], 'explain');
+        setMessage([MARKED_IS_RIGHT], 'explain');
+        shell.speak([MARKED_IS_RIGHT]);
       }
       return;
     }
@@ -191,10 +193,10 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     if (result.unlocked.length) pendingToast = `Neu: ${result.unlocked.map((s) => STAGE_NAMES[s]).join(', ')}`;
     round.secured.push(...result.secured.map((s) => BADGE_NAMES[s]));
     renderCard(true);
+    // Every answer ends with the word heard once more.
+    sayWord();
 
     if (result.ok) {
-      // Every answer ends with the word heard once more; after a mistake within the explanation.
-      sayWord();
       const lead = task.kind === 'example' ? 'Genau! ' : helpUsed ? 'Gemeinsam geschafft! ' : 'Richtig! ';
       setMessage([lead, ...meaning(task.word)], 'good');
       if (result.streak) shell.toast(`${result.streak} hintereinander geschafft!`);
@@ -210,16 +212,15 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
       return;
     }
     setMessage(['Schauen wir zusammen. ', ...mistake(task)], 'explain');
-    const heard = task.variant === 'listen' && engine.listen ? [{ en: task.word.en }] : [];
-    showNext(() => afterAnswer(result), [...spoken(message), ...heard]);
+    showNext(() => afterAnswer(result));
   }
 
-  /** "Weiter" after a mistake, active after a moment; the explanation is read meanwhile. */
-  function showNext(then: () => void, speech: Text): void {
+  /** "Weiter" after a mistake, active after a moment: time to look at the explanation. */
+  function showNext(then: () => void): void {
     afterFeedback = then;
     ui.next.hidden = false;
     ui.next.disabled = true;
-    shell.explain(speech, { unlock: () => afterFeedback === then && (ui.next.disabled = false) });
+    shell.afterLock(() => afterFeedback === then && (ui.next.disabled = false));
   }
 
   /** The message as spoken: without an English voice the English word is left out. */

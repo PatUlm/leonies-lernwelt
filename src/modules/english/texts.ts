@@ -1,3 +1,4 @@
+import { ANSWER_FOLLOWS } from '../../shared/game/texts';
 import type { SpeechPart } from '../../shared/speech';
 import type { Task } from './engine';
 import type { Category, Word } from './words';
@@ -29,9 +30,9 @@ export function meaning(word: Word): Text {
   return [{ en: word.en }, ` heißt ${word.de}.`];
 }
 
-/** Guided example: the word with its meaning, then which button to tap. */
+/** Guided example: the word with its meaning; the answer lighting up completes it. */
 export function example(task: Task): Text {
-  return [task.isNew ? 'Neues Wort: ' : 'Schau mal: ', ...meaning(task.word), ' Die richtige Antwort wird gleich hervorgehoben – tippe sie an.'];
+  return [...(task.isNew ? ['Neues Wort: '] : []), ...meaning(task.word), ` ${ANSWER_FOLLOWS}`];
 }
 
 /** After "Schauen wir zusammen.": the right word, heard once more when listening. */

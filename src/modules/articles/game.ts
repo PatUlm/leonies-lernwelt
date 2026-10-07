@@ -1,5 +1,6 @@
 import { plainStar } from '../../shared/decor';
 import { GameShell } from '../../shared/game/shell';
+import { MARKED_IS_RIGHT } from '../../shared/game/texts';
 import { escapeHtml } from '../../shared/html';
 import type { ModuleContext, ModuleStats } from '../types';
 import {
@@ -103,7 +104,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
       // The right answer lights up only once the explanation has been read.
       const shown = task;
       locked = true;
-      setMessage(`Schau mal: ${explanation(task)}`, 'explain');
+      setMessage(explanation(task), 'explain');
       shell.explain([ui.message.textContent ?? ''], {
         unlock: () => task === shown && (locked = false),
         reveal: () => task === shown && phase === 'question' && buttons[task.correctIndex].classList.add('suggested'),
@@ -164,7 +165,8 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
     if (task.kind === 'example' && index !== task.correctIndex) {
       // Before the mark the explanation goes on; it is no mistake.
       if (buttons[task.correctIndex].classList.contains('suggested')) {
-        setMessage('Schau noch mal: Der leuchtende Knopf ist richtig.', 'explain');
+        setMessage(MARKED_IS_RIGHT, 'explain');
+        shell.speak([MARKED_IS_RIGHT]);
       }
       return;
     }
@@ -208,12 +210,12 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
     showNext(() => afterAnswer(result));
   }
 
-  /** "Weiter" after a mistake, active after a moment; the explanation is read meanwhile. */
+  /** "Weiter" after a mistake, active after a moment: time to look at the explanation. */
   function showNext(then: () => void): void {
     afterFeedback = then;
     ui.next.hidden = false;
     ui.next.disabled = true;
-    shell.explain([ui.message.textContent ?? ''], { unlock: () => afterFeedback === then && (ui.next.disabled = false) });
+    shell.afterLock(() => afterFeedback === then && (ui.next.disabled = false));
   }
 
   function afterAnswer(result: AnswerResult): void {

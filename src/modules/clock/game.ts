@@ -1,5 +1,6 @@
 import { afternoonScene, eveningScene, forenoonScene, nightScene, noonScene, plainStar } from '../../shared/decor';
 import { GameShell } from '../../shared/game/shell';
+import { ANSWER_FOLLOWS, MARKED_IS_RIGHT } from '../../shared/game/texts';
 import { createKeypad, type Keypad } from '../../shared/keypad';
 import { Stopwatch } from '../../shared/stopwatch';
 import type { ModuleContext, ModuleStats } from '../types';
@@ -235,7 +236,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
     const shown = task;
     locked = true;
-    setMessage(`Schau mal: ${task.explanation}`, 'explain');
+    // Choosing: the answer lighting up completes the explanation.
+    setMessage(task.mode === 'choice' ? `${task.explanation} ${ANSWER_FOLLOWS}` : task.explanation ?? '', 'explain');
     shell.explain([messageSpeech()], {
       unlock: () => task === shown && (locked = false),
       reveal: () => task === shown && phase === 'question' && task.mode === 'choice' && buttons[task.correctIndex]?.classList.add('suggested'),
@@ -329,7 +331,8 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     if (task.kind === 'example' && index !== task.correctIndex) {
       // Before the mark the explanation goes on; it is no mistake.
       if (buttons[task.correctIndex].classList.contains('suggested')) {
-        setMessage('Schau noch mal: Der leuchtende Knopf ist richtig.', 'explain');
+        setMessage(MARKED_IS_RIGHT, 'explain');
+        shell.speak([MARKED_IS_RIGHT]);
       }
       return;
     }
@@ -432,12 +435,12 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     showNext(() => afterAnswer(result));
   }
 
-  /** "Weiter" after a mistake, active after a moment; the explanation is read meanwhile. */
+  /** "Weiter" after a mistake, active after a moment: time to look at the explanation. */
   function showNext(then: () => void): void {
     afterFeedback = then;
     ui.next.hidden = false;
     ui.next.disabled = true;
-    shell.explain([messageSpeech()], { unlock: () => afterFeedback === then && (ui.next.disabled = false) });
+    shell.afterLock(() => afterFeedback === then && (ui.next.disabled = false));
   }
 
   function afterAnswer(result: AnswerResult): void {

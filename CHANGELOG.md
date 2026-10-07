@@ -5,6 +5,16 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.2 – 2026-10-07
+
+### Geändert
+
+- **Beispiele ohne „Schau mal“:** Die Erklärung endet mit „Die richtige Antwort ist …“ –
+  dann leuchtet die Antwort auf. Ein falscher Tipp danach wird vorgelesen: „Der leuchtende
+  Knopf ist richtig.“
+- **Fehler in normalen Aufgaben werden nicht mehr von selbst vorgelesen** (wie vor
+  2026.10.1); der Lautsprecher liest sie auf Wunsch vor. „Weiter“ wartet weiter kurz.
+
 ## 2026.10.1 – 2026-10-07
 
 ### Geändert
