@@ -17,12 +17,16 @@ tasks:
   # Terraform plan against netcup1 (read-only).
   plan: ./bin/tunnel.sh plan {{.CLI_ARGS}}
 
-  # Apply the Terraform stack on netcup1.
-  deploy: ./bin/tunnel.sh apply {{.CLI_ARGS}}
+  # Apply the Terraform stack on netcup1, then tag the deployed commit (v<version>).
+  deploy:
+    cmds:
+      - ./bin/tunnel.sh apply {{.CLI_ARGS}}
+      - ./bin/tag-release.sh
 
-  # Build, show plan, then apply.
+  # Build, show plan, then apply and tag.
   deploy-full:
     cmds:
       - ./bin/release.sh
       - ./bin/tunnel.sh plan
       - ./bin/tunnel.sh apply
+      - ./bin/tag-release.sh

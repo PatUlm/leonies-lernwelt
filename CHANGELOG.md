@@ -1,9 +1,22 @@
 # Changelog
 
 Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
-[Keep a Changelog](https://keepachangelog.com/de/1.1.0/). Releases tragen keinen
-Versionsnamen, sondern den Zeitstempel ihres Deploys (siehe [DEPLOY.md](DEPLOY.md));
-deshalb ist dieses Changelog nach Datum gegliedert.
+[Keep a Changelog](https://keepachangelog.com/de/1.1.0/). Seit Oktober 2026 tragen
+Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
+Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
+
+## 2026.10.1 – 2026-10-07
+
+### Geändert
+
+- **Erst zuhören, dann tippen:** Geführte Beispiele werden sofort vorgelesen. Die
+  Antworten reagieren erst nach einem kurzen Moment, und der richtige Knopf leuchtet
+  erst, wenn die Erklärung vorgelesen ist (ohne Ton nach einer kurzen Lesezeit). Ein
+  falscher Tipp vorher zählt nicht als Fehler. Nach einem Fehler und bei der Hilfe wird
+  die Erklärung ebenfalls vorgelesen; „Weiter“ ist nach einem kurzen Moment aktiv.
+- **Vorlesen stoppen:** Während etwas vorgelesen wird, stoppt der Lautsprecher-Knopf das
+  Vorlesen.
+- **Versionen:** Releases heißen jetzt `Jahr.Monat.Zähler` und werden beim Deploy getaggt.
 
 ## 2026-10-05
 

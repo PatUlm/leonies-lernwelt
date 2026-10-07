@@ -6,3 +6,4 @@ tfplan
 *.tfplan
 crash.log
 image.auto.tfvars
+release.env

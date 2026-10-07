@@ -24,11 +24,22 @@ eine SSH-Verbindungsflut auslöst). Der Build führt `npm test` aus und bricht b
 Tests ab. Danach steht der neue Tag in `terraform/image.auto.tfvars`.
 
 `bin/tunnel.sh` öffnet einen SSH-Tunnel auf den Docker-Socket des Servers und lässt
-`terraform plan`/`apply` dagegen laufen. Jedes Release hat einen eindeutigen Tag
-(Default `YYYYMMDD-HHMMSS`, ein vorhandener Tag wird nie überschrieben); das vorherige
-Image bleibt für einen Rollback auf dem Server.
+`terraform plan`/`apply` dagegen laufen. Das vorherige Image bleibt für einen Rollback
+auf dem Server.
 
-Deployt wird der **Arbeitsstand**, nicht ein Git-Tag – also vorher committen.
+## Versionen
+
+Releases tragen eine Kalenderversion nach [CalVer](https://calver.org/) im Schema
+`YYYY.MM.MICRO`: Jahr, Monat ohne führende Null, Zähler der Releases im Monat ab 1
+(`2026.10.1`, `2026.10.2`, `2026.11.1`). `bin/release.sh` ermittelt die nächste Version
+aus den Git-Tags; ein vorhandener Image-Tag wird nie überschrieben. Die Version steht im
+Image-Tag und in `/healthz`.
+
+`bin/release.sh` baut nur einen **committeten** Stand (bricht bei offenen Änderungen ab)
+und merkt sich Version und Commit in `terraform/release.env`. Nach erfolgreichem
+`terraform apply` setzt `task deploy` den annotierten Tag `v<Version>` auf diesen Commit
+und pusht ihn (`bin/tag-release.sh`), sobald `/healthz` diese Version meldet. Ein gebautes,
+aber nicht deploytes Release belegt seine Version; das nächste bekommt die folgende.
 
 ## Voraussetzungen (einmalig)
 
@@ -47,13 +58,13 @@ npm test && npm run typecheck
 git add -A && git commit
 task release      # Image auf netcup1 bauen, schreibt terraform/image.auto.tfvars
 task plan         # erwartet: Container mit neuem Image ersetzen
-task deploy       # anwenden (nicht-interaktiv: task deploy -- -auto-approve)
+task deploy       # anwenden und taggen (nicht-interaktiv: task deploy -- -auto-approve)
 ```
 
 Prüfen:
 
 ```bash
-curl -s https://lernwelt.nieda.de/healthz   # {"ok":true,"version":"<Tag>"}
+curl -s https://lernwelt.nieda.de/healthz   # {"ok":true,"version":"<Version>"}
 ```
 
 Beim ersten Deploy eines Hostnamens liefert Traefik einige Sekunden ein
@@ -85,6 +96,9 @@ DOCKER_HOST=ssh://netcup1 docker image ls lernwelt
 echo 'image = "lernwelt:<alter-tag>"' > terraform/image.auto.tfvars
 task deploy
 ```
+
+Ein Rollback setzt keinen Git-Tag: `bin/tag-release.sh` taggt nur, wenn `/healthz` die
+Version aus `terraform/release.env` meldet, und bricht sonst mit einem Hinweis ab.
 
 ## Hostname oder Projektname ändern
 
