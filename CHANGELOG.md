@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.5 – 2026-10-08
+
+### Geändert
+
+- **Uhrzeiten überall mit „Uhr“:** Antworten und Sätze schreiben die Uhrzeit so, wie man
+  sie in der 3. Klasse in einen Satz schreibt – „3:45 Uhr“ statt „3:45“. Bisher hatten
+  nur die Aufgaben mit Tageszeit das „Uhr“. Gesprochen klingt alles wie bisher.
+
 ## 2026.10.4 – 2026-10-08
 
 ### Behoben

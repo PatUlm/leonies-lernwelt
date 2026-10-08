@@ -27,8 +27,8 @@ describe('clock arithmetic', () => {
   });
 
   it('formats 12-hour digital time', () => {
-    expect(formatDigital({ hour: 3, minute: 5 })).toBe('3:05');
-    expect(formatDigital({ hour: 12, minute: 0 })).toBe('12:00');
+    expect(formatDigital({ hour: 3, minute: 5 })).toBe('3:05 Uhr');
+    expect(formatDigital({ hour: 12, minute: 0 })).toBe('12:00 Uhr');
   });
 });
 

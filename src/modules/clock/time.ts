@@ -59,7 +59,7 @@ export function formatDaytime(t: ClockTime, hour24: number): string {
   return `${hour24}:${String(t.minute).padStart(2, '0')} Uhr`;
 }
 
-/** "3:05" – 12-hour notation, 12:00 instead of 0:00. */
+/** "3:05 Uhr" – 12-hour notation, 12:00 instead of 0:00; written with "Uhr" as in a sentence. */
 export function formatDigital(t: ClockTime): string {
-  return `${t.hour}:${String(t.minute).padStart(2, '0')}`;
+  return `${t.hour}:${String(t.minute).padStart(2, '0')} Uhr`;
 }

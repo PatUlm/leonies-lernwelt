@@ -15,7 +15,7 @@ import { capitalize, formatSpokenCapitalized, numberWord } from './german';
 import { confirmation, exampleMessage, helpText, withContext } from './hints';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import { BADGE_NAMES, TIER_NAMES, TRACK_NAMES, statsFromProgress, trackSecure } from './stats';
-import { TIERS, formatDigital, wrapHour, type ClockTime, type Tier } from './time';
+import { TIERS, formatDaytime, formatDigital, wrapHour, type ClockTime, type Tier } from './time';
 
 const CORRECT_DELAY_MS = 1300;
 const STAR_DELAY_MS = 900;
@@ -155,9 +155,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     return formatDigital(task.time);
   }
 
-  /** "21:30": the 24-hour time of a task with a time of day. */
+  /** "21:30 Uhr": the 24-hour time of a task with a time of day. */
   function written24(t: Task): string {
-    return `${hour24(t.context!, t.time.hour)}:${String(t.time.minute).padStart(2, '0')}`;
+    return formatDaytime(t.time, hour24(t.context!, t.time.hour));
   }
 
   /**

@@ -217,13 +217,13 @@ export function explainExample(task: TaskInfo): string {
   if (track === 'dayInput' && task.context) {
     const written = `${hour24(task.context, hour)}:${String(minute).padStart(2, '0')}`;
     const digits = [...written.replace(':', '')].join(' ');
-    return `Die Uhr zeigt ${formatSpoken(t)}. Das Bild zeigt die Tageszeit. ${towards24(task.context, hour)} Tippe ${digits} – das ist ${written}.`;
+    return `Die Uhr zeigt ${formatSpoken(t)}. Das Bild zeigt die Tageszeit. ${towards24(task.context, hour)} Tippe ${digits} – das ist ${written} Uhr.`;
   }
   if (track === 'set') {
     return setInstruction(t, !!task.hourOnly);
   }
   if (track === 'input') {
-    const digits = [...digital.replace(':', '')].join(' ');
+    const digits = [...`${hour}${String(minute).padStart(2, '0')}`].join(' ');
     return `Lies zuerst die Stunde, dann die Minuten: Es ist ${digital}. Tippe ${digits} – wie auf einer Digitaluhr.`;
   }
   if (track === 'halb') {
