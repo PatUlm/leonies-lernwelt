@@ -115,3 +115,33 @@ test('after a mistake "Weiter" waits a moment, nothing is read aloud by itself',
   const spoken = await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken);
   expect(spoken.filter((s) => s.includes('Schauen wir zusammen'))).toEqual([]);
 });
+
+test('a second tap on "Weiter" does not answer the next task, which moved into its place', async ({ page }) => {
+  await startDevice(page, { forced: [{ type: 'easy' }, { type: 'easy' }] });
+  await openClock(page);
+  const answers = page.locator('.answer');
+  // Tap the first answer until it is a wrong one (a right one moves on by itself).
+  for (let i = 0; ; i++) {
+    expect(i, 'no wrong answer within 15 tasks').toBeLessThan(15);
+    const example = (await page.locator('.message').textContent())?.includes('Die richtige Antwort ist …');
+    await (example ? page.locator('.answer.suggested') : answers.first()).click();
+    await expect(page.locator('.answer.correct')).toHaveCount(1);
+    if (await answers.first().evaluate((b) => b.classList.contains('wrong'))) break;
+    await nextTaskShown(page);
+  }
+  await page.locator('.next').click();
+  await expect(page.locator('.answer.correct')).toHaveCount(0);
+
+  // The second tap right after it, wherever the answers are now: it passes through.
+  const box = (await answers.first().boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  // A click that does not pass the pointer (keyboard) is ignored as well.
+  await answers.first().dispatchEvent('click');
+  await page.waitForTimeout(300);
+  // Checked once: a right answer would move on by itself and clear its marks.
+  expect(await page.locator('.answer.correct, .answer.wrong, .answer.faded').count()).toBe(0);
+
+  // A moment later the answers take taps again.
+  await answers.first().click();
+  await expect(page.locator('.answer.correct')).toHaveCount(1);
+});

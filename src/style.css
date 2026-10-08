@@ -1308,6 +1308,13 @@ a.area-card:active {
   opacity: 0.5;
 }
 
+/* New answers move into the place of "Weiter": a second tap on it passes through. */
+.answers-held .answer,
+.answers-held .check,
+.answers-held .key {
+  pointer-events: none;
+}
+
 /* Landscape has no room below the answers, but plenty beside the clock. */
 @media (orientation: landscape) and (min-width: 900px) {
   .next {

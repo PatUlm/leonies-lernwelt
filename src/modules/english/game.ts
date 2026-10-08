@@ -100,6 +100,7 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     helpUsed = false;
     afterFeedback = null;
     ui.next.hidden = true;
+    shell.holdAnswers();
     shell.setHelpEnabled(task.kind !== 'example');
     // A familiar colour now and then on another shape, so she knows the colour, not one card.
     shape = task.kind !== 'example' && engine.familiar(task.word) ? SHAPES[Math.floor(Math.random() * SHAPES.length)] : 'circle';
@@ -166,7 +167,7 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   function onChoice(index: number): void {
-    if (phase !== 'question' || locked) return;
+    if (phase !== 'question' || locked || !shell.answersReady) return;
     if (task.kind === 'example' && index !== task.correctIndex) {
       // Before the mark the explanation goes on; it is no mistake.
       if (buttons[task.correctIndex].classList.contains('suggested')) {

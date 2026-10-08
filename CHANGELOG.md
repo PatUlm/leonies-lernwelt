@@ -5,6 +5,15 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.4 – 2026-10-08
+
+### Behoben
+
+- **Doppeltipp auf „Weiter“ beantwortet nicht mehr die nächste Aufgabe:** Verschwindet
+  „Weiter“, rücken die neuen Antworten (oder „Fertig“) an seine Stelle. Ein zweiter Tipp
+  traf sie und zählte als Fehler, ohne dass die Aufgabe zu sehen war. Neue Antworten
+  reagieren jetzt erst nach einem halben Augenblick (0,5 s) – in allen Bereichen.
+
 ## 2026.10.3 – 2026-10-07
 
 ### Hinzugefügt

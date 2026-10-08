@@ -87,6 +87,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
     helpUsed = false;
     afterFeedback = null;
     ui.next.hidden = true;
+    shell.holdAnswers();
     shell.setHelpEnabled(task.kind !== 'example');
 
     buttons = task.options.map((option, i) => {
@@ -161,7 +162,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   function onChoice(index: number): void {
-    if (phase !== 'question' || locked) return;
+    if (phase !== 'question' || locked || !shell.answersReady) return;
     if (task.kind === 'example' && index !== task.correctIndex) {
       // Before the mark the explanation goes on; it is no mistake.
       if (buttons[task.correctIndex].classList.contains('suggested')) {

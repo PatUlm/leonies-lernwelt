@@ -203,6 +203,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     ui.answers.classList.toggle('text-answers', task.track === 'text' || task.track === 'halb');
     ui.answers.classList.toggle('daytime-answers', task.track === 'daytime');
     ui.next.hidden = true;
+    shell.holdAnswers();
     shell.setHelpEnabled(!example);
 
     if (task.mode === 'set') renderSet();
@@ -266,6 +267,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     reveal.addEventListener('click', () => {
       ui.answers.classList.remove('mode-reveal');
       renderChoices();
+      shell.holdAnswers();
       setMessage('Hast du es richtig gesagt? Tippe auf deine Uhrzeit.', 'question');
     });
     ui.answers.classList.add('mode-reveal');
@@ -310,7 +312,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function typeDigit(d: number): void {
-    if (phase !== 'question' || typed.length >= 4) return;
+    if (phase !== 'question' || typed.length >= 4 || !shell.answersReady) return;
     typed += String(d);
     updateDisplay();
   }
@@ -326,7 +328,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onChoice(index: number): void {
-    if (phase !== 'question' || locked) return;
+    if (phase !== 'question' || locked || !shell.answersReady) return;
     if (task.kind === 'example' && index !== task.correctIndex) {
       // Before the mark the explanation goes on; it is no mistake.
       if (buttons[task.correctIndex].classList.contains('suggested')) {
@@ -346,7 +348,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onSetDone(): void {
-    if (phase !== 'question' || locked) return;
+    if (phase !== 'question' || locked || !shell.answersReady) return;
     const set = clock.setTimeValue();
     if (!set) return;
     // 1-minute tier: one strike off gets a friendly nudge instead of a mistake.
@@ -368,7 +370,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onInputDone(): void {
-    if (phase !== 'question' || locked || typed.length < 3) return;
+    if (phase !== 'question' || locked || typed.length < 3 || !shell.answersReady) return;
     const parts = typedParts();
     const given: GivenTime = { hour: Number(parts.hour), minute: Number(parts.minute) };
     if (given.hour > 23 || given.minute > 59) {

@@ -34,6 +34,8 @@ export interface ShellOptions {
 const MAX_SPEECH_WAIT_MS = 30_000;
 /** An explanation's answers (or "Weiter") react only after this: no reflex tap. */
 const EXPLAIN_LOCK_MS = 1500;
+/** New answers ignore taps this long: a second tap on "Weiter" must not answer. */
+const NEW_ANSWERS_LOCK_MS = 500;
 /** Without sound the marked answer waits a short look at the text: per word, within bounds. */
 const LOOK_MS_PER_WORD = 300;
 const LOOK_MIN_MS = 2000;
@@ -84,6 +86,8 @@ export class GameShell {
   private afterSpeech: (() => void) | null = null;
   /** Explanations waiting for the end of whatever is read aloud now. */
   private untilQuiet: (() => void)[] = [];
+  /** Counts holdAnswers(), so only the latest hold ends it. */
+  private answersHold = 0;
   private readonly ui: {
     stars: HTMLElement;
     trophies: HTMLElement;
@@ -234,6 +238,26 @@ export class GameShell {
     this.later(fn, EXPLAIN_LOCK_MS);
   }
 
+  /**
+   * New answers are on screen. When "Weiter" disappears, the stage above
+   * grows and pushes them into its place, so a second tap meant for "Weiter"
+   * would land on one; for a moment they ignore taps (style.css lets them
+   * through to the stage) and keys. Not a later(): cancelPending() must not
+   * leave them held.
+   */
+  holdAnswers(): void {
+    const hold = ++this.answersHold;
+    this.root.classList.add('answers-held');
+    window.setTimeout(() => {
+      if (!this.disposed && hold === this.answersHold) this.root.classList.remove('answers-held');
+    }, NEW_ANSWERS_LOCK_MS);
+  }
+
+  /** False right after holdAnswers(). */
+  get answersReady(): boolean {
+    return !this.root.classList.contains('answers-held');
+  }
+
   stopSpeaking(): void {
     this.speech += 1;
     stopSpeaking();
@@ -378,7 +402,7 @@ export class GameShell {
     stopSpeaking();
     for (const id of this.timers) window.clearTimeout(id);
     if (this.ui.dialog.open) this.ui.dialog.close();
-    this.root.classList.remove(this.options.className);
+    this.root.classList.remove(this.options.className, 'answers-held');
     this.root.replaceChildren();
   }
 }
