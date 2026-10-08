@@ -8,7 +8,7 @@ export function answerTask(engine: Engine, task: Task, ok: boolean, helped = fal
     return engine.answer(task, index, helped, elapsedMs);
   }
   // Typing with a time of day: the 24-hour time ("21:30").
-  const hour = task.track === 'dayInput' && task.context ? hour24(task.context, task.time.hour) : task.time.hour;
+  const hour = task.mode === 'input' && task.context ? hour24(task.context, task.time.hour) : task.time.hour;
   const given = ok ? { hour, minute: task.time.minute } : { hour: (task.time.hour % 12) + 1, minute: task.time.minute };
   return engine.answerTime(task, given, helped, elapsedMs);
 }

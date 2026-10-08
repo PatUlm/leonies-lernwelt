@@ -1965,6 +1965,11 @@ a.area-card:active {
   color: #b5aa9a;
 }
 
+.progress-table tr.group th {
+  padding-top: 12px;
+  text-align: left;
+}
+
 .legend {
   font-size: 14px;
   color: var(--ink-soft);

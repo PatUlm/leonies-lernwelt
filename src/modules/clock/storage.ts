@@ -1,8 +1,8 @@
 import { readJson, remove, writeJson } from '../../shared/storage';
 import type { DayContext } from './daytime';
 import {
-  MASTERY_CORRECT, MAX_MASTERY, READY_MASTERY, SECURE_MASTERY, TRACKS, WINDOW, freshProgress,
-  type Attempt, type ForcedTask, type Progress, type ReviewItem, type TierState, type Track,
+  DAY_CHECK_SIZE, MASTERY_CORRECT, MAX_MASTERY, READY_MASTERY, SECURE_MASTERY, TRACKS, WINDOW, freshProgress,
+  type Attempt, type DayAttempt, type DayMix, type ForcedTask, type Progress, type ReviewItem, type TierState, type Track,
 } from './engine';
 import { TIERS, type Tier } from './time';
 
@@ -68,6 +68,22 @@ function reviewItem(v: unknown): ReviewItem | null {
   return { track: v.track, hour, minute, context, dueAt: num(v.dueAt, 0) };
 }
 
+function dayAttempt(v: unknown): DayAttempt | null {
+  if (!isRecord(v)) return null;
+  const hour24 = int(v.hour24, 0, 23);
+  const session = int(v.session, 1, Number.MAX_SAFE_INTEGER);
+  return hour24 === null || session === null ? null : { ok: bool(v.ok), hour24, session };
+}
+
+function dayMix(v: unknown, fresh: DayMix): DayMix {
+  if (!isRecord(v) || !(['off', 'transfer', 'full'] as unknown[]).includes(v.phase)) return fresh;
+  return {
+    phase: v.phase as DayMix['phase'],
+    since: num(v.since, 0),
+    recent: list(v.recent, DAY_CHECK_SIZE).map(dayAttempt).filter((a): a is DayAttempt => a !== null),
+  };
+}
+
 function forcedTask(v: unknown): ForcedTask | null {
   if (!isRecord(v)) return null;
   if (v.type === 'easy') return { type: 'easy' };
@@ -126,6 +142,7 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
       tasks: num(round.tasks, 0),
     },
     trophies: num(raw.trophies, 0),
+    dayMix: dayMix(raw.dayMix, fresh.dayMix),
   };
 }
 

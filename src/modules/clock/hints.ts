@@ -84,7 +84,7 @@ function countingSentence(minute: number): string {
 export function hintFor(task: TaskInfo, chosen: AnswerOption): Hint {
   const { track, time: t } = task;
   const hourWrong = chosen.time.hour !== t.hour;
-  if (track === 'daytime' && task.context) {
+  if ((track === 'daytime' || track === 'digital') && task.context) {
     const right = contextConfirmation(task.context, t);
     if (chosen.kind === 'otherHalf') {
       const late = task.context === 'afternoon' || task.context === 'evening';
@@ -274,10 +274,12 @@ export function withContext(context: DayContext | undefined, t: ClockTime, text:
 /**
  * Help while a task is open. Setting the hands names the target only on
  * screen: read aloud, the help is the same for every time and can be recorded.
+ * With a time of day, choosing, setting and typing get the help of the
+ * daytime tracks, so their recordings fit.
  */
 export function helpText(task: { track: Track; mode: TaskMode; context?: DayContext; hourOnly: boolean }, target: string): { shown: string; spoken: string } {
   if (task.mode === 'set') {
-    const rule = task.track === 'daySet'
+    const rule = task.context
       ? 'Ist die Stunde größer als zwölf, rechne zwölf weniger. Zwölf bleibt zwölf. Bei null Uhr gehört der kurze Zeiger zur Zwölf. '
       : '';
     const hands = task.hourOnly
@@ -288,8 +290,8 @@ export function helpText(task: { track: Track; mode: TaskMode; context?: DayCont
   let rule = '';
   if (task.track === 'text') rule = ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.';
   if (task.track === 'halb') rule = ' Bei „vor halb“ und „nach halb“ sagt man schon die nächste Stunde.';
-  if (task.track === 'daytime') rule = ' Nach zwölf Uhr mittags zählen wir weiter: aus 3 Uhr wird 15 Uhr.';
-  if (task.track === 'dayInput' && task.context) rule = ` ${contextRule(task.context)}`;
+  if (task.track === 'daytime' || (task.track === 'digital' && task.context)) rule = ' Nach zwölf Uhr mittags zählen wir weiter: aus 3 Uhr wird 15 Uhr.';
+  if (task.mode === 'input' && task.context) rule = ` ${contextRule(task.context)}`;
   const text = `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`;
   return { shown: text, spoken: text };
 }

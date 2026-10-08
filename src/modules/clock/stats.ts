@@ -6,12 +6,12 @@ import { TIERS, type Tier } from './time';
 export const TRACK_NAMES: Record<Track, string> = {
   digital: 'Zahl',
   text: 'Text',
-  daytime: 'Tageszeit',
+  daytime: '24-Stunden-Zeiten lesen',
   set: 'Zeiger stellen',
   input: 'Eintippen',
   halb: 'vor/nach halb',
-  daySet: 'Zeiger nach 24 h',
-  dayInput: 'Eintippen mit Tageszeit',
+  daySet: 'Zeiger zu 24-Stunden-Zeiten stellen',
+  dayInput: '24-Stunden-Zeiten eintippen',
 };
 
 export const TIER_NAMES: Record<Tier, string> = {

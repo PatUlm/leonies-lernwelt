@@ -112,7 +112,7 @@ Später kommt als Zusatzlektion, wie man es in vielen Regionen sagt: **„fünf 
 
 Zuschauen ist leichter als selbst machen – deshalb gibt es zwei weitere Arten zu üben:
 
-- **Zeiger stellen:** Die Uhrzeit wird vorgegeben, als „12:30“ oder in Worten („Viertel vor
+- **Zeiger stellen:** Die Uhrzeit wird vorgegeben, als „12:30 Uhr“ oder in Worten („Viertel vor
   elf“). Beide Zeiger haben einen Griff zum Ziehen. Wie bei einer echten Uhr läuft der kurze
   Zeiger mit, wenn man den langen über die 12 zieht. Die Zeiger rasten passend zur Stufe ein
   – erst auf volle Stunden, später auf halbe, Viertel, Fünfer und einzelne Minuten.
@@ -133,8 +133,8 @@ gehört auf die 9“ oder „Zähle vom Zwölferstrich: zwanzig, einundzwanzig, 
 ### Tageszeiten
 
 Eine Zeigeruhr sieht um 3 Uhr morgens genauso aus wie um 3 Uhr nachmittags. Sobald halbe
-Stunden geschafft sind, steht deshalb bei manchen Aufgaben neben der Uhr, welche Tageszeit
-es ist – mit Bild: zuerst **„Es ist Nachmittag.“** (13 bis 18 Uhr), später auch
+Stunden geschafft sind, kommen gleich nach den Uhrzeiten in Worten Aufgaben, bei denen neben
+der Uhr steht, welche Tageszeit es ist – mit Bild: zuerst **„Es ist Nachmittag.“** (13 bis 18 Uhr), später auch
 **Vormittag**, **Abend**, **Mittag** und **„kurz nach Mitternacht“**. Dann ist die Antwort
 zum Beispiel **21:30 Uhr – halb zehn am Abend** oder **0:15 Uhr – Viertel nach zwölf in der
 Nacht**. In etwa jeder zweiten Aufgabe ist dieselbe Uhr in der anderen Tageshälfte eine der
@@ -144,15 +144,25 @@ zählen wir weiter: dreizehn, vierzehn, fünfzehn …“
 Danach wird selbst umgerechnet, in beide Richtungen (je volle, halbe und Viertelstunden,
 15 Bonuspunkte):
 
-- **Zeiger stellen nach 24-Stunden-Zeit:** „Stelle die Uhr auf 21:30.“ Erst zurückrechnen
+- **Zeiger stellen nach 24-Stunden-Zeit:** „Stelle die Uhr auf 21:30 Uhr.“ Erst zurückrechnen
   (21 − 12 = 9), dann halb zehn stellen. Die Tageszeit verrät die App hier erst in den
   Beispielen, auf Hilfe und nach der Antwort.
 - **Eintippen mit Tageszeit:** Die Uhr zeigt halb zehn, daneben „Es ist Abend.“ – richtig ist
   nur 21:30. Bei 9:30 heißt es: „Du hast die Uhr richtig abgelesen. Am Abend zählen wir nach
   zwölf weiter: 9 + 12 = 21.“
 
-Nachmittag und Abend kommen dabei häufiger dran, Vormittag, Mittag und Mitternacht bleiben
-als Gegenprobe, damit „zwölf dazu“ nicht zur Gewohnheit wird.
+Nachmittag (etwa die Hälfte) und Abend (ein Viertel) kommen dabei häufiger dran, Vormittag,
+Mittag und Mitternacht bleiben als Gegenprobe, damit „zwölf dazu“ nicht zur Gewohnheit wird.
+
+**Tageszeiten in allen Übungen:** Sitzen volle und halbe Stunden am Nachmittag, bekommen auch
+Ablesen, Worte, Zeiger stellen, Eintippen und „vor/nach halb“ eine Tageszeit – zuerst etwa
+jede vierte Aufgabe, nach einer Wiederholungsprobe in einer späteren Sitzung (8 von 10
+richtig, auch mit Vormittag) etwa jede zweite. Ablesen heißt dann „15:45 Uhr“ wählen,
+Stellen „Stelle die Uhr auf 15:45 Uhr“, Eintippen 15:45; bei den Worten bleibt „Viertel vor
+vier“, die Rückmeldung nennt beides. Eine neue Minutenstufe beginnt mit den vertrauten
+Stunden. Liest das Kind die Uhr richtig und vertut sich nur in der Tageshälfte, zählt das
+nicht gegen das Ablesen. So sind am Ende rund die Hälfte aller Aufgaben Zeiten ab 12 Uhr.
+Der Elternbereich zeigt, wie weit die Beimischung ist.
 
 <p align="center">
   <img src="docs/screenshots/clock-afternoon.png" alt="Uhr mit dem Hinweis 'Es ist Nachmittag' und Antworten im 24-Stunden-Format" width="720">

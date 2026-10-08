@@ -82,7 +82,8 @@ describe('clock suggestion', () => {
     set('input', 1, { unlocked: true, mastery: 10 });
     const stats = statsFromProgress(engine.progress, T0);
     expect(stats.goals).toMatchObject({ done: 8, total: 35, label: '8 von 35 Lernzielen sicher' });
-    expect(stats.goals.sweets.map((f) => Math.round(f * 6))).toEqual([6, 1, 1, 0, 0, 0, 0, 0]);
+    // In the order the tracks are introduced: digital, text, daytime, set, …
+    expect(stats.goals.sweets.map((f) => Math.round(f * 6))).toEqual([6, 1, 0, 1, 0, 0, 0, 0]);
     expect(stats.nextGoal).toBe('Nächstes Ziel: Zeiger stellen – halbe Stunden');
   });
 

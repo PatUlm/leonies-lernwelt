@@ -20,9 +20,11 @@ export type Track = 'digital' | 'text' | 'daytime' | 'set' | 'input' | 'halb' | 
 export const TRACKS: readonly Track[] = ['digital', 'text', 'daytime', 'set', 'input', 'halb', 'daySet', 'dayInput'];
 /** Tracks mixed into the clock reading once unlocked, in the order they are introduced. */
 export type SideTrack = Exclude<Track, 'digital'>;
-export const SIDE_TRACKS: readonly SideTrack[] = ['text', 'set', 'input', 'daytime', 'halb', 'daySet', 'dayInput'];
+export const SIDE_TRACKS: readonly SideTrack[] = ['text', 'daytime', 'set', 'input', 'halb', 'daySet', 'dayInput'];
 /** Tracks with a time of day: the 24-hour value depends on it. */
 export const DAY_TRACKS: readonly Track[] = ['daytime', 'daySet', 'dayInput'];
+/** Tracks that take on a time of day once the afternoon is learnt (see DayMix). */
+export const MIXED_TRACKS: readonly Track[] = ['digital', 'text', 'set', 'input', 'halb'];
 /** How a task is answered. */
 export type TaskMode = 'choice' | 'set' | 'input';
 
@@ -83,6 +85,30 @@ export const TRACK_TIERS: Record<Track, readonly Tier[]> = {
   daytime: [1, 2, 3], daySet: [1, 2, 3], dayInput: [1, 2, 3],
   halb: [4, 5],
 };
+/**
+ * Times of day in all chapters: once the afternoon is learnt (daytime 1 and 2
+ * ready), the other tracks show a time of day too ("transfer"); after a check
+ * in a later session ("full") about half of them do. A tier still being learnt
+ * gets fewer, its first answers and the guided examples none.
+ */
+export const DAY_MIX_SHARES: Record<'transfer' | 'full', { ready: number; learning: number }> = {
+  transfer: { ready: 0.25, learning: 0.1 },
+  full: { ready: 0.5, learning: 0.25 },
+};
+/**
+ * The check for "full": of the last DAY_CHECK_SIZE independent answers that
+ * need the half of the day (choosing or typing the 24-hour time),
+ * DAY_CHECK_CORRECT right, DAY_CHECK_LATER of them after the transfer's session.
+ */
+export const DAY_CHECK_SIZE = 10;
+export const DAY_CHECK_CORRECT = 8;
+export const DAY_CHECK_LATER = 5;
+/** A new tier takes on times of day after right answers on this many different times. */
+export const DAY_MIX_AFTER = 3;
+/** Weights of the times of day reached so far: mostly afternoon and evening, the forenoon as contrast. */
+export const CONTEXT_WEIGHTS: Record<DayContext, number> = { afternoon: 50, evening: 25, forenoon: 15, noon: 5, night: 5 };
+/** Extra points for a time of day in a mixed track, as for the daytime track. */
+export const DAY_MIX_BONUS = 5;
 /** Share of tasks from tiers below the second newest (easy repetition). */
 export const EASY_SHARE = 0.1;
 /** Recent answers per tier, used to check that a tier was shown with variety. */
@@ -201,6 +227,23 @@ export interface RoundState {
 
 export type RoundSummary = RoundState;
 
+/** An independent answer with a time of day, for the check towards "full". */
+export interface DayAttempt {
+  ok: boolean;
+  /** 0–23 */
+  hour24: number;
+  session: number;
+}
+
+/** How far times of day reach into the other tracks (see DAY_MIX_SHARES). */
+export interface DayMix {
+  phase: 'off' | 'transfer' | 'full';
+  /** Session in which the transfer started; the check needs a later one. */
+  since: number;
+  /** Last DAY_CHECK_SIZE independent answers with a time of day, during the transfer. */
+  recent: DayAttempt[];
+}
+
 export type ForcedTask =
   /** `pick`: index into exampleTimes(); without one an example not seen recently. */
   | { type: 'example'; track: Track; tier: Tier; pick?: number }
@@ -226,6 +269,7 @@ export interface Progress {
   correctStreak: number;
   round: RoundState;
   trophies: number;
+  dayMix: DayMix;
 }
 
 export type TaskKind = 'example' | 'practice' | 'review' | 'easy';
@@ -277,6 +321,8 @@ export interface AnswerResult {
   streak: number | null;
   /** Set when this answer completed the round. */
   roundComplete: RoundSummary | null;
+  /** Times of day just started to appear in the other tracks. */
+  dayMixStarted: boolean;
 }
 
 /** A typed or set time: hour 0–23 when typed, 1–12 when set on the clock. */
@@ -313,15 +359,25 @@ export function freshProgress(now: number): Progress {
     correctStreak: 0,
     round: { target: MIN_ROUND_TARGET, points: 0, correct: 0, tasks: 0 },
     trophies: 0,
+    dayMix: { phase: 'off', since: 0, recent: [] },
   };
 }
 
-/** Text of a choice: "3:45", "Viertel vor vier", "15:45 Uhr" or "fünf vor halb vier". */
+/** Text of a choice: "3:45 Uhr", "Viertel vor vier", "15:45 Uhr" or "fünf vor halb vier". */
 export function label(track: Track, t: ClockTime, hour24Value?: number): string {
   if (track === 'text') return formatSpoken(t);
   if (track === 'halb') return formatSpoken(t, { half: true });
-  if (track === 'daytime') return formatDaytime(t, hour24Value ?? t.hour);
+  if (track === 'daytime' || hour24Value !== undefined) return formatDaytime(t, hour24Value ?? t.hour);
   return formatDigital(t);
+}
+
+/** Answer time that still counts as fluent; converting to or from 24 hours takes longer. */
+export function fastAnswerMs(track: Track, context?: DayContext): number {
+  if (!context || DAY_TRACKS.includes(track)) return FAST_ANSWER_MS[track];
+  if (track === 'digital') return FAST_ANSWER_MS.daytime;
+  if (track === 'set') return FAST_ANSWER_MS.daySet;
+  if (track === 'input') return FAST_ANSWER_MS.dayInput;
+  return FAST_ANSWER_MS[track];
 }
 
 export interface EngineOptions {
@@ -369,10 +425,10 @@ export class Engine {
   }
 
   /**
-   * Time of day for a task. Setting and typing with 24-hour times favour the
-   * afternoon and evening, where the hour changes; the others stay as contrast,
-   * so adding twelve never becomes a habit. Noon and night have only the 12:
-   * they are left out while all their times of this tier were just shown.
+   * Time of day for a task, weighted by CONTEXT_WEIGHTS: mostly the afternoon
+   * and evening, where the hour changes; the others stay as contrast, so adding
+   * twelve never becomes a habit. Noon and night have only the 12: they are
+   * left out while all their times of this tier were just shown.
    */
   private chooseContext(track: Track, tier: Tier): DayContext {
     const recent = this.progress.recent;
@@ -380,8 +436,46 @@ export class Engine {
       CONTEXT_HOURS[c].some((hour) => trackMinutes(track, tier).some((minute) => !recent.includes(timeKey({ hour, minute }))));
     const reached = this.dayContexts();
     const contexts = reached.filter(fresh).length ? reached.filter(fresh) : reached;
-    if (track === 'daytime') return pick(contexts, this.rng);
-    return pick(contexts.flatMap((c) => (c === 'afternoon' || c === 'evening' ? [c, c] : [c])), this.rng);
+    let r = this.rng() * contexts.reduce((sum, c) => sum + CONTEXT_WEIGHTS[c], 0);
+    for (const c of contexts) {
+      if (r < CONTEXT_WEIGHTS[c]) return c;
+      r -= CONTEXT_WEIGHTS[c];
+    }
+    return contexts[contexts.length - 1];
+  }
+
+  /**
+   * Whether a practice task of a mixed track gets a time of day (DAY_MIX_SHARES):
+   * a new tier first with the familiar hours, fewer while it is learnt.
+   */
+  private mixesDaytime(track: Track, tier: Tier): boolean {
+    const phase = this.progress.dayMix.phase;
+    if (phase === 'off' || !MIXED_TRACKS.includes(track)) return false;
+    const s = this.tierState(track, tier);
+    const known = new Set(s.window.filter((a) => a.ok).map((a) => `${a.hour}:${a.minute}`));
+    if (!s.ready && known.size < DAY_MIX_AFTER) return false;
+    const shares = DAY_MIX_SHARES[phase];
+    return this.rng() < (s.ready ? shares.ready : shares.learning);
+  }
+
+  /**
+   * The transfer starts once the afternoon is learnt (full and half hours with
+   * a time of day). Returns true when it just started.
+   */
+  private updateDayMix(task: Task, ok: boolean, independent: boolean): boolean {
+    const p = this.progress;
+    const mix = p.dayMix;
+    if (mix.phase === 'off') {
+      if (!this.tierState('daytime', 1).ready || !this.tierState('daytime', 2).ready) return false;
+      p.dayMix = { phase: 'transfer', since: p.session, recent: [] };
+      return true;
+    }
+    // Only choosing or typing the 24-hour time shows the half of the day; setting the hands and words do not.
+    const needsHalf = task.context && (task.mode === 'input' || (task.mode === 'choice' && (task.track === 'digital' || task.track === 'daytime')));
+    if (mix.phase !== 'transfer' || !needsHalf || !independent) return false;
+    mix.recent = [...mix.recent, { ok, hour24: hour24(task.context!, task.time.hour), session: p.session }].slice(-DAY_CHECK_SIZE);
+    if (dayCheckPassed(mix)) mix.phase = 'full';
+    return false;
   }
 
   /** Call on app start and before each task; opens a new session after a long pause. */
@@ -416,7 +510,7 @@ export class Engine {
   answer(task: Task, optionIndex: number, helped: boolean, elapsedMs = Infinity): AnswerResult {
     const chosen = task.options[optionIndex];
     const ok = chosen.kind === 'correct';
-    return this.settle(task, ok, ok ? null : hintFor(task, chosen), helped, elapsedMs);
+    return this.settle(task, ok, ok ? null : hintFor(task, chosen), helped, elapsedMs, chosen.kind === 'otherHalf');
   }
 
   /**
@@ -426,21 +520,21 @@ export class Engine {
    */
   answerTime(task: Task, given: GivenTime, helped: boolean, elapsedMs = Infinity): AnswerResult {
     const hour12 = given.hour % 12 || 12;
-    const hourOk = task.track === 'dayInput' && task.context
-      ? given.hour === hour24(task.context, task.time.hour)
-      : hour12 === task.time.hour;
-    const ok = hourOk && given.minute === task.time.minute;
+    const read = hour12 === task.time.hour && given.minute === task.time.minute;
+    const typed24 = task.mode === 'input' && task.context;
+    const ok = read && (!typed24 || given.hour === hour24(task.context!, task.time.hour));
     let hint: Hint | null = null;
     if (!ok) {
       const set = { hour: hour12, minute: given.minute };
-      if (task.track === 'daySet' && task.context) hint = daySetHint(task.time, task.context, set);
-      else if (task.track === 'dayInput' && task.context) hint = dayInputHint(task.time, task.context, given);
+      if (task.mode === 'set' && task.context) hint = daySetHint(task.time, task.context, set);
+      else if (typed24) hint = dayInputHint(task.time, task.context!, given);
       else hint = task.mode === 'set' ? setHint(task.time, set) : inputHint(task.time, given.hour);
     }
-    return this.settle(task, ok, hint, helped, elapsedMs);
+    return this.settle(task, ok, hint, helped, elapsedMs, read && !ok);
   }
 
-  private settle(task: Task, ok: boolean, hint: Hint | null, helped: boolean, elapsedMs: number): AnswerResult {
+  /** `halfOnly`: the clock was read right, only the half of the day was wrong. */
+  private settle(task: Task, ok: boolean, hint: Hint | null, helped: boolean, elapsedMs: number, halfOnly = false): AnswerResult {
     if (this.current?.id !== task.id) throw new Error('answer for a task that is not current');
     this.current = null;
     const p = this.progress;
@@ -451,7 +545,7 @@ export class Engine {
     const result: AnswerResult = {
       ok, scored: false, correctIndex: task.correctIndex, points: 0,
       starEarned: false, unlocked: [], secured: [], offerPause: false,
-      streak: null, roundComplete: null,
+      streak: null, roundComplete: null, dayMixStarted: false,
     };
 
     if (task.kind === 'example') {
@@ -476,6 +570,7 @@ export class Engine {
       p.correctStreak = 0;
       if (ok) this.award(result, HELP_POINTS[task.tier]);
       this.countRound(result, false);
+      result.dayMixStarted = this.updateDayMix(task, ok, false);
       return result;
     }
 
@@ -484,11 +579,14 @@ export class Engine {
     if (!task.sayFirst) {
       result.scored = true;
       const wasSecure = state.secure;
-      this.recordAttempt(task, state, ok, ok && elapsedMs < FAST_ANSWER_MS[task.track]);
+      // A mixed track keeps the clock reading apart from the half of the day: only the latter wrong leaves it as it is.
+      const mixed = !!task.context && MIXED_TRACKS.includes(task.track);
+      if (!(mixed && halfOnly)) this.recordAttempt(task, state, ok, ok && elapsedMs < fastAnswerMs(task.track, task.context));
       if (state.secure && !wasSecure) result.secured.push({ track: task.track, tier: task.tier });
     }
     if (ok) {
-      this.award(result, TIER_POINTS[task.tier] + TRACK_BONUS[task.track]);
+      const dayBonus = task.context && MIXED_TRACKS.includes(task.track) ? DAY_MIX_BONUS : 0;
+      this.award(result, TIER_POINTS[task.tier] + TRACK_BONUS[task.track] + dayBonus);
       p.correctTotal += 1;
       result.starEarned = p.correctTotal % CORRECT_PER_STAR === 0;
       p.wrongStreak = 0;
@@ -507,6 +605,7 @@ export class Engine {
     }
 
     result.unlocked = this.updateUnlocks();
+    result.dayMixStarted = this.updateDayMix(task, ok, !task.sayFirst);
     this.countRound(result, ok);
     return result;
   }
@@ -716,19 +815,24 @@ export class Engine {
   ): Task {
     const state = this.tierState(track, tier);
     const mode = modeOf(track);
-    const context = DAY_TRACKS.includes(track) ? (given?.context ?? this.chooseContext(track, tier)) : undefined;
+    // Examples and reviews bring their own; a mixed track's practice task sometimes takes one.
+    let context: DayContext | undefined;
+    if (DAY_TRACKS.includes(track)) context = given?.context ?? this.chooseContext(track, tier);
+    else if (given) context = given.context;
+    else if (kind === 'practice' && this.mixesDaytime(track, tier)) context = this.chooseContext(track, tier);
     const time = given?.time ?? this.chooseTime(track, tier, context);
     const advanced = state.mastery >= READY_MASTERY / 2 || state.ready;
     let options: AnswerOption[] = [];
     if (mode === 'choice') {
-      options = context
+      // Words stay the same in either half of the day: there the time of day only stands above.
+      options = context && (track === 'daytime' || track === 'digital')
         ? buildDaytimeOptions(time, hour24(context, time.hour), advanced, this.rng)
         : buildOptions(time, { tier, advanced }, this.rng);
     }
     // Setting the hands: the time in words once that text tier is mastered;
     // always "21:30" when converting, words would skip the conversion.
     let prompt: Task['prompt'];
-    if (track === 'daySet') prompt = 'daytime';
+    if (mode === 'set' && context) prompt = 'daytime';
     // Examples always with the digital time: their explanation is recorded once.
     else if (mode === 'set') prompt = kind !== 'example' && this.tierState('text', tier).ready && this.rng() < 0.5 ? 'text' : 'digital';
     // Minute numbers help with the first answers of the 10- and 5-minute tiers.
@@ -820,13 +924,28 @@ export class Engine {
   private scheduleReview(task: Task): void {
     const p = this.progress;
     const key = timeKey(task.time);
-    if (p.reviewQueue.some((r) => r.track === task.track && timeKey(r) === key)) return;
+    if (p.reviewQueue.some((r) => r.track === task.track && r.context === task.context && timeKey(r) === key)) return;
     p.reviewQueue.push({
       track: task.track, hour: task.time.hour, minute: task.time.minute, context: task.context,
       dueAt: p.taskCounter + RECENT_SPAN + 1 + Math.floor(this.rng() * 2),
     });
     if (p.reviewQueue.length > 12) p.reviewQueue.shift();
   }
+}
+
+/**
+ * The repetition check towards "full": the recent answers needing the half of
+ * the day are mostly right, partly from a later session than the transfer's,
+ * on several hours, with both a forenoon and an afternoon or evening.
+ */
+export function dayCheckPassed(mix: DayMix): boolean {
+  const { recent } = mix;
+  if (recent.length < DAY_CHECK_SIZE) return false;
+  const correct = recent.filter((a) => a.ok);
+  if (correct.length < DAY_CHECK_CORRECT) return false;
+  if (correct.filter((a) => a.session > mix.since).length < DAY_CHECK_LATER) return false;
+  if (new Set(correct.map((a) => a.hour24)).size < MIN_DISTINCT_HOURS) return false;
+  return correct.some((a) => a.hour24 > 0 && a.hour24 < 12) && correct.some((a) => a.hour24 > 12);
 }
 
 /**

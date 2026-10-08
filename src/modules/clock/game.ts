@@ -7,7 +7,8 @@ import type { ModuleContext, ModuleStats } from '../types';
 import { AnalogClock } from './clock';
 import { contextSentence, hour24, type DayContext } from './daytime';
 import {
-  CORRECT_PER_STAR, Engine, MASTERY_CORRECT, MASTERY_FAST_BONUS, MASTERY_WRONG, MIN_DISTINCT_HOURS,
+  CORRECT_PER_STAR, DAY_CHECK_CORRECT, DAY_CHECK_LATER, DAY_CHECK_SIZE, DAY_MIX_SHARES, DAY_TRACKS, Engine,
+  MASTERY_CORRECT, MASTERY_FAST_BONUS, MASTERY_WRONG, MIN_DISTINCT_HOURS,
   READY_MASTERY_BY_TRACK, SECURE_MASTERY, TRACK_TIERS, TRACKS, label, setStep,
   type AnswerResult, type GivenTime, type RoundSummary, type Task, type Track,
 } from './engine';
@@ -198,10 +199,10 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     // The time-of-day context stays visible for the whole task.
     ui.daytime.hidden = true;
     ui.sceneText.textContent = '';
-    if (task.track !== 'daySet' || example) showContext();
+    if (task.mode !== 'set' || example) showContext();
     ui.answers.className = `answers mode-${task.mode}`;
     ui.answers.classList.toggle('text-answers', task.track === 'text' || task.track === 'halb');
-    ui.answers.classList.toggle('daytime-answers', task.track === 'daytime');
+    ui.answers.classList.toggle('daytime-answers', task.options.some((o) => o.hour24 !== undefined));
     ui.next.hidden = true;
     shell.holdAnswers();
     shell.setHelpEnabled(!example);
@@ -394,6 +395,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     if (result.unlocked.length) {
       pendingToast = `Neu: ${result.unlocked.map((u) => practicedName(u.track, u.tier)).join(', ')}!`;
     }
+    if (result.dayMixStarted) pendingToast = [pendingToast, 'Jetzt übst du auch nachmittags und abends weiter!'].filter(Boolean).join(' ');
     round.secured.push(...result.secured.flatMap((s) => BADGE_NAMES[s.track][s.tier] ?? []));
     // A whole track secure is a skill of its own: its sweet on the tile is full now.
     // Compared with before the answer, as a tier can become ready and secure at once.
@@ -409,7 +411,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
       showContext();
       // 23:23 for a clock without time of day is right too; show the usual way.
       const written =
-        task.track === 'input' && typedTime && typedTime.hour !== task.time.hour ? ` Hier schreiben wir ${formatDigital(task.time)}.` : '';
+        task.track === 'input' && !task.context && typedTime && typedTime.hour !== task.time.hour ? ` Hier schreiben wir ${formatDigital(task.time)}.` : '';
       setMessage(`${lead} ${confirmation(task)}${written}`, 'good');
       if (result.streak) {
         const n = result.streak <= 12 ? capitalize(numberWord(result.streak)) : String(result.streak);
@@ -428,7 +430,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
     showContext();
     let shown = '';
-    if (task.track === 'dayInput' && task.context) shown = ` Richtig ist ${written24(task)}.`;
+    if (task.mode === 'input' && task.context) shown = ` Richtig ist ${written24(task)}.`;
     else if (task.mode === 'input') shown = ` Richtig ist ${formatDigital(task.time)}.`;
     setMessage(`Schauen wir zusammen. ${result.hint ?? ''}${shown}`, 'explain');
     clock.setFocus(result.hintFocus ?? null, task.time);
@@ -514,7 +516,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     helpUsed = true;
     clock.setHelpers({ minuteLabels: true, quarters: true });
     if (task.mode !== 'set') clock.setFocus('hour', task.time);
-    if (task.track === 'daySet') showContext();
+    if (task.mode === 'set') showContext();
     const text = helpText({ ...task, hourOnly: setStep(task.tier) >= 60 }, targetText());
     setMessage(text.shown, 'explain', text.spoken);
     speakMessage();
@@ -547,8 +549,22 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
   }
 
+  /** How far times of day reach into the other tracks, for parents. */
+  function dayMixStatus(): string {
+    const mix = engine.progress.dayMix;
+    const percent = (share: number) => `${Math.round(share * 100)} %`;
+    const lead = '<strong>Beimischung in den übrigen Übungen</strong> (Zahl, Text, Zeiger stellen, Eintippen, vor/nach halb):';
+    if (mix.phase === 'off') return `${lead} beginnt, sobald volle und halbe Stunden am Nachmittag gelernt sind.`;
+    const { ready, learning } = DAY_MIX_SHARES[mix.phase];
+    const shares = `etwa ${percent(ready)} der Aufgaben gelernter Stufen, ${percent(learning)} bei Stufen im Lernen`;
+    if (mix.phase === 'full') return `${lead} voll – ${shares}.`;
+    const right = mix.recent.filter((a) => a.ok).length;
+    return `${lead} Übergang – ${shares}. Voll nach ${DAY_CHECK_CORRECT} von ${DAY_CHECK_SIZE} richtigen 24-Stunden-Antworten,
+      davon ${DAY_CHECK_LATER} in einer späteren Sitzung (bisher ${right} von ${mix.recent.length}).`;
+  }
+
   function showParents(): void {
-    const rows = TRACKS.map((track) => {
+    const row = (track: Track) => {
       const cells = TIERS.map((tier) => {
         if (!TRACK_TIERS[track].includes(tier)) return '<td class="locked"></td>';
         const s = engine.tierState(track, tier);
@@ -556,11 +572,17 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
         return `<td class="${s.unlocked ? '' : 'locked'}">${status}</td>`;
       }).join('');
       return `<tr><th>${TRACK_NAMES[track]}</th>${cells}</tr>`;
-    }).join('');
+    };
+    const rows = [
+      ...TRACKS.filter((t) => !DAY_TRACKS.includes(t)).map(row),
+      `<tr class="group"><th colspan="${TIERS.length + 1}">Uhrzeiten im Tageslauf</th></tr>`,
+      ...DAY_TRACKS.map(row),
+    ].join('');
     const header = TIERS.map((t) => `<th title="${TIER_NAMES[t]}">S${t}</th>`).join('');
     shell.showDialog(
       `<h2>Elternbereich</h2>
        <table class="progress-table"><thead><tr><th></th>${header}</tr></thead><tbody>${rows}</tbody></table>
+       <p class="legend">${dayMixStatus()}</p>
        <p class="legend">S1 volle · S2 halbe · S3 Viertel · S4 10er · S5 5er · S6 einzelne Minuten.<br>
        „übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je richtige Antwort (+${MASTERY_FAST_BONUS} wenn flott),
        −${MASTERY_WRONG} je Fehler. „gelernt“ = nächste Stufe frei: Zahl ab ${READY_MASTERY_BY_TRACK.digital},

@@ -8,7 +8,7 @@ import { Engine as ArticleEngine, EXAMPLE_KEYS, STAGES as ARTICLE_STAGES, freshP
 import { explanation, help as articleHelp } from '../src/modules/articles/texts';
 import { NOUNS } from '../src/modules/articles/words';
 import type { DayContext } from '../src/modules/clock/daytime';
-import { DAY_TRACKS, TRACKS, TRACK_TIERS, exampleTimes, modeOf, setStep } from '../src/modules/clock/engine';
+import { DAY_TRACKS, MIXED_TRACKS, TRACKS, TRACK_TIERS, exampleTimes, modeOf, setStep } from '../src/modules/clock/engine';
 import { exampleMessage, explainExample, helpText, withContext } from '../src/modules/clock/hints';
 import type { Task as EnglishTask } from '../src/modules/english/engine';
 import { example, help as englishHelp } from '../src/modules/english/texts';
@@ -60,8 +60,9 @@ export function germanTexts(): GermanText[] {
         const message = exampleMessage(explainExample({ track, time, context, hourOnly }), mode);
         add(`Uhr ${track} ${tier}: Beispiel`, withContext(context, time, message));
       }
-      // Help: the time of day stands above it in the time-of-day tracks.
-      const contexts: (DayContext | undefined)[] = DAY_TRACKS.includes(track) ? ['afternoon', 'forenoon', 'evening', 'noon', 'night'] : [undefined];
+      // Help: the time of day stands above it in the time-of-day tracks, and in the others once it is mixed in.
+      const all: DayContext[] = ['afternoon', 'forenoon', 'evening', 'noon', 'night'];
+      const contexts: (DayContext | undefined)[] = DAY_TRACKS.includes(track) ? all : MIXED_TRACKS.includes(track) ? [undefined, ...all] : [undefined];
       for (const context of contexts) {
         const spoken = helpText({ track, mode, context, hourOnly }, '').spoken;
         // At night the sentence depends on the minute: "Mitternacht" or "kurz nach Mitternacht".

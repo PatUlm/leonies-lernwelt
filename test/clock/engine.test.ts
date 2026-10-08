@@ -26,6 +26,11 @@ function play(
   return seen;
 }
 
+/** Guided examples still queued come before a warm-up: answer them in the old session. */
+function finishExamples(engine: Engine): void {
+  while (engine.progress.forced.length) answerTask(engine, engine.nextTask(), true, false, 10_000);
+}
+
 describe('Engine', () => {
   it('starts with two guided examples of full hours', () => {
     const engine = new Engine(freshProgress(T0), seeded(1));
@@ -88,6 +93,7 @@ describe('Engine', () => {
   it('starts a new session with a short warm-up on earlier tiers', () => {
     const engine = new Engine(freshProgress(T0), seeded(14));
     play(engine, 60, 1, seeded(15), 1000, 10_000);
+    finishExamples(engine);
     const unlocked = engine.unlockedTiers('digital');
     expect(unlocked.length).toBeGreaterThan(2);
     const next = play(engine, 3, 1, seeded(16), 1000, 10_000, T0 + 100 * SESSION_GAP_MS);
@@ -117,6 +123,7 @@ describe('Engine', () => {
   it('ends the warm-up also when answers are found with help', () => {
     const engine = new Engine(freshProgress(T0), seeded(14));
     play(engine, 60, 1, seeded(15), 1000, 10_000);
+    finishExamples(engine);
     engine.touch(T0 + 100 * SESSION_GAP_MS);
     expect(engine.progress.warmup).toBe(3);
     for (let i = 0; i < 3; i++) {

@@ -5,6 +5,26 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.6 – 2026-10-08
+
+### Geändert
+
+- **Nachmittag und Abend in allen Übungen:** Sobald volle und halbe Stunden am Nachmittag
+  sitzen, bekommen auch Ablesen, Worte, Zeiger stellen, Eintippen und „vor/nach halb“ eine
+  Tageszeit – zuerst etwa jede vierte Aufgabe, nach einer Wiederholungsprobe in einer
+  späteren Sitzung etwa jede zweite. Bisher übten nur die eigenen Tageszeit-Aufgaben
+  24-Stunden-Zeiten, am Ende kaum jede zwanzigste Aufgabe am Nachmittag; jetzt ist es
+  rund die Hälfte aller Aufgaben ab 12 Uhr. Eine neue Minutenstufe beginnt weiter mit den
+  vertrauten Stunden, und wer die Uhr richtig liest und sich nur in der Tageshälfte vertut,
+  verliert beim Ablesen nichts.
+- **Tageszeiten früher:** Die Aufgaben mit Tageszeit kommen direkt nach den Uhrzeiten in
+  Worten, vor Zeiger stellen und Eintippen. Nachmittag kommt etwa in der Hälfte der
+  Aufgaben mit Tageszeit, Abend in einem Viertel, Vormittag, Mittag und Mitternacht als
+  Gegenprobe.
+- **Elternbereich:** Die Tageszeit-Übungen stehen gesammelt unter „Uhrzeiten im
+  Tageslauf“ („24-Stunden-Zeiten lesen“, „Zeiger zu 24-Stunden-Zeiten stellen“,
+  „24-Stunden-Zeiten eintippen“), dazu der Stand der Beimischung in den übrigen Übungen.
+
 ## 2026.10.5 – 2026-10-08
 
 ### Geändert
