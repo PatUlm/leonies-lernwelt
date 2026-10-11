@@ -17,6 +17,23 @@ Offene Fragen:
 - **Alltag und Zeitspannen:** „Der Film beginnt um halb vier. Wie lange noch?“ – erst wenn das
   Uhrlesen sicher sitzt.
 
+## Mathe: Umkehraufgaben
+
+Beim Planen bewusst nicht in die erste Version genommen:
+
+- **Minus-Platzhalter `__ − 23 = 67`:** Die Umkehraufgabe ist dann eine Plusaufgabe
+  (67 + 23, schrittweise 67 + 20 = 87, dann 87 + 3 = 90), die Probe 90 − 23 = 67. Laut
+  Game-Designer ein eigenes Kapitel mit eigener Strategie, eigener Freischaltung (nach
+  Stufe 9) und eigenen Hilfen – die Minus-Hilfen passen nicht.
+- **Zahlenstrahl als Hilfe beim Zehnerübergang:** Ein kurzer Zahlenstrahl, der zeigt, wie
+  73 − 7 erst bis 70 und dann weiter zurück geht. Braucht eine eigene Grafik; bisher holt
+  die Hilfe die zwei Schritte zurück.
+- **Glatte Zehner abziehen (90 − 30):** Als später Sonderfall; der Einer-Schritt fällt dabei
+  weg, deshalb nicht in den neun Stufen.
+- **Längeres Aufwärmen nach Fehlern:** Der Game-Designer schlug zwei Aufwärmaufgaben vor,
+  nach Fehlern bis zu vier. Umgesetzt sind die zwei; nach einem gezeigten Ergebnis kommen
+  ein Beispiel und eine leichtere Aufgabe.
+
 ## Deutsch: Der, die, das
 
 Vom Game-Designer bewusst für später vorgesehen; beides steht auf den Schulbuchseiten

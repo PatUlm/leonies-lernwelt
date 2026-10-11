@@ -124,9 +124,9 @@ describe('pickRecommendation', () => {
 });
 
 describe('areas', () => {
-  it('has the five school subjects with the clock in maths', () => {
+  it('has the five school subjects with the clock and the inverse tasks in maths', () => {
     expect(AREAS.map((a) => a.title)).toEqual(['Mathe', 'Deutsch', 'Musik', 'HSU', 'Englisch']);
-    expect(AREAS[0].modules.map((m) => m.id)).toEqual(['uhr']);
+    expect(AREAS[0].modules.map((m) => m.id)).toEqual(['uhr', 'umkehr']);
     expect(AREAS[1].modules.map((m) => m.id)).toEqual(['artikel']);
     expect(AREAS[4].modules.map((m) => m.id)).toEqual(['woerter']);
   });

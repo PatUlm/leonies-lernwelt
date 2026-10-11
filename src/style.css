@@ -877,7 +877,8 @@ a.area-card:active {
 /* ---------- clock module ---------- */
 
 .clock-game,
-.word-game {
+.word-game,
+.calc-game {
   height: 100dvh;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1988,12 +1989,237 @@ a.area-card:active {
   height: 26px;
 }
 
+/* ---------- Umkehraufgaben ---------- */
+
+/* The gap task, its inverse and the lines to calculate, one below the other. */
+.calc-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 620px);
+  min-height: 0;
+  padding: 14px 20px;
+  border-radius: 28px;
+  border: 4px solid var(--candy-soft);
+  background: var(--card);
+  box-shadow: 0 6px 0 #f9a8d4;
+  overflow: auto;
+}
+
+.calc-rows {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.calc-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.calc-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.calc-eq {
+  display: flex;
+  align-items: center;
+  gap: 0.28em;
+  white-space: nowrap;
+  font-size: clamp(30px, 4.6vw, 42px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+
+.calc-step .calc-eq,
+.calc-probe .calc-eq {
+  padding-left: 0.6em;
+}
+
+.calc-field {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.3em;
+  min-height: 1.3em;
+  padding: 0 0.15em;
+  border-radius: 12px;
+  border: 3px solid #e2d8ca;
+  background: #fff;
+}
+
+.calc-field.small {
+  min-width: 1.6em;
+}
+
+.calc-field.pending {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+
+/* The open field: thick border plus a blinking cursor, never colour alone. */
+.calc-field.active {
+  border-color: var(--hour);
+  border-width: 4px;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.calc-field.active::after {
+  content: '';
+  width: 3px;
+  height: 0.9em;
+  margin-left: 2px;
+  background: var(--hour);
+  animation: caret 1s steps(1) infinite;
+}
+
+.calc-field.ok {
+  border-color: var(--good);
+  background: var(--good-bg);
+  color: var(--good);
+}
+
+.calc-field.shown {
+  border-color: var(--accent);
+  background: #fef3c7;
+}
+
+.calc-field.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.calc-field.wrong::after {
+  display: none;
+}
+
+/* In an example: the number to type. */
+.calc-field .ghost {
+  opacity: 0.4;
+}
+
+.calc-gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9em;
+  min-height: 1.2em;
+  border-radius: 10px;
+  border: 3px dashed var(--accent);
+  background: #fef3c7;
+}
+
+.calc-gap.filled {
+  border-style: solid;
+  border-color: var(--good);
+  background: var(--good-bg);
+  color: var(--good);
+  animation: copy-pop 0.6s ease-out;
+}
+
+/* After "added": look at the minus. */
+.calc-op.flag {
+  color: var(--bad);
+  text-decoration: underline 4px;
+  text-underline-offset: 6px;
+}
+
+/* The tens result taken over into the ones line. */
+.calc-copy.copied {
+  display: inline-block;
+  color: var(--good);
+  animation: copy-pop 0.6s ease-out;
+}
+
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes copy-pop {
+  0% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.calc-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: min(100%, 560px);
+}
+
+.calc-choices[hidden],
+.keypad[hidden] {
+  display: none;
+}
+
+.calc-choice {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .calc-card {
+    padding: 10px 14px;
+    border-radius: 22px;
+  }
+
+  .calc-rows {
+    gap: 4px;
+  }
+
+  .calc-label {
+    font-size: 13px;
+  }
+
+  .calc-eq {
+    font-size: 27px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .calc-card {
+    padding: 8px 10px;
+  }
+
+  .calc-rows {
+    gap: 2px;
+  }
+
+  .calc-label {
+    font-size: 12px;
+  }
+
+  .calc-eq {
+    font-size: 22px;
+  }
+
+  .calc-field {
+    border-radius: 9px;
+  }
+
+  .calc-choices {
+    width: 100%;
+    gap: 8px;
+  }
+}
+
 /* ---------- phones ---------- */
 
 /* Phones: the sweets at the bottom edge would sit behind the answer buttons. */
 @media (max-width: 600px), (orientation: landscape) and (max-height: 500px) {
   .clock-game .sky .bob,
-  .word-game .sky .bob {
+  .word-game .sky .bob,
+  .calc-game .sky .bob {
     display: none;
   }
 }
@@ -2095,7 +2321,8 @@ a.area-card:active {
  */
 @media (orientation: landscape) and (max-height: 500px) {
   .clock-game,
-  .word-game {
+  .word-game,
+  .calc-game {
     grid-template-columns: minmax(0, 42%) minmax(0, 1fr) auto;
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     column-gap: 14px;
@@ -2170,7 +2397,8 @@ a.area-card:active {
   }
 
   .clock-wrap,
-  .word-card {
+  .word-card,
+  .calc-card {
     grid-column: 1;
     grid-row: 1 / 6;
     width: 100%;

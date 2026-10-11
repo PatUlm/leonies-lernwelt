@@ -13,6 +13,11 @@ import { exampleMessage, explainExample, helpText, withContext } from '../src/mo
 import type { Task as EnglishTask } from '../src/modules/english/engine';
 import { example, help as englishHelp } from '../src/modules/english/texts';
 import { WORDS } from '../src/modules/english/words';
+import { BACK_EXAMPLE, EXAMPLES, STAGES as INVERSE_STAGES, levelOf, stepsOf, type Problem } from '../src/modules/inverse/engine';
+import {
+  CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, explanation as inverseExample,
+  help as inverseHelp, question as inverseQuestion,
+} from '../src/modules/inverse/texts';
 import { MARKED_IS_RIGHT } from '../src/shared/game/texts';
 import type { SpeechPart } from '../src/shared/speech';
 import { spokenGerman } from '../src/shared/spoken';
@@ -70,6 +75,29 @@ export function germanTexts(): GermanText[] {
       }
     }
   }
+
+  // Umkehraufgaben: examples, questions, help and hints
+  const front = ([total, part]: readonly [number, number]): Problem => ({ total, part, shape: 'front' });
+  for (const stage of INVERSE_STAGES) {
+    for (const example of EXAMPLES[levelOf(stage)]) add(`Umkehr ${stage}: Beispiel`, inverseExample(stage, front(example)));
+  }
+  add(`Umkehr ${BACK_EXAMPLE.stage}: Beispiel`, inverseExample(BACK_EXAMPLE.stage, BACK_EXAMPLE.problem));
+  add('Umkehr: Beispiel', EXAMPLE_TYPE);
+  // Two lines without a ten to cross, from a round ten and over the ten; one line; directly with the check sum.
+  const lines = [
+    ...stepsOf({ form: 1, problem: front(EXAMPLES[1][0]), probe: false }),
+    ...stepsOf({ form: 1, problem: front(EXAMPLES[2][0]), probe: false }),
+    ...stepsOf({ form: 1, problem: front(EXAMPLES[3][0]), probe: false }),
+    ...stepsOf({ form: 2, problem: front(EXAMPLES[1][0]), probe: false }),
+    ...stepsOf({ form: 3, problem: front(EXAMPLES[1][0]), probe: true }),
+  ];
+  for (const step of lines) {
+    add('Umkehr: Frage', inverseQuestion(step));
+    add('Umkehr: Hilfe', inverseHelp(step));
+  }
+  for (const step of lines.filter((s) => s.kind === 'line' || s.kind === 'direct')) add('Umkehr: Frage', `${CHOOSE_RIGHT} ${inverseQuestion(step)}`);
+  add('Umkehr: Frage', CHOOSE_QUESTION);
+  add('Umkehr: Hilfe', CHOOSE_HELP, CHOOSE_WRONG, ...Object.values(HINTS));
 
   // Farben, Zahlen, Tiere: the German parts around the English word
   for (const word of WORDS) {

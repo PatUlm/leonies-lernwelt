@@ -5,7 +5,8 @@ einfach im Browser – ohne Installation, ohne Konto, ohne Werbung.
 
 Die Module sind nach Schulfächern sortiert – Leonies Idee: Jeder **Lernbereich** ist eine
 eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8) lernt damit, die
-Zeigeruhr zu lesen. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
+Zeigeruhr zu lesen. Daneben löst sie in **„Umkehraufgaben“** Platzhalteraufgaben wie
+„__ + 23 = 90“ rückwärts. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
 Artikel. In Englisch lernt **„Farben, Zahlen, Tiere“** die ersten englischen Wörter. Weitere
 Module folgen.
 
@@ -49,7 +50,7 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 
 | Bereich | Süßigkeit | Module |
 |---|---|---|
-| Mathe | Lolli | Die Uhr |
+| Mathe | Lolli | Die Uhr, Umkehraufgaben |
 | Deutsch | Bonbon | Der, die, das |
 | Musik | Cupcake | folgt |
 | HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
@@ -239,6 +240,41 @@ des Profils mit.
 <p align="center">
   <img src="docs/screenshots/dashboard.png" alt="Startseite mit Pokalen, Sternen, Abzeichen und den fünf Lernbereichen als Süßigkeiten" width="720">
 </p>
+
+## Mathe: Umkehraufgaben
+
+Platzhalteraufgaben im Zahlenraum bis 100, wie in der 3. Klasse: Welche Zahl gehört in die
+Lücke von „__ + 23 = 90“? Leonie rechnet die **Umkehraufgabe** 90 − 23 halbschriftlich,
+**schrittweise**: erst die Zehner, dann die Einer. Am Ende steht die Zahl in der Lücke –
+67 + 23 = 90 ist zugleich die Probe.
+
+Die Schreibweise wird nach und nach kürzer; jede neue Schreibweise beginnt wieder mit den
+leichten Zahlen, damit nie zwei Dinge auf einmal neu sind. So entstehen neun Stufen:
+
+| Zahlen | Zwei Schritte | Eine Zeile | Direkt |
+|---|:-:|:-:|:-:|
+| ohne Zehnerübergang (96 − 23) | 1 | 4 | 7 |
+| glatte Zehner (90 − 23, auch 100 − 23) | 2 | 5 | 8 |
+| über den Zehner (93 − 27) | 3 | 6 | 9 |
+
+- **Zwei Schritte:** 90 − 20 = 70, dann 70 − 3 = 67. Das Zwischenergebnis wandert in die
+  zweite Zeile. **Eine Zeile:** 90 − 20 − 3 = 67. **Direkt:** 90 − 23 = 67.
+- Glatte Zehner kommen nach den Aufgaben ohne Übergang: 90 − 23 führt zu 70 − 3, und das
+  geht schon rückwärts über den Zehner.
+- Eingetippt wird mit der großen Ziffern-Tastatur; das Feld, in dem gerade gerechnet wird,
+  hat einen dicken Rahmen und einen blinkenden Strich.
+- Ab Stufe 3 steht die Lücke manchmal hinten (23 + __ = 90), ab „Eine Zeile“ wählt Leonie
+  manchmal zuerst die Umkehraufgabe (90 − 23 oder 90 + 23), bei „Direkt“ rechnet sie manchmal
+  die Probe selbst.
+- Nach einem falschen Ergebnis gibt es einen Tipp passend zum Fehler – zum Beispiel „zuerst
+  nur die Zehner“, wenn zuerst die Einer abgezogen wurden, oder „Dann hast du einen Zehner
+  weniger“ bei 70 − 3 = 77. Beim zweiten Fehlversuch zeigt die App die Zeile, danach kommen
+  ein Beispiel und eine leichtere Aufgabe. Die Hilfe holt bei „Eine Zeile“ und „Direkt“ die
+  zwei Schritte zurück.
+
+Eine Aufgabe zählt als richtig, wenn alle Zeilen beim ersten Versuch ohne Hilfe stimmen;
+mit Tipp oder Hilfe gibt es die halben Punkte. Ein Durchgang hat acht Aufgaben. Stufen,
+Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Deutsch: Der, die, das
 

@@ -5,6 +5,18 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.7 – 2026-10-11
+
+### Hinzugefügt
+
+- **Neues Mathe-Modul „Umkehraufgaben“:** Platzhalteraufgaben wie „__ + 23 = 90“ im
+  Zahlenraum bis 100 über die Umkehraufgabe 90 − 23 lösen, schrittweise – erst die Zehner,
+  dann die Einer. Neun Stufen: zuerst in zwei Schritten mit Zwischenergebnis, dann in einer
+  Zeile (90 − 20 − 3), dann direkt; jeweils ohne Zehnerübergang, mit glatten Zehnern und über
+  den Zehner. Eingabe mit der Ziffern-Tastatur, Tipps passend zum Fehler, die Lücke auch
+  hinten (23 + __ = 90), die Umkehraufgabe auswählen und die Probe selbst rechnen.
+- **Rechenzeichen werden vorgelesen:** „90 − 23 = 67“ klingt als „90 minus 23 gleich 67“.
+
 ## 2026.10.6 – 2026-10-08
 
 ### Geändert
