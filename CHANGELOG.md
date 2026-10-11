@@ -5,6 +5,20 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.9 – 2026-10-11
+
+### Geändert
+
+- **Umkehraufgaben: mehr Übung pro Stufe:** Die nächste Stufe öffnet sich nach zehn statt
+  sechs Aufgaben, die beim ersten Versuch ohne Hilfe ganz richtig sind (zuletzt 8 von 10
+  richtig, mit mindestens vier verschiedenen Zahlen). Sicher ist eine Stufe ab 140
+  Lernpunkten. Es bleibt bei neun Stufen.
+- **Umkehraufgaben: kürzere Beispiele:** Nur eine neue Schreibweise beginnt mit zwei
+  erklärten Beispielen. Neue Zahlen in einer bekannten Schreibweise (glatte Zehner, über den
+  Zehner) bekommen ein kurzes Beispiel, das nur den neuen Schritt zeigt. Bisher wiederholten
+  je zwei fast gleiche Beispiele den ganzen Rechenweg, kurz nacheinander. Das Beispiel zur
+  Lücke hinten (23 + __ = 90) kommt erst nach etwas Übung in der neuen Schreibweise.
+
 ## 2026.10.8 – 2026-10-11
 
 ### Behoben

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BACK_EXAMPLE, EXAMPLES, Engine, HELP_POINTS, LEVEL_POINTS, MASTERY_CORRECT, PROBLEMS, ROUND_TASKS, SESSION_GAP_MS, STAGES,
-  WARMUP_TASKS, answerOf, formOf, freshProgress, levelOf, levelOfProblem, parseKey, problemKey,
+  BACK_EXAMPLE, EXAMPLES, Engine, HELP_POINTS, LEVEL_POINTS, MASTERY_CORRECT, MIN_DISTINCT, PROBLEMS, READY_MASTERY,
+  ROUND_TASKS, SECURE_MASTERY, SESSION_GAP_MS, STAGES, WARMUP_TASKS, answerOf, examplesFor, formOf, freshProgress, levelOf, levelOfProblem,
+  parseKey, problemKey,
   type Outcome, type Stage, type Task,
 } from '../../src/modules/inverse/engine';
 import { seeded } from '../rng';
@@ -116,17 +117,36 @@ describe('inverse engine', () => {
     expect(easy.stage).toBe((formOf(hard.stage) - 1) * 3 + 1);
   });
 
-  it('unlocks the stages one by one, each with its two examples, up to stage 9', () => {
+  it('opens the next stage after exactly ten clean tasks, not after nine', () => {
+    const engine = new Engine(freshProgress(T0), seeded(15));
+    play(engine, 2);
+    const tasks = play(engine, 9);
+    expect(tasks.every((t) => t.kind === 'practice' && t.stage === 1)).toBe(true);
+    expect(engine.stageState(2).unlocked).toBe(false);
+    play(engine, 1);
+    expect(engine.stageState(2).unlocked).toBe(true);
+    const correct = engine.stageState(1).window.filter((a) => a.ok);
+    expect(correct).toHaveLength(10);
+    expect(new Set(correct.map((a) => a.total)).size).toBeGreaterThanOrEqual(4);
+    expect(new Set(correct.map((a) => a.part)).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it('unlocks the stages one by one after ten clean tasks: two examples for a new way of writing, one for new numbers', () => {
     const engine = new Engine(freshProgress(T0), seeded(6));
     for (const stage of STAGES.slice(1)) {
       reach(engine, stage);
       const prev = engine.stageState((stage - 1) as Stage);
       expect(prev.ready).toBe(true);
       const correct = prev.window.filter((a) => a.ok);
-      expect(new Set(correct.map((a) => a.total)).size).toBeGreaterThanOrEqual(3);
-      expect(new Set(correct.map((a) => a.part)).size).toBeGreaterThanOrEqual(3);
-      const next = play(engine, 2);
-      expect(next.map((t) => [t.kind, t.stage])).toEqual([['example', stage], ['example', stage]]);
+      expect(prev.mastery).toBeGreaterThanOrEqual(READY_MASTERY);
+      expect(correct.length).toBeGreaterThanOrEqual(8);
+      expect(new Set(correct.map((a) => a.total)).size).toBeGreaterThanOrEqual(MIN_DISTINCT);
+      expect(new Set(correct.map((a) => a.part)).size).toBeGreaterThanOrEqual(MIN_DISTINCT);
+      const count = examplesFor(stage);
+      expect(count).toBe(levelOf(stage) === 1 ? 2 : 1);
+      const next = play(engine, count + 1);
+      expect(next.map((t) => [t.kind, t.stage]).slice(0, count)).toEqual(Array(count).fill(['example', stage]));
+      expect(next[count].kind).not.toBe('example');
     }
   });
 
@@ -154,9 +174,16 @@ describe('inverse engine', () => {
     const engine = new Engine(freshProgress(T0), seeded(9));
     reach(engine, 4);
     expect(engine.progress.backShown).toBe(false);
-    const tasks = play(engine, 30);
-    const back = tasks.find((t) => t.problem.shape === 'back')!;
-    expect(tasks.indexOf(back)).toBeGreaterThan(2);
+    let back: Task | undefined;
+    for (let i = 0; i < 80 && !back; i++) {
+      const before = engine.stageState(BACK_EXAMPLE.stage).attempts;
+      const [t] = play(engine, 1);
+      if (t.problem.shape === 'back') {
+        back = t;
+        // Not right after the examples of the new form: first five tasks of practice in it.
+        expect(before).toBe(5);
+      }
+    }
     expect(back).toMatchObject({ kind: 'example', stage: BACK_EXAMPLE.stage, key: problemKey(BACK_EXAMPLE.problem) });
     expect(engine.progress.backShown).toBe(true);
     const later = play(engine, 100).filter((t) => t.kind !== 'example');
@@ -189,8 +216,8 @@ describe('inverse engine', () => {
   it('makes a stage secure only in a later session', () => {
     const engine = new Engine(freshProgress(T0), seeded(12));
     reach(engine, 2);
-    play(engine, 30);
-    expect(engine.stageState(1).mastery).toBeGreaterThanOrEqual(100);
+    for (let i = 0; i < 300 && engine.stageState(1).mastery < SECURE_MASTERY; i++) play(engine, 1);
+    expect(engine.stageState(1).mastery).toBeGreaterThanOrEqual(SECURE_MASTERY);
     expect(engine.stageState(1).secure).toBe(false);
     const later = T0 + SESSION_GAP_MS + 1;
     for (let i = 0; i < 200 && !engine.stageState(1).secure; i++) play(engine, 1, undefined, later);

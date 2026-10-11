@@ -273,8 +273,11 @@ leichten Zahlen, damit nie zwei Dinge auf einmal neu sind. So entstehen neun Stu
   zwei Schritte zurück.
 
 Eine Aufgabe zählt als richtig, wenn alle Zeilen beim ersten Versuch ohne Hilfe stimmen;
-mit Tipp oder Hilfe gibt es die halben Punkte. Ein Durchgang hat acht Aufgaben. Stufen,
-Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
+mit Tipp oder Hilfe gibt es die halben Punkte. Die nächste Stufe öffnet sich erst nach zehn
+solchen Aufgaben – lieber mehr Übung pro Stufe als mehr Stufen. Eine neue Schreibweise
+beginnt mit zwei erklärten Beispielen, neue Zahlen in einer bekannten Schreibweise mit einem
+kurzen, das nur den Schritt über den Zehner zeigt. Ein Durchgang hat acht Aufgaben. Abzeichen,
+Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Deutsch: Der, die, das
 

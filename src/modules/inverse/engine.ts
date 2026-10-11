@@ -36,18 +36,25 @@ export function stageOf(form: Form, level: Level): Stage {
 /**
  * Learning points per stage: +MASTERY_CORRECT for a task solved completely on
  * the first try without help; nothing taken away, no bonus for speed.
- * READY unlocks the next stage, SECURE earns the badge.
+ * READY unlocks the next stage (ten clean tasks: more practice per stage, the
+ * stages stay few), SECURE earns the badge.
  */
 export const MASTERY_CORRECT = 10;
-export const READY_MASTERY = 60;
-export const SECURE_MASTERY = 100;
-export const MAX_MASTERY = 120;
-export const WINDOW = 8;
-export const READY_WINDOW_CORRECT = 6;
-export const SECURE_WINDOW_CORRECT = 7;
+export const READY_MASTERY = 100;
+export const SECURE_MASTERY = 140;
+export const MAX_MASTERY = 160;
+export const WINDOW = 10;
+export const READY_WINDOW_CORRECT = 8;
+export const SECURE_WINDOW_CORRECT = 9;
 /** Correct tasks in the window must have this many different sums and as many different known parts. */
-export const MIN_DISTINCT = 3;
-export const EXAMPLES_PER_STAGE = 2;
+export const MIN_DISTINCT = 4;
+/**
+ * A new way of writing starts with two guided examples; new numbers in a known
+ * way of writing with one, which shows only what is new.
+ */
+export function examplesFor(stage: Stage): number {
+  return levelOf(stage) === 1 ? 2 : 1;
+}
 /** Share of the newest stage, growing with its mastery; the stage before gets most of the rest. */
 export const NEWEST_SHARE_MIN = 0.4;
 export const NEWEST_SHARE_MAX = 0.75;
@@ -69,7 +76,7 @@ export const STREAK_PRAISE = 3;
 export const BACK_SHAPE_STAGE: Stage = 3;
 export const BACK_SHAPE_SHARE = 0.2;
 /** Practice in the new form before the example of the moved gap comes. */
-export const BACK_EXAMPLE_AFTER = 2;
+export const BACK_EXAMPLE_AFTER = 5;
 /** From form 2: now and then she first chooses the inverse ("90 − 23" or "90 + 23"). */
 export const CHOOSE_SHARE = 0.3;
 /** In form 3: now and then she types the check sum herself ("67 + 23 = __"). */
@@ -324,7 +331,7 @@ export interface AnswerResult {
 export type Rng = () => number;
 
 function introExamples(stage: Stage): ForcedTask[] {
-  return Array.from({ length: EXAMPLES_PER_STAGE }, (_, pick) => ({ type: 'example', stage, pick }));
+  return Array.from({ length: examplesFor(stage) }, (_, pick) => ({ type: 'example', stage, pick }));
 }
 
 function freshStage(unlocked: boolean): StageState {
