@@ -296,6 +296,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     keypad = createKeypad({
       onDigit: (d) => typeDigit(d),
       onBackspace: () => {
+        if (shell.dialogOpen) return;
         typed = typed.slice(0, -1);
         updateDisplay();
       },
@@ -312,8 +313,9 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
     return { hour: typed.slice(0, typed.length - 2), minute: typed.slice(-2) };
   }
 
+  /** The pad also listens to the keyboard: keys typed into a dialog (parents' area) are not answers. */
   function typeDigit(d: number): void {
-    if (phase !== 'question' || typed.length >= 4 || !shell.answersReady) return;
+    if (phase !== 'question' || typed.length >= 4 || !shell.answersReady || shell.dialogOpen) return;
     typed += String(d);
     updateDisplay();
   }
@@ -371,7 +373,7 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onInputDone(): void {
-    if (phase !== 'question' || locked || typed.length < 3 || !shell.answersReady) return;
+    if (phase !== 'question' || locked || typed.length < 3 || !shell.answersReady || shell.dialogOpen) return;
     const parts = typedParts();
     const given: GivenTime = { hour: Number(parts.hour), minute: Number(parts.minute) };
     if (given.hour > 23 || given.minute > 59) {

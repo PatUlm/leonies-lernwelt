@@ -117,17 +117,32 @@ test('choosing the inverse, help in the direct form brings back the two lines, t
   await expect(page.locator('.message')).toHaveText('Gemeinsam geschafft! 26 + 34 = 60.');
 });
 
-test('keys typed while the parents\' area is open are no answers', async ({ page }) => {
+test('keys typed while the parents\' area is open do not type, delete or send a number', async ({ page }) => {
   await startInverse(page, [{ stage: 2, key: 'f:90:23', dueAt: 0 }]);
   await expect(page.locator('.message')).toHaveText('Ziehe zuerst die Zehner ab.');
-  await page.locator('[data-ref="parents"]').click();
-  await expect(page.locator('.dialog')).toBeVisible();
-  await page.keyboard.type('70');
-  await page.keyboard.press('Enter');
-  await page.locator('.dialog .btn.primary').click();
+  const parents = async (keys: () => Promise<void>) => {
+    await page.locator('[data-ref="parents"]').click();
+    await expect(page.locator('.dialog')).toBeVisible();
+    // A tap on the text takes the focus off the sound checkbox: keys reach the page.
+    await page.locator('.dialog h2').click();
+    await keys();
+    await page.locator('.dialog .btn.primary').click();
+  };
+
+  await parents(() => page.keyboard.type('70'));
   await expect(page.locator('.calc-field.active')).toHaveText('');
+
+  // Typed on the pad: Backspace and Enter in the dialog leave it.
+  for (const d of '70') await page.locator('.key-digit', { hasText: new RegExp(`^${d}$`) }).click();
+  await parents(async () => {
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Enter');
+  });
+  await expect(page.locator('.calc-field.active')).toHaveText('70');
   await expect(page.locator('.calc-field.ok')).toHaveCount(0);
   await expect(page.locator('.message')).toHaveText('Ziehe zuerst die Zehner ab.');
+  await page.locator('.key-submit').click();
+  await expect(page.locator('.calc-field.ok')).toHaveText('70');
 });
 
 test('card, message and keypad fit on the screen without scrolling', async ({ page }) => {

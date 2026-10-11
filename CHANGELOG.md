@@ -5,6 +5,15 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.8 – 2026-10-11
+
+### Behoben
+
+- **Tastatur im Elternbereich tippt nicht mehr mit:** War der Elternbereich offen und der
+  Text darin angetippt, landeten Ziffern, Löschen und Enter einer angeschlossenen Tastatur
+  im Eintippen der Uhrzeit – Enter konnte sogar eine Antwort abschicken. Jetzt wirkt die
+  Tastatur nur, solange kein Dialog offen ist (bei der Uhr und bei den Umkehraufgaben).
+
 ## 2026.10.7 – 2026-10-11
 
 ### Hinzugefügt

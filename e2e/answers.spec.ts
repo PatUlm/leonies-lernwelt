@@ -37,6 +37,38 @@ test('a wrong choice turns red with a cross, the other wrong ones grey, the righ
   await expect(page.locator('.answer.wrong, .answer.faded')).toHaveCount(0);
 });
 
+test('keys typed while the parents\' area is open do not type, delete or send the time', async ({ page }) => {
+  await startDevice(page, { forced: [{ type: 'example', track: 'input', tier: 1, pick: 0 }] });
+  await page.goto('/#/mathe/uhr');
+  await expect(page.locator('.time-display')).toBeVisible();
+  // Past the lock of the example, so "Fertig" would send the time.
+  await page.waitForTimeout(1800);
+  const parents = async (keys: () => Promise<void>) => {
+    await page.locator('[data-ref="parents"]').click();
+    await expect(page.locator('.dialog')).toBeVisible();
+    // A tap on the text takes the focus off the sound checkbox: keys reach the page.
+    await page.locator('.dialog h2').click();
+    await keys();
+    await page.locator('.dialog .btn.primary').click();
+  };
+
+  await parents(() => page.keyboard.type('300'));
+  await expect(page.locator('[data-field="hour"]')).toHaveText('–');
+  await expect(page.locator('[data-field="minute"]')).toHaveText('––');
+
+  // The example's 3:00, typed on the pad: Backspace and Enter in the dialog leave it.
+  for (const d of '300') await page.locator('.key-digit', { hasText: new RegExp(`^${d}$`) }).click();
+  await parents(async () => {
+    await page.keyboard.press('Backspace');
+    await page.keyboard.press('Enter');
+  });
+  await expect(page.locator('[data-field="hour"]')).toHaveText('3');
+  await expect(page.locator('[data-field="minute"]')).toHaveText('00');
+  await expect(page.locator('.message')).not.toContainText('Genau!');
+  await page.locator('.key-submit').click();
+  await expect(page.locator('.message')).toContainText('Genau!');
+});
+
 test('a right choice stays green and greys out all other answers', async ({ page }) => {
   // The guided example marks the right answer.
   await startDevice(page);

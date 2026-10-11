@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-export type ForcedTask = { type: 'example'; track: string; tier: number } | { type: 'easy' };
+export type ForcedTask = { type: 'example'; track: string; tier: number; pick?: number } | { type: 'easy' };
 
 /**
  * Fresh device with a clock progress whose first tasks are `forced`
