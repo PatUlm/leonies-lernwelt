@@ -1,10 +1,12 @@
 /**
  * Renders the English words of "Farben, Zahlen, Tiere" with Gemini TTS into
- * .data/tts/en/ (<word>.mp3 and <word>.slow.mp3) plus a page to listen to
+ * .data/tts/en/ (<word>.mp3 and <word>.slow.mp3) and the sentences of "How
+ * many?" (<sentence-file>.mp3, normal speed only) plus a page to listen to
  * them before bin/tts-upload.sh puts them on the server.
  *
  *   node scripts/render-speech.ts            # renders what is missing
  *   node scripts/render-speech.ts red blue   # renders these words again
+ *   node scripts/render-speech.ts there-is-one-ghost   # a sentence again, by its file name
  *   TTS_MODEL=gemini-3.8-flash-lite-tts node scripts/render-speech.ts   # another model
  *     (the daily request limit counts per model)
  *
@@ -16,21 +18,24 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { WORDS } from '../src/modules/english/words.ts';
+import { englishSentences, sentenceFile } from '../src/modules/howmany/content.ts';
 
 const MODEL = process.env.TTS_MODEL ?? 'gemini-3.8-flash-tts';
 const VOICE = 'en-gb-tutor-13';
 const STYLE = {
   normal: "Say this English word clearly and naturally, in a friendly British English teacher's voice, for an eight-year-old child learning English.",
   slow: 'Say this English word slowly and very clearly, like a friendly British English teacher repeating it for an eight-year-old child.',
+  sentence: "Say this English sentence clearly and naturally, in a friendly British English teacher's voice, for an eight-year-old child learning English.",
 };
+const SENTENCES = englishSentences();
 /** Pause between requests: the API allows about 10 per minute. */
 const PAUSE_MS = 6500;
 const OUT = join(import.meta.dirname, '..', '.data', 'tts', 'en');
 
 const key = process.env.GEMINI_API_KEY ?? readFileSync(join(homedir(), '.config', 'lernwelt', 'gemini-api-key'), 'utf8').trim();
 const again = new Set(process.argv.slice(2));
-const unknown = [...again].filter((w) => !WORDS.some((x) => x.en === w));
-if (unknown.length) throw new Error(`not a word of the app: ${unknown.join(', ')}`);
+const unknown = [...again].filter((w) => !WORDS.some((x) => x.en === w) && !SENTENCES.some((s) => sentenceFile(s) === w));
+if (unknown.length) throw new Error(`not a word or sentence of the app: ${unknown.join(', ')}`);
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -81,11 +86,22 @@ for (const { en } of WORDS) {
     await sleep(PAUSE_MS);
   }
 }
+for (const sentence of SENTENCES) {
+  const name = sentenceFile(sentence);
+  const file = join(OUT, `${name}.mp3`);
+  if (existsSync(file) && !again.has(name)) continue;
+  rmSync(file, { force: true });
+  toMp3(await render(sentence, 'sentence'), file);
+  console.log(sentence);
+  await sleep(PAUSE_MS);
+}
 
 const rows = WORDS.map(({ en, de }) => `<tr><td>${en}</td><td>${de}</td>`
   + `<td><audio controls preload="none" src="${en}.mp3"></audio></td>`
   + `<td><audio controls preload="none" src="${en}.slow.mp3"></audio></td></tr>`);
+const sentenceRows = SENTENCES.map((s) => `<tr><td>${s}</td><td><audio controls preload="none" src="${sentenceFile(s)}.mp3"></audio></td></tr>`);
 writeFileSync(join(OUT, 'index.html'), `<!doctype html><meta charset="utf-8"><title>Aufnahmen prüfen</title>
 <style>body{font:16px system-ui;margin:2em}td{padding:.2em .8em}</style>
-<h1>Englische Wörter (${VOICE})</h1><table><tr><th>Wort</th><th></th><th>normal</th><th>langsam</th></tr>${rows.join('\n')}</table>`);
+<h1>Englische Wörter (${VOICE})</h1><table><tr><th>Wort</th><th></th><th>normal</th><th>langsam</th></tr>${rows.join('\n')}</table>
+<h2>Sätze</h2><table>${sentenceRows.join('\n')}</table>`);
 console.log(`done: ${join(OUT, 'index.html')}`);

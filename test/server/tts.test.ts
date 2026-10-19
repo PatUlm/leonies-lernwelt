@@ -41,6 +41,16 @@ describe('recordings', () => {
     expect(await recordings.get('en', 'blue', false)).toBeNull();
     expect(await recordings.get('en', 'hello', false)).toBeNull();
   });
+
+  it('exist for the sentences of "How many?" under their file name, at normal speed only', async () => {
+    await writeFile(join(dir, 'tts', 'en', 'there-is-one-ghost.mp3'), 'mp3:one ghost');
+    expect(speakable('en', 'There is one ghost.')).toBe(true);
+    expect(speakable('en', 'There is one ghosts.')).toBe(false);
+    const recordings = new Recordings(join(dir, 'tts'));
+    expect((await recordings.get('en', 'There is one ghost.', false))?.toString()).toBe('mp3:one ghost');
+    expect((await recordings.get('en', 'There is one ghost.', true))?.toString()).toBe('mp3:one ghost');
+    expect(await recordings.get('en', 'There are two ghosts.', false)).toBeNull();
+  });
 });
 
 describe('GET /api/tts', () => {

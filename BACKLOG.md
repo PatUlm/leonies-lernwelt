@@ -56,6 +56,20 @@ Vom Game-Designer bewusst für später vorgesehen:
 - **Mengenbilder:** kleine Mengen bis fünf als Punkte oder Tiere statt nur als Ziffer.
 - **Nachsprechen:** freiwillig „Magst du es auch sagen?“, ohne Bewertung.
 
+## Englisch: How many?
+
+Mit dem Game-Designer für nach der ersten Version vorgesehen:
+
+- **Mehr Zahlen:** 1–10 gemischt, später bis 20; größere Mengen in übersichtlichen
+  Fünfergruppen. Jede Zahl bringt je Nomen eine Aufnahme mehr.
+- **Mehr Nomen:** weitere Tiere aus „Farben, Zahlen, Tiere“, sobald die drei ersten sitzen.
+- **Die Frage selbst bauen:** „How many ghosts are there?“ als eigene Stufe.
+- **Die Zahl ausschreiben:** zuerst mit vorgegebenen Buchstabenkärtchen, dann per Tastatur;
+  der Rest des Satzes bleibt vorgegeben, damit nicht Grammatik und Rechtschreibung zugleich neu
+  sind.
+- **Unregelmäßige Mehrzahl:** mouse/mice, fish/fish, sheep/sheep als eigene Wortpaare – dort
+  hilft die Regel „mehrere → s“ nicht.
+
 ## Weitere Module
 
 - Musik und HSU: Bereiche sind angelegt, Inhalte fehlen noch.

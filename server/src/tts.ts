@@ -1,12 +1,16 @@
 import { readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { WORDS } from '../../src/modules/english/words.ts';
+import { englishSentences, sentenceFile } from '../../src/modules/howmany/content.ts';
+
+/** The English sentences of "How many?", recorded like the words (normal speed only). */
+const SENTENCES: ReadonlySet<string> = new Set(englishSentences());
 
 /**
- * Only the app's own words have recordings: the word also names the file, so
- * the list keeps requests inside the recordings directory.
+ * Only the app's own words and sentences have recordings: they also name the
+ * file, so the list keeps requests inside the recordings directory.
  */
-const ALLOWED: Record<string, ReadonlySet<string>> = { en: new Set(WORDS.map((w) => w.en)) };
+const ALLOWED: Record<string, ReadonlySet<string>> = { en: new Set([...WORDS.map((w) => w.en), ...SENTENCES]) };
 
 export function speakable(lang: string, text: string): boolean {
   return ALLOWED[lang]?.has(text) ?? false;
@@ -25,7 +29,8 @@ interface Manifest {
 /**
  * Recordings, rendered and checked beforehand and uploaded with
  * bin/tts-upload.sh. English words (scripts/render-speech.ts):
- * <dir>/en/<word>.mp3 and <word>.slow.mp3. German sentences
+ * <dir>/en/<word>.mp3 and <word>.slow.mp3, English sentences
+ * <dir>/en/<sentence-file>.mp3 (see sentenceFile). German sentences
  * (scripts/render-german.ts): <dir>/de/manifest.json maps the spoken text
  * (see src/shared/spoken.ts) to its file.
  */
@@ -41,6 +46,7 @@ export class Recordings {
   async get(lang: string, text: string, slow: boolean): Promise<Buffer | null> {
     let file: string | undefined;
     if (lang === 'de') file = (await this.german()).get(text);
+    else if (lang === 'en' && SENTENCES.has(text)) file = `${sentenceFile(text)}.mp3`;
     else if (speakable(lang, text)) file = slow ? `${text}.slow.mp3` : `${text}.mp3`;
     if (!file) return null;
     try {

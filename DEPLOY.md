@@ -76,12 +76,14 @@ weiter, wenn der Health-Check des neuen Containers grün ist (in der Startphase 
 ## Sprachaufnahmen
 
 Die englischen Wörter liegen als MP3 im Volume (`/data/tts/en/<wort>.mp3` und
-`<wort>.slow.mp3`), nicht im Image. Sie werden lokal mit Gemini TTS erzeugt und vor dem
-Hochladen angehört:
+`<wort>.slow.mp3`), nicht im Image; die Sätze von „How many?“ daneben unter ihrem
+Dateinamen (`there-are-two-ghosts.mp3`, nur normal schnell). Sie werden lokal mit Gemini
+TTS erzeugt und vor dem Hochladen angehört:
 
 ```bash
-node scripts/render-speech.ts            # fehlende Wörter (API-Key in ~/.config/lernwelt/gemini-api-key)
+node scripts/render-speech.ts            # fehlende Wörter und Sätze (API-Key in ~/.config/lernwelt/gemini-api-key)
 node scripts/render-speech.ts red blue   # einzelne Wörter neu aufnehmen
+node scripts/render-speech.ts there-is-one-ghost   # einen Satz neu aufnehmen
 # .data/tts/en/index.html anhören
 bin/tts-upload.sh                        # ersetzt alle Aufnahmen auf dem Server in einem Schritt
 ```

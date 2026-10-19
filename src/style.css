@@ -1837,6 +1837,190 @@ a.area-card:active {
   }
 }
 
+/* ---------- How many? ---------- */
+
+/* Above the sky decor also where .stage dissolves (phone landscape): a cloud must not hide a thing to count. */
+.count-card {
+  position: relative;
+  z-index: 1;
+}
+
+/* One to five things placed as on a die: counted at a glance. */
+.count-picture {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  width: clamp(150px, 26vh, 240px);
+  aspect-ratio: 1;
+  flex: none;
+}
+
+.count-thing {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ghost-svg {
+  width: 92%;
+  height: auto;
+}
+
+.count-emoji {
+  font-size: clamp(36px, 6.5vh, 60px);
+  line-height: 1;
+}
+
+.count-question {
+  margin: 0;
+  font-size: clamp(24px, 3.6vw, 32px);
+  font-weight: 800;
+  color: var(--hour);
+}
+
+.answers.build-answers {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The sentence: four places and the fixed full stop. */
+.build-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.build-slot {
+  min-width: 3.4em;
+  min-height: 58px;
+  padding: 4px 12px;
+  border: 3px dashed var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+  font-size: clamp(24px, 3.6vw, 32px);
+  font-weight: 800;
+}
+
+.build-slot.filled {
+  border-style: solid;
+  border-color: var(--hour);
+  background: var(--card);
+}
+
+.build-slot.ok {
+  border-style: solid;
+  border-color: var(--good);
+  background: var(--good-bg);
+}
+
+/* A check found the wrong card here: the place stays marked until it is filled again. */
+.build-slot.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+
+.build-slot.shown {
+  border-style: solid;
+  border-color: var(--accent);
+  background: #fef3c7;
+}
+
+.build-slot:disabled {
+  cursor: default;
+}
+
+.build-stop {
+  font-size: clamp(28px, 4vw, 36px);
+  font-weight: 800;
+  line-height: 58px;
+}
+
+.build-pool {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.answer.build-card {
+  min-height: 60px;
+  padding: 6px 18px;
+  font-size: clamp(22px, 3.4vw, 30px);
+}
+
+/* A placed card keeps its room: the others do not jump. */
+.answer.build-card.used {
+  visibility: hidden;
+}
+
+@media (max-width: 600px) {
+  .count-picture {
+    width: clamp(120px, 22vh, 180px);
+  }
+
+  .count-question {
+    font-size: 21px;
+  }
+
+  .answers.build-answers {
+    gap: 10px;
+  }
+
+  .build-slot {
+    min-height: 48px;
+    padding: 2px 8px;
+    font-size: 21px;
+  }
+
+  .build-stop {
+    line-height: 48px;
+  }
+
+  .answer.build-card {
+    min-height: 48px;
+    padding: 4px 12px;
+    font-size: 21px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .count-picture {
+    width: min(100%, 44vh);
+  }
+
+  .count-emoji {
+    font-size: 8vh;
+  }
+
+  .count-question {
+    font-size: 18px;
+  }
+
+  .answers.build-answers {
+    gap: 6px;
+  }
+
+  .build-slot {
+    min-height: 40px;
+    font-size: 18px;
+  }
+
+  .build-stop {
+    line-height: 40px;
+  }
+
+  .answer.build-card {
+    min-height: 40px;
+    padding: 2px 10px;
+    font-size: 18px;
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {

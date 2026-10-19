@@ -5,6 +5,19 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.10 – 2026-10-19
+
+### Hinzugefügt
+
+- **Neues Englisch-Modul „How many?“:** Zu einem Bild mit ein bis fünf Geistern, Katzen
+  oder Hunden fragt die App „How many ghosts are there?“. Leonie baut die Antwort aus
+  Wortkärtchen: „There is one ghost.“ oder „There are three ghosts.“. Drei Stufen legen je ein
+  Kärtchen mehr dazu, das nicht passt: erst die andere Form des Nomens (ghost/ghosts), dann
+  „is“ oder „are“, dann eine falsche Zahl. „One“ kommt in etwa vier von zehn Aufgaben vor,
+  denn dort fehlt das s. Geprüft wird erst auf Knopfdruck; richtige Kärtchen bleiben stehen,
+  falsche gehen zurück, und ein Tipp passt zum Fehler. Fragen und Antworten sind als
+  englische Aufnahmen vorgelesen.
+
 ## 2026.10.9 – 2026-10-11
 
 ### Geändert

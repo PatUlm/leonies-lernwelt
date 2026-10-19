@@ -13,6 +13,10 @@ import { exampleMessage, explainExample, helpText, withContext } from '../src/mo
 import type { Task as EnglishTask } from '../src/modules/english/engine';
 import { example, help as englishHelp } from '../src/modules/english/texts';
 import { WORDS } from '../src/modules/english/words';
+import { EXAMPLES as HOWMANY_EXAMPLES, STAGES as HOWMANY_STAGES, parseKey as parseHowMany } from '../src/modules/howmany/engine';
+import {
+  BUILD_PROMPT, COMPLETE_HELP, HINTS as HOWMANY_HINTS, MARKED_CARD, explanation as howManyExample, help as howManyHelp, reveal as howManyReveal,
+} from '../src/modules/howmany/texts';
 import { BACK_EXAMPLE, EXAMPLES, STAGES as INVERSE_STAGES, levelOf, stepsOf, type Problem } from '../src/modules/inverse/engine';
 import {
   CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, explanation as inverseExample,
@@ -106,5 +110,18 @@ export function germanTexts(): GermanText[] {
       for (const dropped of [false, true]) add('Englisch: Hilfe', ...german(englishHelp({ word, variant } as EnglishTask, true, dropped)));
     }
   }
+
+  // How many?: the German parts around the English sentences
+  for (const stage of HOWMANY_STAGES) {
+    for (const key of HOWMANY_EXAMPLES[stage]) add(`How many ${stage}: Beispiel`, ...german(howManyExample(stage, parseHowMany(key)!)));
+  }
+  add('How many: Beispiel', MARKED_CARD);
+  add('How many: Frage', BUILD_PROMPT, COMPLETE_HELP);
+  add('How many: Hilfe', ...Object.values(HOWMANY_HINTS));
+  for (const key of ['ghost:1', 'ghost:2']) {
+    for (const slot of [0, 1, 2, 3]) add('How many: Hilfe', howManyHelp(slot, parseHowMany(key)!));
+  }
+  add('How many: Hilfe', ...german(howManyReveal(parseHowMany('ghost:1')!)));
+  add('How many: Lob', ...['Richtig!', 'Genau!', 'Gemeinsam geschafft!']);
   return [...all].map(([text, source]) => ({ text, source }));
 }

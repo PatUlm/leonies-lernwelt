@@ -54,7 +54,7 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 | Deutsch | Bonbon | Der, die, das |
 | Musik | Cupcake | folgt |
 | HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
-| Englisch | Schokolade | Farben, Zahlen, Tiere |
+| Englisch | Schokolade | Farben, Zahlen, Tiere; How many? |
 
 Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
 **„Hier weiter“** zeigt immer genau eine Empfehlung – zum Beispiel einen angefangenen
@@ -331,6 +331,38 @@ sixteen) erst, wenn beide sitzen. Hilfe nimmt bei drei Bildern eine falsche Antw
 beim Hören und Lesen spielt sie das Wort langsam vor, beim Wort-Wählen verrät sie den ersten
 Buchstaben. Hat das Gerät keine englische Stimme, werden die Wörter gelesen statt gehört.
 Stufen, Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
+
+## Englisch: How many?
+
+Frage und Antwortsatz wie auf einem Arbeitsblatt der 3. Klasse: Zu einem Bild mit ein bis
+fünf Geistern, Katzen oder Hunden fragt die App „How many ghosts are there?“ (als Aufnahme
+vorgelesen). Leonie baut die Antwort aus Wortkärtchen: „There is one ghost.“ oder „There are
+three ghosts.“ Ein angetipptes Kärtchen wandert auf den nächsten freien Platz, ein
+nochmal angetipptes zurück. Der große Anfangsbuchstabe und der Punkt kommen von selbst, damit
+„There“ seinen Platz nicht verrät. Die Dinge liegen wie die Augen auf einem Würfel, damit man
+sie auf einen Blick zählen kann.
+
+Im Mittelpunkt steht das s: „one ghost“, aber „two ghosts“. Jede Stufe legt ein Kärtchen mehr
+dazu, das nicht passt:
+
+| Stufe | Kärtchen zur Auswahl |
+|:-:|---|
+| 1 | Satz und das Nomen in der anderen Form (ghost, ghosts) |
+| 2 | dazu „is“ oder „are“ |
+| 3 | dazu eine falsche Zahl neben der richtigen |
+
+- Etwa vier von zehn Aufgaben zeigen genau ein Ding – dort fehlt das s am häufigsten.
+- Geprüft wird erst mit „Prüfen“, nicht bei jedem Kärtchen. Richtige Kärtchen bleiben stehen,
+  falsche gehen zurück, ihr Platz bleibt rot markiert. Der Tipp passt zum Fehler: „Eins oder
+  mehrere?“ beim s und bei is/are, „Zähle noch einmal genau“ bei der Zahl, sonst die
+  Reihenfolge. Beim zweiten falschen Prüfen zeigt die App den Satz.
+- Die Hilfe räumt den ersten falschen Platz frei und lässt das passende Kärtchen leuchten.
+- Stufe 1 beginnt mit zwei erklärten Beispielen (ein Geist, drei Geister), Stufe 2 und 3 mit je
+  einem. Am Ende jeder Aufgabe wird der ganze Satz auf Englisch vorgelesen.
+
+Ein Satz zählt als richtig, wenn er beim ersten Prüfen ohne Hilfe stimmt. Die nächste Stufe
+öffnet sich nach zehn solchen Sätzen mit verschiedenen Zahlen und Bildern. Ein Durchgang hat
+zehn Aufgaben; Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Ideen für später
 

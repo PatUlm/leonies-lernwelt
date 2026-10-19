@@ -1,6 +1,7 @@
 import { articleModule } from './modules/articles';
 import { clockModule } from './modules/clock';
 import { englishModule } from './modules/english';
+import { howManyModule } from './modules/howmany';
 import { inverseModule } from './modules/inverse';
 import type { LearningModule, ModuleStats } from './modules/types';
 import { chocolateBar, cupcakeCandy, gummyBear, lollipopCandy, wrappedCandy } from './shared/candy';
@@ -22,7 +23,7 @@ export const AREAS: Area[] = [
   { id: 'deutsch', title: 'Deutsch', color: '#f29bc1', candy: wrappedCandy, modules: [articleModule] },
   { id: 'musik', title: 'Musik', color: '#b39ddb', candy: cupcakeCandy, modules: [] },
   { id: 'hsu', title: 'HSU', subtitle: 'Heimat- und Sachunterricht', color: '#56c5b8', candy: gummyBear, modules: [] },
-  { id: 'englisch', title: 'Englisch', color: '#cc9a76', candy: chocolateBar, modules: [englishModule] },
+  { id: 'englisch', title: 'Englisch', color: '#cc9a76', candy: chocolateBar, modules: [englishModule, howManyModule] },
 ];
 
 export interface ModuleEntry {

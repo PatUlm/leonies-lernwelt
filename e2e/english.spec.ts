@@ -88,8 +88,8 @@ test('the Englisch area offers "Farben, Zahlen, Tiere"', async ({ page }) => {
   await fakeVoices(page, ['de-DE', 'en-GB']);
   await startEnglish(page);
   await page.goto('/#/englisch');
-  await expect(page.locator('.module-title')).toHaveText('Farben, Zahlen, Tiere');
-  await page.locator('.module-tile').click();
+  await expect(page.locator('.module-title').first()).toHaveText('Farben, Zahlen, Tiere');
+  await page.locator('.module-tile').first().click();
   await expect(page.locator('.word-card')).toBeVisible();
 });
 
