@@ -1839,12 +1839,6 @@ a.area-card:active {
 
 /* ---------- How many? ---------- */
 
-/* Above the sky decor also where .stage dissolves (phone landscape): a cloud must not hide a thing to count. */
-.count-card {
-  position: relative;
-  z-index: 1;
-}
-
 /* One to five things placed as on a die: counted at a glance. */
 .count-picture {
   display: grid;
@@ -2580,6 +2574,12 @@ a.area-card:active {
     display: contents;
   }
 
+  /* Without the stage's own layer, its parts lie above the sky decor themselves: no cloud over the clock or a picture. */
+  .stage > * {
+    position: relative;
+    z-index: 1;
+  }
+
   .clock-wrap,
   .word-card,
   .calc-card {
@@ -2622,7 +2622,10 @@ a.area-card:active {
     grid-column: 3;
     grid-row: 4;
     align-self: center;
-    position: static;
+    /* Not fixed as in wide landscape, but raised like the other parts of the stage. */
+    position: relative;
+    top: auto;
+    right: auto;
     transform: none;
     width: auto;
     min-width: 0;

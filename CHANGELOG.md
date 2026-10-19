@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.11 – 2026-10-19
+
+### Behoben
+
+- **Keine Wolken mehr über Uhr und Bildern:** Auf dem Handy im Querformat lagen die Wolken der
+  Hintergrund-Deko über der Uhr, den Bildkarten und den Antworten – bei der Uhr verdeckten
+  sie eine Minutenzahl. Jetzt liegt die ganze Spielfläche darüber, in allen Modulen.
+
 ## 2026.10.10 – 2026-10-19
 
 ### Hinzugefügt
