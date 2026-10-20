@@ -70,6 +70,21 @@ Mit dem Game-Designer für nach der ersten Version vorgesehen:
 - **Unregelmäßige Mehrzahl:** mouse/mice, fish/fish, sheep/sheep als eigene Wortpaare – dort
   hilft die Regel „mehrere → s“ nicht.
 
+## Musik: Notenwerte
+
+Mit dem Game-Designer für nach der ersten Version vorgesehen:
+
+- **Feinere Taktlücken:** eine fehlende Achtel (zuerst die zweite eines Paars, mit sichtbarer
+  Schlagteilung), danach Lücken aus mehreren Noten mit Gruppen als Antwort. Dann passen oft
+  mehrere Antworten (eine Viertel oder zwei Achtel); entweder nur eine anbieten oder alle
+  gleich langen gelten lassen.
+- **Pausen:** zuerst die Viertelpause als „ein Schlag Stille“ – sobald die Schule sie einführt.
+- **Achtel mit Balken:** als andere Schreibweise derselben Achtel, nicht zugleich mit neuem Stoff.
+- **Rhythmen bauen und nachklatschen:** frei bauen und anhören; Nachklatschen ohne Bewertung.
+- **„kurz, mittel, lang“:** Leonie nennt die Noten so. Welche Note welcher Begriff ist, ist noch
+  offen (Leonie fragen); erst dann in die Texte aufnehmen.
+- **Weitere Taktarten** (3/4, 2/4) und die punktierte halbe Note für Lücken von drei Schlägen.
+
 ## Weitere Module
 
-- Musik und HSU: Bereiche sind angelegt, Inhalte fehlen noch.
+- HSU: Bereich ist angelegt, Inhalte fehlen noch.

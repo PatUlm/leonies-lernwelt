@@ -5,6 +5,17 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.13 – 2026-10-20
+
+### Hinzugefügt
+
+- **Neues Musik-Modul „Notenwerte“ (Leonies Idee):** Ganze, halbe, Viertel- und Achtelnoten,
+  gezeichnet wie auf ihrem Blatt, und wie viele Schläge sie dauern. Vier Stufen: zur Note die
+  Länge wählen, eine Notengruppe finden, die zusammen genauso lang dauert (halbe Note = zwei
+  Viertel = Achtel, Achtel, Viertel …), zur Länge die Note wählen und die fehlende Note in einem
+  4/4-Takt einsetzen. Felder unter den Noten zeigen die Schläge; „Anhören“ spielt die Noten als
+  gehaltene Töne über einem leisen Schlag. Beispiele und Hilfen werden vorgelesen.
+
 ## 2026.10.12 – 2026-10-20
 
 ### Geändert

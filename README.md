@@ -7,8 +7,9 @@ Die Module sind nach Schulfächern sortiert – Leonies Idee: Jeder **Lernbereic
 eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8) lernt damit, die
 Zeigeruhr zu lesen. Daneben löst sie in **„Umkehraufgaben“** Platzhalteraufgaben wie
 „__ + 23 = 90“ rückwärts. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
-Artikel. In Englisch lernt **„Farben, Zahlen, Tiere“** die ersten englischen Wörter. Weitere
-Module folgen.
+Artikel. In Musik lernt sie mit **„Notenwerte“**, wie lange ganze, halbe, Viertel- und
+Achtelnoten dauern – ihre eigene Idee. In Englisch lernt **„Farben, Zahlen, Tiere“** die ersten
+englischen Wörter. Weitere Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
 
@@ -52,7 +53,7 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 |---|---|---|
 | Mathe | Lolli | Die Uhr, Umkehraufgaben |
 | Deutsch | Bonbon | Der, die, das |
-| Musik | Cupcake | folgt |
+| Musik | Cupcake | Notenwerte |
 | HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
 | Englisch | Schokolade | Farben, Zahlen, Tiere; How many? |
 
@@ -365,6 +366,38 @@ kommt:
 Eine Aufgabe zählt als richtig, wenn sie beim ersten Versuch ohne Hilfe stimmt. Die nächste
 Stufe öffnet sich nach zehn solchen Aufgaben mit verschiedenen Anzahlen und Bildern. Ein
 Durchgang hat zehn Aufgaben; Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
+
+## Musik: Notenwerte
+
+Leonies eigene Idee. Sie hat aufgeschrieben, was sie kennt: ganze, halbe, Viertel- und
+Achtelnoten, Hälse nach oben, jede Achtel mit eigenem Fähnchen, und Gruppen, die zusammen zwei
+Schläge dauern (zwei Viertel, Achtel-Achtel-Viertel, vier Achtel …). Genau so zeichnet die App
+die Noten, ohne Notensystem und ohne Pausen. Die Länge steht immer in Schlägen: Eine
+Viertelnote dauert einen Schlag. Unter den Noten stehen dafür **Felder**, eins je Schlag, jedes in zwei
+Hälften – eine Achtel füllt ein halbes Feld, eine ganze Note vier.
+
+| Stufe | Aufgabe | Antworten |
+|:-:|---|---|
+| 1 | Wie lange dauert diese Note? | drei Längen: halber Schlag, 1, 2 oder 4 Schläge |
+| 2 | Was dauert zusammen genauso lang? | drei Notengruppen, nur eine dauert so lang wie die Note |
+| 3 | Welche Note dauert so lange? | drei Noten |
+| 4 | Welche Note fehlt im 4/4-Takt? | drei Noten; es fehlt eine Viertel oder eine halbe Note |
+
+- In Stufe 2 und 4 stehen die Felder anfangs unter den Noten; nach den ersten Aufgaben kommen sie
+  erst mit der Hilfe und nach der Antwort. Ohne Felder haben alle Noten gleich viel Platz, und
+  die Lücke im Takt ist immer gleich breit – so verrät der Abstand nichts.
+- In Stufe 4 fehlt anfangs die letzte Note, später eine beliebige.
+- **„Anhören“** spielt die Note, die Länge oder den Takt: ein gehaltener Ton über einem leisen
+  Klick je Schlag, nach zwei Klicks zum Einzählen; die gerade klingende Note leuchtet blau. Eine
+  Lücke bleibt still, die Klicks laufen weiter. „Anhören“ klingt auch, wenn die Töne aus sind.
+- Nach einem Fehler sagt die App, warum es nicht passt: „Das wären fünf Schläge. In einen Takt
+  passen vier Schläge.“ Die Hilfe beschreibt die Note („Innen leer, mit Hals: Das ist eine
+  halbe Note.“), nennt die Note zur Länge oder lässt zählen.
+- Jede Stufe beginnt mit zwei erklärten Beispielen.
+
+Die nächste Stufe öffnet sich nach zehn selbstständig richtigen Antworten, von denen zuletzt
+acht von zehn stimmen und bei denen jede Note dabei war. Ein Durchgang hat zehn Aufgaben;
+Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Ideen für später
 

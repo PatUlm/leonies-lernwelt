@@ -2032,6 +2032,156 @@ a.area-card:active {
   }
 }
 
+/* ---------- Notenwerte ---------- */
+
+.notes-show {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+  color: var(--ink);
+}
+
+.notes-svg,
+.length-svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+}
+
+.notes-svg.card-notes {
+  height: clamp(110px, 18vh, 170px);
+}
+
+.notes-svg.card-bar {
+  height: clamp(96px, 17vh, 160px);
+}
+
+/* The length in beats: the Musik colour, blue while it is heard. */
+.notes-svg .field,
+.length-svg .field {
+  fill: #b39ddb;
+}
+
+.note.playing {
+  color: var(--hour);
+}
+
+.note.playing .field,
+.length.playing .field {
+  fill: var(--hour);
+}
+
+/* The note just put into the bar. */
+.note.filled {
+  color: var(--good);
+}
+
+.length {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.length-svg {
+  height: 38px;
+}
+
+.length-svg.card-length {
+  height: clamp(48px, 9vh, 72px);
+}
+
+.length-label {
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.card-length + .length-label {
+  font-size: clamp(26px, 4vw, 36px);
+}
+
+.listen-button.playing {
+  border-color: var(--hour);
+}
+
+.answer.notes-answer {
+  display: grid;
+  place-items: center;
+  min-height: 112px;
+  padding: 8px;
+  color: var(--ink);
+}
+
+.notes-answer .notes-svg {
+  height: 84px;
+}
+
+.answers.group-answers .notes-svg {
+  height: clamp(64px, 10vh, 92px);
+}
+
+/* Phones: groups and lengths one below the other, so four beats keep their room. */
+@media (max-width: 600px) {
+  .answers.group-answers,
+  .answers.length-answers {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .answer.notes-answer {
+    min-height: 96px;
+  }
+
+  .group-answers .answer.notes-answer,
+  .length-answers .answer.notes-answer {
+    min-height: 72px;
+    padding: 4px 8px;
+  }
+
+  .length-answers .length {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .answers.group-answers .notes-svg {
+    height: 76px;
+  }
+
+  .length-label {
+    font-size: 18px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .notes-svg.card-notes,
+  .notes-svg.card-bar {
+    height: 96px;
+  }
+
+  .answer.notes-answer {
+    min-height: 72px;
+    padding: 4px;
+  }
+
+  .notes-answer .notes-svg {
+    height: 60px;
+  }
+
+  .answers.group-answers .notes-svg {
+    height: 52px;
+  }
+
+  .length-svg {
+    height: 28px;
+  }
+
+  .length-label {
+    font-size: 16px;
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {

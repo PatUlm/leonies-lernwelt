@@ -3,6 +3,7 @@ import { clockModule } from './modules/clock';
 import { englishModule } from './modules/english';
 import { howManyModule } from './modules/howmany';
 import { inverseModule } from './modules/inverse';
+import { notesModule } from './modules/notes';
 import type { LearningModule, ModuleStats } from './modules/types';
 import { chocolateBar, cupcakeCandy, gummyBear, lollipopCandy, wrappedCandy } from './shared/candy';
 
@@ -21,7 +22,7 @@ export interface Area {
 export const AREAS: Area[] = [
   { id: 'mathe', title: 'Mathe', color: '#63b3ed', candy: lollipopCandy, modules: [clockModule, inverseModule] },
   { id: 'deutsch', title: 'Deutsch', color: '#f29bc1', candy: wrappedCandy, modules: [articleModule] },
-  { id: 'musik', title: 'Musik', color: '#b39ddb', candy: cupcakeCandy, modules: [] },
+  { id: 'musik', title: 'Musik', color: '#b39ddb', candy: cupcakeCandy, modules: [notesModule] },
   { id: 'hsu', title: 'HSU', subtitle: 'Heimat- und Sachunterricht', color: '#56c5b8', candy: gummyBear, modules: [] },
   { id: 'englisch', title: 'Englisch', color: '#cc9a76', candy: chocolateBar, modules: [englishModule, howManyModule] },
 ];
