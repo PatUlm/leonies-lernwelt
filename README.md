@@ -334,35 +334,37 @@ Stufen, Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Englisch: How many?
 
-Frage und Antwortsatz wie auf einem Arbeitsblatt der 3. Klasse: Zu einem Bild mit ein bis
-fünf Geistern, Katzen oder Hunden fragt die App „How many ghosts are there?“ (als Aufnahme
-vorgelesen). Leonie baut die Antwort aus Wortkärtchen: „There is one ghost.“ oder „There are
-three ghosts.“ Ein angetipptes Kärtchen wandert auf den nächsten freien Platz, ein
-nochmal angetipptes zurück. Der große Anfangsbuchstabe und der Punkt kommen von selbst, damit
-„There“ seinen Platz nicht verrät. Die Dinge liegen wie die Augen auf einem Würfel, damit man
-sie auf einen Blick zählen kann.
+Frage und Antwortsatz wie auf einem Arbeitsblatt der 3. Klasse: „How many ghosts are there? –
+There are three ghosts.“ Die Bilder zeigen ein bis fünf Geister, Katzen oder Hunde, angeordnet
+wie die Augen auf einem Würfel, damit man sie auf einen Blick zählen kann. Im Mittelpunkt steht
+das s: „one ghost“, aber „two ghosts“. Jede Stufe übt erst eine Sache, bevor der ganze Satz
+kommt:
 
-Im Mittelpunkt steht das s: „one ghost“, aber „two ghosts“. Jede Stufe legt ein Kärtchen mehr
-dazu, das nicht passt:
+| Stufe | Aufgabe | Beispiel |
+|:-:|---|---|
+| 1 | Eins oder mehrere: das Nomen wählen | 🐕🐕🐕 → [dog] / **[dogs]** |
+| 2 | „is“ oder „are“ einsetzen, ohne Zahl | There **[is]** a dog. / There **[are]** dogs. |
+| 3 | Die Antwort auf „How many …?“ aus Kärtchen bauen | There are three dogs. |
 
-| Stufe | Kärtchen zur Auswahl |
-|:-:|---|
-| 1 | Satz und das Nomen in der anderen Form (ghost, ghosts) |
-| 2 | dazu „is“ oder „are“ |
-| 3 | dazu eine falsche Zahl neben der richtigen |
+- **Stufe 1 und 2:** Zwei Kärtchen, geprüft wird sofort. Bei einem falschen Kärtchen nennt die
+  App die Regel („Schau genau: Es sind mehrere. Bei mehreren kommt ein s dazu.“) und zeigt das
+  richtige; weiter geht es mit „Weiter“. Das englische Wort oder der Satz wird erst nach der
+  Wahl vorgelesen, vorher würde es die Lösung verraten.
+- **Stufe 3:** Die Frage wird vorgelesen. Ein angetipptes Kärtchen wandert auf den nächsten
+  freien Platz, ein nochmal angetipptes zurück. Großer Anfangsbuchstabe und Punkt kommen von
+  selbst, damit „There“ seinen Platz nicht verrät. Dabei liegen die andere Form des Nomens, das
+  andere Verb und eine falsche Zahl neben der richtigen. Etwa vier von zehn Aufgaben zeigen genau
+  ein Ding – dort fehlt das s am häufigsten.
+- Geprüft wird in Stufe 3 erst mit „Prüfen“. Richtige Kärtchen bleiben stehen, falsche gehen
+  zurück, ihr Platz bleibt rot markiert. Der Tipp passt zum Fehler: „Eins oder mehrere?“ beim s
+  und bei is/are, „Zähle noch einmal genau“ bei der Zahl, sonst die Reihenfolge. Beim zweiten
+  falschen Prüfen zeigt die App den Satz.
+- Die Hilfe lässt das passende Kärtchen leuchten (in Stufe 3 für den ersten falschen Platz).
+- Jede Stufe beginnt mit zwei erklärten Beispielen: eins und mehrere.
 
-- Etwa vier von zehn Aufgaben zeigen genau ein Ding – dort fehlt das s am häufigsten.
-- Geprüft wird erst mit „Prüfen“, nicht bei jedem Kärtchen. Richtige Kärtchen bleiben stehen,
-  falsche gehen zurück, ihr Platz bleibt rot markiert. Der Tipp passt zum Fehler: „Eins oder
-  mehrere?“ beim s und bei is/are, „Zähle noch einmal genau“ bei der Zahl, sonst die
-  Reihenfolge. Beim zweiten falschen Prüfen zeigt die App den Satz.
-- Die Hilfe räumt den ersten falschen Platz frei und lässt das passende Kärtchen leuchten.
-- Stufe 1 beginnt mit zwei erklärten Beispielen (ein Geist, drei Geister), Stufe 2 und 3 mit je
-  einem. Am Ende jeder Aufgabe wird der ganze Satz auf Englisch vorgelesen.
-
-Ein Satz zählt als richtig, wenn er beim ersten Prüfen ohne Hilfe stimmt. Die nächste Stufe
-öffnet sich nach zehn solchen Sätzen mit verschiedenen Zahlen und Bildern. Ein Durchgang hat
-zehn Aufgaben; Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
+Eine Aufgabe zählt als richtig, wenn sie beim ersten Versuch ohne Hilfe stimmt. Die nächste
+Stufe öffnet sich nach zehn solchen Aufgaben mit verschiedenen Anzahlen und Bildern. Ein
+Durchgang hat zehn Aufgaben; Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Ideen für später
 

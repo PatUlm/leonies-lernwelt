@@ -51,6 +51,15 @@ describe('recordings', () => {
     expect((await recordings.get('en', 'There is one ghost.', true))?.toString()).toBe('mp3:one ghost');
     expect(await recordings.get('en', 'There are two ghosts.', false)).toBeNull();
   });
+
+  it('keep the slow recording of a word that "How many?" uses too', async () => {
+    await writeFile(join(dir, 'tts', 'en', 'cat.slow.mp3'), 'mp3:cat:slow');
+    await writeFile(join(dir, 'tts', 'en', 'ghosts.mp3'), 'mp3:ghosts');
+    const recordings = new Recordings(join(dir, 'tts'));
+    expect((await recordings.get('en', 'cat', true))?.toString()).toBe('mp3:cat:slow');
+    expect((await recordings.get('en', 'ghosts', false))?.toString()).toBe('mp3:ghosts');
+    expect(speakable('en', 'There are dogs.')).toBe(true);
+  });
 });
 
 describe('GET /api/tts', () => {

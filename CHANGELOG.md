@@ -5,6 +5,19 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.12 – 2026-10-20
+
+### Geändert
+
+- **How many?: eine Sache pro Stufe:** Bisher verlangten schon die ersten beiden Stufen den
+  ganzen Satz und damit drei Dinge auf einmal (Einzahl/Mehrzahl, is/are, die Anzahl). Jetzt übt
+  Stufe 1 nur Einzahl oder Mehrzahl (dog oder dogs zum Bild), Stufe 2 nur „is“ oder „are“
+  („There is a dog.“ / „There are dogs.“), und erst Stufe 3 baut die ganze Antwort aus
+  Kärtchen, mit falscher Nomenform, falschem Verb und falscher Zahl dabei. Stufe 1 und 2 prüfen
+  sofort und erklären einen Fehler gleich. Jede Stufe beginnt mit zwei Beispielen: eins und
+  mehrere. Wer schon gespielt hat, beginnt wieder bei Stufe 1; Sterne, Pokale und Punkte
+  bleiben.
+
 ## 2026.10.11 – 2026-10-19
 
 ### Behoben

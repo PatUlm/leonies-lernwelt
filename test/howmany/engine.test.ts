@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { NOUNS, nounOf } from '../../src/modules/howmany/content';
 import {
-  EXAMPLES, Engine, HELP_POINTS, MASTERY_CORRECT, MIN_DISTINCT_COUNTS, MIN_DISTINCT_NOUNS, POINTS, PROBLEMS, READY_MASTERY,
-  ROUND_TASKS, SECURE_MASTERY, SESSION_GAP_MS, STAGES, cardsFor, diagnose, freshProgress, parseKey, problemKey,
+  EXAMPLES, Engine, HELP_POINTS, MASTERY_CORRECT, MIN_DISTINCT_COUNTS, MIN_DISTINCT_NOUNS, ONE_SHARE, POINTS, PROBLEMS, READY_MASTERY,
+  ROUND_TASKS, SECURE_MASTERY, SESSION_GAP_MS, STAGES, cardsFor, diagnose, freshProgress, gapsOf, parseKey, problemKey, roleOf, sentenceOf,
   type Outcome, type Stage, type Task,
 } from '../../src/modules/howmany/engine';
 import { seeded } from '../rng';
@@ -40,11 +40,23 @@ describe('how many problems', () => {
     for (const key of ['ghost:0', 'ghost:6', 'mouse:2', 'ghost', ':2', '']) expect(parseKey(key)).toBeNull();
   });
 
-  it('adds one tempting card per stage', () => {
+  it('asks one thing at a time: the noun form, then is/are, then the whole sentence', () => {
+    const one = { count: 1, noun: ghost };
+    const three = { count: 3, noun: ghost };
+    expect(sentenceOf(1, one)).toEqual(['ghost']);
+    expect(sentenceOf(1, three)).toEqual(['ghosts']);
+    expect(sentenceOf(2, one)).toEqual(['there', 'is', 'a', 'ghost']);
+    expect(sentenceOf(2, three)).toEqual(['there', 'are', 'ghosts']);
+    expect(sentenceOf(3, three)).toEqual(['there', 'are', 'three', 'ghosts']);
+    expect([gapsOf(1), gapsOf(2), gapsOf(3)]).toEqual([[0], [1], [0, 1, 2, 3]]);
+    expect([roleOf(1, 0), roleOf(2, 1), roleOf(3, 2)]).toEqual(['noun', 'verb', 'number']);
+  });
+
+  it('offers the two forms in stages 1 and 2, and three tempting cards in stage 3', () => {
     const rng = seeded(1);
     const one = { count: 1, noun: ghost };
-    expect([...cardsFor(1, one, rng)].sort()).toEqual(['ghost', 'ghosts', 'is', 'one', 'there']);
-    expect([...cardsFor(2, one, rng)].sort()).toEqual(['are', 'ghost', 'ghosts', 'is', 'one', 'there']);
+    expect([...cardsFor(1, one, rng)].sort()).toEqual(['ghost', 'ghosts']);
+    expect([...cardsFor(2, one, rng)].sort()).toEqual(['are', 'is']);
     expect([...cardsFor(3, one, rng)].sort()).toEqual(['are', 'ghost', 'ghosts', 'is', 'one', 'there', 'two']);
     // A wrong number next to the right one, inside one to five.
     for (let i = 0; i < 20; i++) {
@@ -70,7 +82,7 @@ describe('how many engine', () => {
     const [first, second] = play(engine, 2);
     expect([first.kind, second.kind]).toEqual(['example', 'example']);
     expect([first.key, second.key]).toEqual(['ghost:1', 'ghost:3']);
-    expect(first.answer).toEqual(['there', 'is', 'one', 'ghost']);
+    expect([first.answer, second.answer]).toEqual([['ghost'], ['ghosts']]);
     expect(engine.progress.round.tasks).toBe(0);
     expect(engine.progress.points).toBe(0);
   });
@@ -96,13 +108,17 @@ describe('how many engine', () => {
     expect(engine.progress.points).toBe(HELP_POINTS);
   });
 
-  it('shows "one" in about four of ten tasks and never the same picture twice in a row', () => {
+  it('shows one thing as often as several in stage 1, in about four of ten tasks in stage 3', () => {
     const engine = new Engine(freshProgress(T0), seeded(4));
-    const tasks = play(engine, 400).filter((t) => t.kind === 'practice');
-    const share = tasks.filter((t) => t.problem.count === 1).length / tasks.length;
-    expect(share).toBeGreaterThan(0.3);
-    expect(share).toBeLessThan(0.5);
-    for (let i = 1; i < tasks.length; i++) expect(tasks[i].key).not.toBe(tasks[i - 1].key);
+    const first = play(engine, 300, (t) => (t.stage === 1 ? { ...CLEAN, mistake: true } : CLEAN)).filter((t) => t.kind === 'practice');
+    const share = (tasks: Task[]) => tasks.filter((t) => t.problem.count === 1).length / tasks.length;
+    expect(share(first)).toBeGreaterThan(ONE_SHARE[1] - 0.1);
+    expect(share(first)).toBeLessThan(ONE_SHARE[1] + 0.1);
+    for (let i = 1; i < first.length; i++) expect(first[i].key).not.toBe(first[i - 1].key);
+    reach(engine, 3);
+    const whole = play(engine, 400).filter((t) => t.kind === 'practice' && t.stage === 3);
+    expect(share(whole)).toBeGreaterThan(ONE_SHARE[3] - 0.1);
+    expect(share(whole)).toBeLessThan(ONE_SHARE[3] + 0.1);
   });
 
   it('brings a mistaken sentence back a few tasks later', () => {

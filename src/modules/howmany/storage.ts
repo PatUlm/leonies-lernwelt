@@ -61,21 +61,28 @@ function forcedTask(v: unknown): ForcedTask | null {
 
 /**
  * Progress can come from another device via the server, so every field is
- * checked: only known fields with valid values are taken over.
+ * checked: only known fields with valid values are taken over. Version 1 had
+ * other stages (the whole sentence from the start): she starts again at stage
+ * 1, her stars, trophies and points stay.
  */
 export function sanitizeProgress(raw: unknown, now: number): Progress {
   const fresh = freshProgress(now);
-  if (!isRecord(raw) || raw.version !== 1) return fresh;
-  const stored = Array.isArray(raw.stages) ? raw.stages : [];
-  const round = isRecord(raw.round) ? raw.round : {};
-  return {
-    version: 1,
+  if (!isRecord(raw) || (raw.version !== 1 && raw.version !== 2)) return fresh;
+  const kept = {
     session: num(raw.session, 1, 1),
     lastActive: num(raw.lastActive, now),
     lastAnswered: typeof raw.lastAnswered === 'number' ? num(raw.lastAnswered, 0) : null,
     taskCounter: num(raw.taskCounter, 0),
     points: num(raw.points, 0),
     correctTotal: num(raw.correctTotal, 0),
+    trophies: num(raw.trophies, 0),
+  };
+  if (raw.version === 1) return { ...fresh, ...kept, news: true };
+  const stored = Array.isArray(raw.stages) ? raw.stages : [];
+  const round = isRecord(raw.round) ? raw.round : {};
+  return {
+    ...kept,
+    version: 2,
     stages: STAGES.map((s) => stageState(stored[s - 1], fresh.stages[s - 1])),
     reviewQueue: list(raw.reviewQueue, 12).map(reviewItem).filter((r): r is ReviewItem => r !== null),
     forced: list(raw.forced, 12).map(forcedTask).filter((f): f is ForcedTask => f !== null),
@@ -83,7 +90,7 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     wrongStreak: num(raw.wrongStreak, 0),
     correctStreak: num(raw.correctStreak, 0),
     round: { tasks: num(round.tasks, 0), points: num(round.points, 0), correct: num(round.correct, 0) },
-    trophies: num(raw.trophies, 0),
+    news: bool(raw.news),
   };
 }
 

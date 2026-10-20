@@ -15,7 +15,8 @@ import { example, help as englishHelp } from '../src/modules/english/texts';
 import { WORDS } from '../src/modules/english/words';
 import { EXAMPLES as HOWMANY_EXAMPLES, STAGES as HOWMANY_STAGES, parseKey as parseHowMany } from '../src/modules/howmany/engine';
 import {
-  BUILD_PROMPT, COMPLETE_HELP, HINTS as HOWMANY_HINTS, MARKED_CARD, explanation as howManyExample, help as howManyHelp, reveal as howManyReveal,
+  BUILD_PROMPT, CHOOSE_PROMPT, COMPLETE_HELP, HINTS as HOWMANY_HINTS, MARKED_CARD, explanation as howManyExample, help as howManyHelp,
+  mistake as howManyMistake, reveal as howManyReveal,
 } from '../src/modules/howmany/texts';
 import { BACK_EXAMPLE, EXAMPLES, STAGES as INVERSE_STAGES, levelOf, stepsOf, type Problem } from '../src/modules/inverse/engine';
 import {
@@ -111,15 +112,16 @@ export function germanTexts(): GermanText[] {
     }
   }
 
-  // How many?: the German parts around the English sentences
+  // How many?: the German parts around the English words and sentences
   for (const stage of HOWMANY_STAGES) {
     for (const key of HOWMANY_EXAMPLES[stage]) add(`How many ${stage}: Beispiel`, ...german(howManyExample(stage, parseHowMany(key)!)));
   }
   add('How many: Beispiel', MARKED_CARD);
-  add('How many: Frage', BUILD_PROMPT, COMPLETE_HELP);
+  add('How many: Frage', CHOOSE_PROMPT, BUILD_PROMPT, COMPLETE_HELP);
   add('How many: Hilfe', ...Object.values(HOWMANY_HINTS));
-  for (const key of ['ghost:1', 'ghost:2']) {
-    for (const slot of [0, 1, 2, 3]) add('How many: Hilfe', howManyHelp(slot, parseHowMany(key)!));
+  for (const one of [true, false]) {
+    for (const role of ['there', 'verb', 'number', 'noun'] as const) add('How many: Hilfe', howManyHelp(role, one));
+    for (const stage of [1, 2] as const) add('How many: Hilfe', ...german(howManyMistake(stage, parseHowMany(one ? 'ghost:1' : 'ghost:2')!)));
   }
   add('How many: Hilfe', ...german(howManyReveal(parseHowMany('ghost:1')!)));
   add('How many: Lob', ...['Richtig!', 'Genau!', 'Gemeinsam geschafft!']);

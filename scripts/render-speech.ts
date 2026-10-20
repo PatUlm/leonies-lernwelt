@@ -1,7 +1,7 @@
 /**
  * Renders the English words of "Farben, Zahlen, Tiere" with Gemini TTS into
- * .data/tts/en/ (<word>.mp3 and <word>.slow.mp3) and the sentences of "How
- * many?" (<sentence-file>.mp3, normal speed only) plus a page to listen to
+ * .data/tts/en/ (<word>.mp3 and <word>.slow.mp3) and the words and sentences of
+ * "How many?" (<sentence-file>.mp3, normal speed only) plus a page to listen to
  * them before bin/tts-upload.sh puts them on the server.
  *
  *   node scripts/render-speech.ts            # renders what is missing
@@ -18,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { WORDS } from '../src/modules/english/words.ts';
-import { englishSentences, sentenceFile } from '../src/modules/howmany/content.ts';
+import { englishTexts, sentenceFile } from '../src/modules/howmany/content.ts';
 
 const MODEL = process.env.TTS_MODEL ?? 'gemini-3.8-flash-tts';
 const VOICE = 'en-gb-tutor-13';
@@ -27,7 +27,8 @@ const STYLE = {
   slow: 'Say this English word slowly and very clearly, like a friendly British English teacher repeating it for an eight-year-old child.',
   sentence: "Say this English sentence clearly and naturally, in a friendly British English teacher's voice, for an eight-year-old child learning English.",
 };
-const SENTENCES = englishSentences();
+/** The words and sentences of "How many?" that are not words of the other module already. */
+const SENTENCES = englishTexts().filter((t) => !WORDS.some((w) => w.en === t));
 /** Pause between requests: the API allows about 10 per minute. */
 const PAUSE_MS = 6500;
 const OUT = join(import.meta.dirname, '..', '.data', 'tts', 'en');
@@ -91,7 +92,7 @@ for (const sentence of SENTENCES) {
   const file = join(OUT, `${name}.mp3`);
   if (existsSync(file) && !again.has(name)) continue;
   rmSync(file, { force: true });
-  toMp3(await render(sentence, 'sentence'), file);
+  toMp3(await render(sentence, sentence.includes(' ') ? 'sentence' : 'normal'), file);
   console.log(sentence);
   await sleep(PAUSE_MS);
 }

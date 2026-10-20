@@ -1928,6 +1928,13 @@ a.area-card:active {
   cursor: default;
 }
 
+/* Words already given around the place to fill (stage 2: "There __ a dog."). */
+.build-word {
+  font-size: clamp(24px, 3.6vw, 32px);
+  font-weight: 800;
+  line-height: 58px;
+}
+
 .build-stop {
   font-size: clamp(28px, 4vw, 36px);
   font-weight: 800;
@@ -1971,6 +1978,11 @@ a.area-card:active {
     font-size: 21px;
   }
 
+  .build-word {
+    font-size: 21px;
+    line-height: 48px;
+  }
+
   .build-stop {
     line-height: 48px;
   }
@@ -2002,6 +2014,11 @@ a.area-card:active {
   .build-slot {
     min-height: 40px;
     font-size: 18px;
+  }
+
+  .build-word {
+    font-size: 18px;
+    line-height: 40px;
   }
 
   .build-stop {

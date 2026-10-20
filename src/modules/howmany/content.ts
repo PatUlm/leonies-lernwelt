@@ -50,15 +50,27 @@ export function answerText(count: number, noun: Noun): string {
   return sentenceText(answerWords(count, noun));
 }
 
-/** Every English sentence of the module: the questions and all answers. */
-export function englishSentences(): string[] {
+/** Without a number, for is/are alone: ["there", "is", "a", "dog"] or ["there", "are", "dogs"]. */
+export function isAreWords(one: boolean, noun: Noun): string[] {
+  return one ? ['there', 'is', 'a', noun.one] : ['there', 'are', noun.many];
+}
+
+/**
+ * Everything English the module plays: the nouns in both forms, the
+ * sentences without a number, the questions and all answers.
+ */
+export function englishTexts(): string[] {
   return NOUNS.flatMap((noun) => [
+    noun.one,
+    noun.many,
+    sentenceText(isAreWords(true, noun)),
+    sentenceText(isAreWords(false, noun)),
     questionText(noun),
     ...NUMBER_WORDS.map((_, i) => answerText(i + 1, noun)),
   ]);
 }
 
-/** File name of a sentence's recording, without extension: "there-are-two-ghosts". */
+/** File name of a recording, without extension: "there-are-two-ghosts", "ghosts". */
 export function sentenceFile(sentence: string): string {
   return sentence.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
 }

@@ -2,9 +2,9 @@ import { SUGGESTION_PRIORITY, type ModuleStats, type Suggestion } from '../types
 import { Engine, ROUND_TASKS, SESSION_GAP_MS, STAGES, type Progress, type Stage } from './engine';
 
 export const STAGE_NAMES: Record<Stage, string> = {
-  1: 'ghost oder ghosts',
+  1: 'Eins oder mehrere',
   2: 'is oder are',
-  3: 'Alles zusammen',
+  3: 'Ganze Sätze',
 };
 
 export const BADGE_NAMES: Record<Stage, string> = {

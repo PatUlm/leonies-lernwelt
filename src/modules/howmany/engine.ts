@@ -1,14 +1,14 @@
-import { MAX_COUNT, NOUNS, NUMBER_WORDS, answerWords, nounOf, type Noun } from './content';
+import { MAX_COUNT, NOUNS, NUMBER_WORDS, answerWords, isAreWords, nounOf, type Noun } from './content';
 
 /**
- * "How many?": a picture with one to five ghosts, cats or dogs, the question
- * "How many ghosts are there?" and the answer built from word cards. The
- * point is "one ghost" against "two ghosts" (Leonie wrote "There is one
- * ghosts."), so each stage adds one card that tempts:
+ * "How many?": a picture with one to five ghosts, cats or dogs. The point is
+ * "one ghost" against "two ghosts" (Leonie wrote "There is one ghosts."), so
+ * one thing is learnt at a time before the whole sentence:
  *
- *   stage 1: the noun in the other form   (ghost / ghosts)
- *   stage 2: also the other verb          (is / are)
- *   stage 3: also a wrong number          (three / four)
+ *   stage 1: one or several        [ghost] / [ghosts]
+ *   stage 2: is or are             There [is] a dog. / There [are] dogs.
+ *   stage 3: the whole answer      "How many dogs are there?" – There are three dogs.
+ *            from cards, with the other noun form, the other verb and a wrong number
  */
 export type Stage = 1 | 2 | 3;
 export const STAGES: readonly Stage[] = [1, 2, 3];
@@ -28,8 +28,12 @@ export const SECURE_WINDOW_CORRECT = 9;
 /** Correct tasks in the window must have this many different numbers and nouns. */
 export const MIN_DISTINCT_COUNTS = 3;
 export const MIN_DISTINCT_NOUNS = 2;
-/** "one" is where the "s" goes wrong: it comes in about four of ten tasks. */
-export const ONE_SHARE = 0.4;
+/**
+ * Share of pictures with one thing: one or several are as frequent while
+ * that is the question; in the whole sentence "one" is where the "s" goes
+ * wrong, and two to five have to be counted, so it comes in four of ten.
+ */
+export const ONE_SHARE: Record<Stage, number> = { 1: 0.5, 2: 0.5, 3: 0.4 };
 /** Share of the newest stage once several are open; the one before gets most of the rest. */
 export const NEWEST_SHARE = 0.6;
 export const EASY_SHARE = 0.1;
@@ -66,23 +70,47 @@ export const PROBLEMS: readonly Problem[] = NOUNS.flatMap((noun) => NUMBER_WORDS
 
 /**
  * Guided examples come from fixed lists, so their explanations can be
- * recorded beforehand. Stage 1 shows one ghost and several ghosts.
+ * recorded beforehand: each stage shows one thing and several of the same.
  */
 export const EXAMPLES: Record<Stage, readonly string[]> = {
   1: ['ghost:1', 'ghost:3'],
-  2: ['dog:2'],
-  3: ['cat:4'],
+  2: ['dog:1', 'dog:3'],
+  3: ['ghost:1', 'ghost:3'],
 };
 
-/** The cards of a task: the answer, and per stage one more card that tempts. */
+/** The sentence of a task, lower case: one word in stage 1, without a number in stage 2. */
+export function sentenceOf(stage: Stage, p: Problem): string[] {
+  const one = p.count === 1;
+  if (stage === 1) return [one ? p.noun.one : p.noun.many];
+  if (stage === 2) return isAreWords(one, p.noun);
+  return answerWords(p.count, p.noun);
+}
+
+/** The places she fills: the word, the verb, or the whole sentence. */
+export function gapsOf(stage: Stage): number[] {
+  return stage === 1 ? [0] : stage === 2 ? [1] : [0, 1, 2, 3];
+}
+
+/** What a place asks for, for its help. */
+export type Role = 'there' | 'verb' | 'number' | 'noun';
+
+export function roleOf(stage: Stage, place: number): Role {
+  if (stage === 1) return 'noun';
+  if (stage === 2) return 'verb';
+  return (['there', 'verb', 'number', 'noun'] as const)[place];
+}
+
+/**
+ * The cards of a task: in stages 1 and 2 the two forms to choose from; in
+ * stage 3 the answer with the other noun form, the other verb and a number
+ * next to the right one.
+ */
 export function cardsFor(stage: Stage, p: Problem, rng: Rng): string[] {
   const one = p.count === 1;
-  const cards = [...answerWords(p.count, p.noun), one ? p.noun.many : p.noun.one];
-  if (stage >= 2) cards.push(one ? 'are' : 'is');
-  if (stage >= 3) {
-    const near = p.count === 1 ? 2 : p.count === MAX_COUNT ? MAX_COUNT - 1 : p.count + (rng() < 0.5 ? -1 : 1);
-    cards.push(NUMBER_WORDS[near - 1]);
-  }
+  if (stage === 1) return shuffled([p.noun.one, p.noun.many], rng);
+  if (stage === 2) return shuffled(['is', 'are'], rng);
+  const near = one ? 2 : p.count === MAX_COUNT ? MAX_COUNT - 1 : p.count + (rng() < 0.5 ? -1 : 1);
+  const cards = [...answerWords(p.count, p.noun), one ? p.noun.many : p.noun.one, one ? 'are' : 'is', NUMBER_WORDS[near - 1]];
   return shuffled(cards, rng);
 }
 
@@ -140,7 +168,7 @@ export interface RoundState {
 }
 
 export interface Progress {
-  version: 1;
+  version: 2;
   session: number;
   lastActive: number;
   /** When the last task was finished; opening without answering does not count. */
@@ -157,6 +185,8 @@ export interface Progress {
   correctStreak: number;
   round: RoundState;
   trophies: number;
+  /** The stages were rebuilt since her last visit: a short note that her rewards stay. */
+  news: boolean;
 }
 
 export type TaskKind = 'example' | 'practice' | 'review';
@@ -167,7 +197,10 @@ export interface Task {
   kind: TaskKind;
   key: string;
   problem: Problem;
-  /** The answer word by word, lower case. */
+  /** The whole sentence, lower case; `gaps` are its places to fill. */
+  words: string[];
+  gaps: number[];
+  /** The words for the gaps, in order. */
   answer: string[];
   /** The cards to choose from, shuffled. */
   cards: string[];
@@ -175,13 +208,13 @@ export interface Task {
 
 /** How a task went, reported by the game when the sentence is done. */
 export interface Outcome {
-  /** A wrong sentence was checked. */
+  /** A wrong card was chosen, or a wrong sentence checked. */
   mistake: boolean;
   /** Help was asked for before any mistake: the task does not count as her own try. */
   helpFirst: boolean;
   /** Help was used at all. */
   helped: boolean;
-  /** The sentence had to be shown after the second wrong check. */
+  /** The answer had to be shown: after a wrong card, or the second wrong check. */
   shown: boolean;
 }
 
@@ -213,7 +246,7 @@ function freshStage(unlocked: boolean): StageState {
 
 export function freshProgress(now: number): Progress {
   return {
-    version: 1,
+    version: 2,
     session: 1,
     lastActive: now,
     lastAnswered: null,
@@ -228,6 +261,7 @@ export function freshProgress(now: number): Progress {
     correctStreak: 0,
     round: { tasks: 0, points: 0, correct: 0 },
     trophies: 0,
+    news: false,
   };
 }
 
@@ -431,7 +465,7 @@ export class Engine {
 
   private pickPractice(): Task {
     const stage = this.chooseStage();
-    return this.makeTask(stage, 'practice', problemKey(this.freshProblem()))!;
+    return this.makeTask(stage, 'practice', problemKey(this.freshProblem(stage)))!;
   }
 
   /** The newest stage first, the one before as practice, older ones now and then. */
@@ -451,8 +485,8 @@ export class Engine {
    * One thing in about ONE_SHARE of the tasks, otherwise two to five; never a
    * picture just seen (with all three "one" pictures among the last tasks, several).
    */
-  private freshProblem(): Problem {
-    const one = this.rng() < ONE_SHARE;
+  private freshProblem(stage: Stage): Problem {
+    const one = this.rng() < ONE_SHARE[stage];
     const fresh = PROBLEMS.filter((p) => !this.progress.recent.includes(problemKey(p)));
     const fitting = fresh.filter((p) => (p.count === 1) === one);
     return pick(fitting.length ? fitting : fresh, this.rng);
@@ -462,13 +496,17 @@ export class Engine {
   makeTask(stage: Stage, kind: TaskKind, key: string): Task | null {
     const problem = parseKey(key);
     if (!problem) return null;
+    const words = sentenceOf(stage, problem);
+    const gaps = gapsOf(stage);
     return {
       id: this.progress.taskCounter,
       stage,
       kind,
       key,
       problem,
-      answer: answerWords(problem.count, problem.noun),
+      words,
+      gaps,
+      answer: gaps.map((i) => words[i]),
       cards: cardsFor(stage, problem, this.rng),
     };
   }

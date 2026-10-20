@@ -5,14 +5,15 @@ import type { ModuleContext, ModuleStats } from '../types';
 import { questionText } from './content';
 import {
   CORRECT_PER_STAR, Engine, MASTERY_CORRECT, MIN_DISTINCT_COUNTS, ONE_SHARE, READY_MASTERY, READY_WINDOW_CORRECT, ROUND_TASKS,
-  SECURE_MASTERY, SECURE_WINDOW_CORRECT, SESSION_GAP_MS, STAGES, WINDOW, diagnose,
+  SECURE_MASTERY, SECURE_WINDOW_CORRECT, SESSION_GAP_MS, STAGES, WINDOW, diagnose, roleOf,
   type AnswerResult, type RoundState, type Task,
 } from './engine';
 import { picture } from './pictures';
 import { BADGE_NAMES, STAGE_NAMES, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import {
-  BUILD_PROMPT, COMPLETE_HELP, HINTS, MARKED_CARD, answer, confirmation, explanation, help, question, reveal, type Text,
+  BUILD_PROMPT, CHOOSE_PROMPT, COMPLETE_HELP, HINTS, MARKED_CARD, NEWS, answer, confirmation, explanation, help,
+  mistake as mistakeText, question, reveal, type Text,
 } from './texts';
 
 const CORRECT_DELAY_MS = 1800;
@@ -80,6 +81,8 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
   let wrongSlots = new Set<number>();
   /** The card help or an example lights up. */
   let suggested: number | null = null;
+  /** Stages 1 and 2: the wrong card she chose, marked while the right one is shown. */
+  let wrongCard: number | null = null;
   let checks = 0;
   let helpUsed = false;
   let mistake = false;
@@ -117,6 +120,7 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
     fixed = new Set();
     wrongSlots = new Set();
     suggested = null;
+    wrongCard = null;
     checks = 0;
     helpUsed = false;
     mistake = false;
@@ -143,8 +147,12 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
       });
     } else {
       locked = false;
-      setMessage([BUILD_PROMPT], 'question');
-      shell.speak(question(task.problem));
+      if (whole()) {
+        setMessage([BUILD_PROMPT], 'question');
+        shell.speak(question(task.problem));
+      } else {
+        setMessage([CHOOSE_PROMPT], 'question');
+      }
     }
     renderSentence();
 
@@ -152,6 +160,11 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
       shell.toast(pendingToast);
       pendingToast = null;
     }
+  }
+
+  /** Stage 3: the whole sentence, checked with "Prüfen". Stages 1 and 2 fill one place, checked at once. */
+  function whole(): boolean {
+    return task.gaps.length > 1;
   }
 
   /** In an example: the card for the first open place lights up. */
@@ -187,8 +200,28 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
         complete(false);
         return;
       }
+    } else if (!whole()) {
+      onChoice(index);
+      return;
     }
     renderSentence();
+  }
+
+  /** Stages 1 and 2: a wrong card is explained, the right one put in its place; "Weiter" goes on. */
+  function onChoice(index: number): void {
+    if (task.cards[index] === task.answer[0]) {
+      complete(false);
+      return;
+    }
+    mistake = true;
+    if (!helpUsed) mistakeAlone = true;
+    wrongCard = index;
+    showAnswer();
+    phase = 'wait';
+    renderSentence();
+    setMessage(mistakeText(task.stage, task.problem), 'explain');
+    shell.speak(message);
+    showNext(() => complete(true));
   }
 
   /** A card in the sentence goes back, unless a check found it right. */
@@ -261,9 +294,9 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
     round.secured.push(...result.secured.map((s) => BADGE_NAMES[s]));
 
     const lead = task.kind === 'example' ? 'Genau!' : result.ok ? 'Richtig!' : 'Gemeinsam geschafft!';
-    setMessage(confirmation(lead, task.problem), 'good');
-    // Every sentence ends heard once more; a shown one was just read.
-    if (!shown) shell.speak(answer(task.problem));
+    setMessage(confirmation(lead, task.stage, task.problem), 'good');
+    // Every task ends with the word or sentence heard once more; a shown one was just read.
+    if (!shown) shell.speak(answer(task.stage, task.problem));
     if (result.streak) shell.toast(`${result.streak} hintereinander geschafft!`);
     sound.correct();
     if (result.points) shell.floatPoints(result.points);
@@ -307,7 +340,7 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
     shell.stopSpeaking();
     sound.star();
     const stars = engine.stars - round.starsAtStart;
-    const lines = [`<p class="round-score">${summary.points} Punkte · ${plural(summary.correct, 'Satz', 'Sätze')} allein richtig</p>`];
+    const lines = [`<p class="round-score">${summary.points} Punkte · ${plural(summary.correct, 'Aufgabe', 'Aufgaben')} allein richtig</p>`];
     if (stars > 0) {
       const icons = `<span class="inline-stars">${plainStar('#fbbf24').repeat(Math.min(stars, 5))}</span>`;
       lines.push(`<p>Neu: ${icons} ${plural(stars, 'Stern', 'Sterne')}</p>`);
@@ -332,49 +365,74 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
 
   // --- card and sentence -------------------------------------------------------
 
+  /** The picture; in stage 3 with the English question to hear again. */
   function renderCard(): void {
-    ui.card.innerHTML = `${picture(task.problem)}
-      <p class="count-question" lang="en">${escapeHtml(questionText(task.problem.noun))}</p>
-      <button type="button" class="listen-button" data-ref="listen"><span aria-hidden="true">🔊</span> Frage hören</button>`;
-    ui.card.querySelector('[data-ref="listen"]')!.addEventListener('click', () => shell.speak(question(task.problem)));
+    const ask = whole()
+      ? `<p class="count-question" lang="en">${escapeHtml(questionText(task.problem.noun))}</p>
+      <button type="button" class="listen-button" data-ref="listen"><span aria-hidden="true">🔊</span> Frage hören</button>`
+      : '';
+    ui.card.innerHTML = `${picture(task.problem)}${ask}`;
+    ui.card.querySelector('[data-ref="listen"]')?.addEventListener('click', () => shell.speak(question(task.problem)));
   }
 
-  /** The places of the sentence (first word with a capital letter, the full stop fixed) and the free cards. */
+  /**
+   * The sentence with its places (a sentence starts with a capital letter and
+   * ends with a full stop, both fixed; stage 1 is a single word) and the free cards.
+   */
   function renderSentence(): void {
     // The buttons are rebuilt: focus on one of them moves to the next free card, or to "Prüfen" once the sentence is full.
     const focused = document.activeElement;
     const hadFocus = focused instanceof HTMLElement && (ui.line.contains(focused) || ui.pool.contains(focused));
     const done = phase !== 'build';
-    const places = slots.map((card, i) => {
+    const sentence = task.stage > 1;
+    const shape = (word: string, at: number) => (sentence && at === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word);
+    const parts = task.words.map((fixedWord, at): HTMLElement => {
+      const i = task.gaps.indexOf(at);
+      if (i < 0) {
+        const span = document.createElement('span');
+        span.className = 'build-word';
+        span.textContent = shape(fixedWord, at);
+        return span;
+      }
+      const card = slots[i];
       const b = document.createElement('button');
       b.type = 'button';
       const state = done ? (phase === 'wait' ? 'shown' : 'ok') : fixed.has(i) ? 'ok' : wrongSlots.has(i) ? 'wrong' : card === null ? 'empty' : 'filled';
       b.className = `build-slot ${state}`;
       const word = card === null ? '' : task.cards[card];
-      b.textContent = i === 0 ? word.charAt(0).toUpperCase() + word.slice(1) : word;
+      b.textContent = shape(word, at);
       b.setAttribute('aria-label', word ? `${word}, zurücklegen` : `Platz ${i + 1}, frei`);
-      b.disabled = done || fixed.has(i) || card === null || task.kind === 'example';
+      b.disabled = done || fixed.has(i) || card === null || task.kind === 'example' || !whole();
       b.addEventListener('click', () => onSlot(i));
       return b;
     });
-    const stop = document.createElement('span');
-    stop.className = 'build-stop';
-    stop.textContent = '.';
-    ui.line.replaceChildren(...places, stop);
+    if (sentence) {
+      // After a given word the full stop sits right at it; after a place, next to it.
+      const last = parts[parts.length - 1];
+      if (last.classList.contains('build-word')) {
+        last.textContent += '.';
+      } else {
+        const stop = document.createElement('span');
+        stop.className = 'build-stop';
+        stop.textContent = '.';
+        parts.push(stop);
+      }
+    }
+    ui.line.replaceChildren(...parts);
 
     ui.pool.replaceChildren(
       ...task.cards.map((word, i) => {
         const b = document.createElement('button');
         b.type = 'button';
         const used = slots.includes(i);
-        b.className = `answer build-card${used ? ' used' : ''}${i === suggested ? ' suggested' : ''}`;
+        b.className = `answer build-card${used ? ' used' : ''}${i === suggested ? ' suggested' : ''}${i === wrongCard ? ' wrong' : ''}`;
         b.textContent = word;
         b.disabled = done || used;
         b.addEventListener('click', () => onCard(i));
         return b;
       }),
     );
-    ui.check.hidden = task.kind === 'example';
+    ui.check.hidden = task.kind === 'example' || !whole();
     ui.check.disabled = done || slots.includes(null);
     if (hadFocus) {
       const full = !ui.check.disabled && !ui.check.hidden;
@@ -408,14 +466,14 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
     for (let i = slot; i < slots.length; i++) if (!fixed.has(i)) slots[i] = null;
     suggested = cardFor(task.answer[slot]);
     renderSentence();
-    setMessage([help(slot, task.problem)], 'explain');
+    setMessage([help(roleOf(task.stage, task.gaps[slot]), task.problem.count === 1)], 'explain');
     shell.speak(message);
   }
 
   /** While she builds: the English question, then the message; otherwise the message. */
   function readAloud(): void {
     if (!task) return;
-    shell.speak(phase === 'build' && task.kind !== 'example' ? [...question(task.problem), ...message] : message);
+    shell.speak(phase === 'build' && task.kind !== 'example' && whole() ? [...question(task.problem), ...message] : message);
   }
 
   function showParents(): void {
@@ -427,15 +485,16 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
     shell.showDialog(
       `<h2>Elternbereich</h2>
        <table class="progress-table"><tbody>${rows}</tbody></table>
-       <p class="legend">Die Antwort auf „How many …?“ wird aus Wortkärtchen gebaut, mit 1 bis 5 Geistern, Katzen oder Hunden.
-       Jede Stufe legt ein Kärtchen mehr dazu, das nicht passt: erst die andere Form des Nomens (ghost/ghosts), dann „is“
-       oder „are“, dann eine falsche Zahl. Etwa ${Math.round(ONE_SHARE * 10)} von 10 Aufgaben zeigen genau eins.
-       „übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je Satz, der beim ersten Prüfen ohne Hilfe stimmt; Fehler ziehen
+       <p class="legend">Bilder mit 1 bis 5 Geistern, Katzen oder Hunden. Stufe 1: Einzahl oder Mehrzahl wählen (dog/dogs).
+       Stufe 2: „is“ oder „are“ einsetzen (There is a dog. / There are dogs.). Stufe 3: die Antwort auf „How many …?“ aus
+       Kärtchen bauen; dabei liegen die andere Form des Nomens, das andere Verb und eine falsche Zahl. Dort zeigen etwa
+       ${Math.round(ONE_SHARE[3] * 10)} von 10 Aufgaben genau eins.
+       „übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je Aufgabe, die beim ersten Versuch ohne Hilfe stimmt; Fehler ziehen
        nichts ab. „gelernt“ = nächste Stufe frei: ab ${READY_MASTERY} Lernpunkten, wenn zuletzt mindestens
-       ${READY_WINDOW_CORRECT} von ${WINDOW} Sätzen mit mindestens ${MIN_DISTINCT_COUNTS} verschiedenen Zahlen richtig waren.
-       „sicher“ ab ${SECURE_MASTERY} Lernpunkten und mindestens ${SECURE_WINDOW_CORRECT} von ${WINDOW} richtigen Sätzen, sobald
+       ${READY_WINDOW_CORRECT} von ${WINDOW} Aufgaben mit mindestens ${MIN_DISTINCT_COUNTS} verschiedenen Anzahlen richtig waren.
+       „sicher“ ab ${SECURE_MASTERY} Lernpunkten und mindestens ${SECURE_WINDOW_CORRECT} von ${WINDOW} richtigen Aufgaben, sobald
        die Stufe nach mehr als ${SESSION_GAP_MS / 60_000} Minuten Pause wieder ohne Hilfe gelöst wird. Ein Stern je
-       ${CORRECT_PER_STAR} richtige Sätze, ein Pokal je ${ROUND_TASKS} Aufgaben.</p>
+       ${CORRECT_PER_STAR} richtige Aufgaben, ein Pokal je ${ROUND_TASKS} Aufgaben.</p>
        <label class="setting"><input type="checkbox" data-ref="soundToggle" ${ctx.settings.sound ? 'checked' : ''}/> Töne</label>
        <p><button type="button" class="btn danger" data-ref="reset">Fortschritt löschen (3 Sek. halten)</button></p>`,
       [{ label: 'Schließen', primary: true, action: () => {} }],
@@ -455,6 +514,10 @@ export function mountHowManyGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   renderScore();
+  if (engine.progress.news) {
+    pendingToast = NEWS;
+    engine.progress.news = false;
+  }
   nextTask();
 
   return () => shell.dispose();
