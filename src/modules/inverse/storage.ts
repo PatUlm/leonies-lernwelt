@@ -53,7 +53,7 @@ function reviewItem(v: unknown): ReviewItem | null {
 
 function forcedTask(v: unknown): ForcedTask | null {
   if (!isRecord(v)) return null;
-  if (v.type === 'back') return { type: 'back' };
+  if (v.type === 'back' || v.type === 'choose' || v.type === 'probe') return { type: v.type };
   if (v.type === 'easy') return isStage(v.stage) ? { type: 'easy', stage: v.stage } : { type: 'easy' };
   if (v.type !== 'example' || !isStage(v.stage)) return null;
   const pick = v.pick;
@@ -84,6 +84,9 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     recent: list(raw.recent, RECENT_SPAN).filter((r): r is number => typeof r === 'number' && Number.isInteger(r) && r > 0 && r <= 100),
     newestRun: num(raw.newestRun, 0),
     backShown: bool(raw.backShown),
+    chooseShown: bool(raw.chooseShown),
+    probeShown: bool(raw.probeShown),
+    hundredShown: bool(raw.hundredShown),
     wrongStreak: num(raw.wrongStreak, 0),
     correctStreak: num(raw.correctStreak, 0),
     round: { tasks: num(round.tasks, 0), points: num(round.points, 0), correct: num(round.correct, 0) },

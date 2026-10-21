@@ -1,4 +1,4 @@
-import { answerOf, formOf, levelOf, type Diagnosis, type Problem, type Stage, type Step } from './engine';
+import { answerOf, levelOf, type Diagnosis, type Problem, type Stage, type Step } from './engine';
 
 /**
  * Everything the child reads or hears in "Umkehraufgaben". The fixed sentences
@@ -97,51 +97,53 @@ export function confirmation(p: Problem): string {
 }
 
 
+/** "drei Zehner": how many tens are taken from 100. */
+const TENS_WORDS = ['', 'einen', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun'];
+
 /**
- * The guided example of a stage, read aloud at once; the numbers to type light
- * up afterwards. A new way of writing explains the whole way; new numbers in a
- * known way of writing show only the step over the ten. The same examples come
- * back after a mistake, so they never say "neu" (the toast does).
+ * A guided example explains line by line: each line gets its own short
+ * message, read aloud before its number lights up. A new way of writing says
+ * the whole way, new numbers in a known way only what is new. The same
+ * examples come back after a mistake, so they never say "neu" (the toast does).
  */
-export function explanation(stage: Stage, p: Problem): string {
+function exampleLine(stage: Stage, p: Problem, step: Step): string {
   const tens = p.part - (p.part % 10);
   const ones = p.part % 10;
   const between = p.total - tens;
   const answer = answerOf(p);
+  const back = between % 10;
   const level = levelOf(stage);
-  if (p.shape === 'front' && level !== 1) {
-    const back = between % 10;
-    const typeOne = 'Tippe die Zahl ab, die leuchtet.';
-    if (level === 2) {
-      switch (formOf(stage)) {
-        case 1:
-          return `Hier starten wir bei einem glatten Zehner. ${p.total} − ${tens} = ${between}. Von ${between} gehen wir ${ones} zurück, unter den Zehner: ${between} − ${ones} = ${answer}. Tippe die Zahlen ab, die leuchten.`;
-        case 2:
-          return `Glatte Zehner kennst du schon. Jetzt in einer Zeile: ${p.total} − ${tens} − ${ones}. Nach den Zehnern sind wir bei ${between}. ${ones} zurück ergibt ${answer}. ${typeOne}`;
-        case 3:
-          return `Jetzt direkt vom glatten Zehner: ${inverseText(p)}. Im Kopf: erst ${tens} zurück bis ${between}, dann noch ${ones}: ${answer}. ${typeOne}`;
-      }
-    }
-    switch (formOf(stage)) {
-      case 1:
-        return `Hier reichen die Einer nicht. ${p.total} − ${tens} = ${between}. Für ${between} − ${ones} gehen wir erst ${back} zurück bis ${between - back}, dann noch ${ones - back}: ${answer}. Tippe die Zahlen ab, die leuchten.`;
-      case 2:
-        return `Den Weg über den Zehner kennst du schon. Jetzt in einer Zeile: ${p.total} − ${tens} − ${ones}. Von ${between} erst ${back} zurück bis ${between - back}, dann noch ${ones - back}: ${answer}. ${typeOne}`;
-      case 3:
-        return `Jetzt direkt: ${inverseText(p)}. Im Kopf: erst ${tens} zurück bis ${between}. Dann ${back} bis ${between - back} und noch ${ones - back} zurück: ${answer}. ${typeOne}`;
-    }
+  // Over the ten: back to the ten first, then on.
+  const way = level === 3
+    ? `erst ${tens} zurück bis ${between}, dann ${back} bis ${between - back} und noch ${ones - back}: ${answer}`
+    : `erst ${tens} zurück bis ${between}, dann ${ones} zurück bis ${answer}`;
+  switch (step.kind) {
+    case 'tens':
+      if (p.total === 100) return `100 sind zehn Zehner. Wir nehmen ${TENS_WORDS[tens / 10]} Zehner weg: 100 − ${tens} = ${between}.`;
+      if (level === 2) return `Hier starten wir bei einem glatten Zehner: ${p.total} − ${tens} = ${between}.`;
+      if (level === 3) return `Hier reichen die Einer nicht. Zuerst die Zehner: ${p.total} − ${tens} = ${between}.`;
+      return `Die Umkehraufgabe rechnet rückwärts: ${inverseText(p)}. Zuerst die Zehner: ${p.total} − ${tens} = ${between}.`;
+    case 'ones':
+      if (p.total === 100) return `Jetzt noch ${ones} zurück: ${between} − ${ones} = ${answer}.`;
+      if (level === 2) return `Von ${between} gehen wir ${ones} zurück, unter den Zehner: ${between} − ${ones} = ${answer}.`;
+      if (level === 3) return `Für ${between} − ${ones} gehen wir erst ${back} zurück bis ${between - back}, dann noch ${ones - back}: ${answer}.`;
+      return `Dann die Einer: ${between} − ${ones} = ${answer}.`;
+    case 'line':
+      if (p.shape === 'back') return `Jetzt steht die Lücke nach dem Plus. Die Umkehraufgabe bleibt gleich: ${termsText(step)}.`;
+      return `Jetzt in einer Zeile: ${termsText(step)}. ${way.charAt(0).toUpperCase()}${way.slice(1)}.`;
+    case 'direct':
+      return `Jetzt direkt${level === 2 ? ' vom glatten Zehner' : ''}: ${inverseText(p)}. Im Kopf ${way}.`;
+    case 'probe':
+      return `Mit der Probe prüfen wir die gefundene Zahl. ${termsText(step)} ergibt wieder ${p.total}.`;
   }
-  const lead = p.shape === 'back'
-    ? `Jetzt steht die Lücke nach dem Plus. Die Umkehraufgabe bleibt gleich: ${inverseText(p)}.`
-    : 'Gesucht ist die Zahl in der Lücke.';
-  switch (formOf(stage)) {
-    case 1:
-      return `${lead} Wir rechnen rückwärts mit der Umkehraufgabe ${inverseText(p)}. Zuerst die Zehner: ${p.total} − ${tens} = ${between}. Dann die Einer: ${between} − ${ones} = ${answer}. Tippe die Zahlen ab, die leuchten.`;
-    case 2: {
-      const inverse = p.shape === 'back' ? '' : ` Die Umkehraufgabe ist ${inverseText(p)}.`;
-      return `${lead}${inverse} Jetzt rechnen wir in einer Zeile: ${p.total} − ${tens} − ${ones}. Erst die Zehner weg, das gibt ${between}. Dann die Einer weg, das gibt ${answer}. Tippe die Zahl ab, die leuchtet.`;
-    }
-    case 3:
-      return `${lead} Jetzt rechnen wir die Umkehraufgabe direkt: ${inverseText(p)}. Im Kopf geht es schrittweise: ${p.total} − ${tens} = ${between}, dann ${between} − ${ones} = ${answer}. Tippe die Zahl ab, die leuchtet.`;
-  }
+}
+
+/** The example message of one line: what to calculate, then the number to type. */
+export function exampleText(stage: Stage, p: Problem, step: Step): string {
+  return `${exampleLine(stage, p, step)} ${EXAMPLE_TYPE}`;
+}
+
+/** The example of choosing the inverse: why it is the minus task; then its button lights up. */
+export function chooseExample(p: Problem): string {
+  return `Wir suchen die fehlende Zahl zur Plusaufgabe. Dafür rechnen wir rückwärts: ${inverseText(p)}. Tippe auf die Aufgabe, die leuchtet.`;
 }

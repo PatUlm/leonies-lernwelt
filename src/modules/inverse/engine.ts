@@ -50,10 +50,11 @@ export const SECURE_WINDOW_CORRECT = 9;
 export const MIN_DISTINCT = 4;
 /**
  * A new way of writing starts with two guided examples; new numbers in a known
- * way of writing with one, which shows only what is new.
+ * way of writing with one, which shows only what is new. Stage 2 also shows
+ * the start at 100.
  */
 export function examplesFor(stage: Stage): number {
-  return levelOf(stage) === 1 ? 2 : 1;
+  return levelOf(stage) === 1 || stage === 2 ? 2 : 1;
 }
 /** Share of the newest stage, growing with its mastery; the stage before gets most of the rest. */
 export const NEWEST_SHARE_MIN = 0.4;
@@ -77,9 +78,13 @@ export const BACK_SHAPE_STAGE: Stage = 3;
 export const BACK_SHAPE_SHARE = 0.2;
 /** Practice in the new form before the example of the moved gap comes. */
 export const BACK_EXAMPLE_AFTER = 5;
-/** From form 2: now and then she first chooses the inverse ("90 − 23" or "90 + 23"). */
+/** From form 2, once its example was shown: now and then she first chooses the inverse ("90 − 23" or "90 + 23"). */
 export const CHOOSE_SHARE = 0.3;
-/** In form 3: now and then she types the check sum herself ("67 + 23 = __"). */
+/**
+ * In form 3 without crossing a ten, once its example was shown: now and then
+ * she types the check sum herself ("73 + 23 = __"). Adding over a ten is not
+ * taught here, so the check sum of the other levels stays shown.
+ */
 export const PROBE_SHARE = 0.3;
 
 /** front: "__ + 23 = 90"; back: "23 + __ = 90". The inverse is "90 − 23" for both. */
@@ -148,11 +153,17 @@ export const PROBLEMS: Record<Level, readonly (readonly [number, number])[]> = {
  */
 export const EXAMPLES: Record<Level, readonly (readonly [number, number])[]> = {
   1: [[96, 23], [78, 45]],
-  2: [[90, 23], [60, 34]],
+  2: [[90, 23], [100, 34]],
   3: [[93, 27], [72, 48]],
 };
 /** The example of the moved gap: "23 + __ = 96", in the form she has just begun. */
 export const BACK_EXAMPLE: { stage: Stage; problem: Problem } = { stage: 4, problem: { total: 96, part: 23, shape: 'back' } };
+/** The example of choosing the inverse, after the first examples of one line. */
+export const CHOOSE_EXAMPLE: { stage: Stage; problem: Problem } = { stage: 4, problem: { total: 96, part: 23, shape: 'front' } };
+/** The example of the check sum, after the first examples of the direct way. */
+export const PROBE_EXAMPLE: { stage: Stage; problem: Problem } = { stage: 7, problem: { total: 96, part: 23, shape: 'front' } };
+/** The second example of stage 2 starts at 100: before it, no task does. */
+const HUNDRED_EXAMPLE: ForcedTask = { type: 'example', stage: 2, pick: 1 };
 
 /** One line to calculate; `result` goes into its field. */
 export interface Step {
@@ -250,6 +261,8 @@ export interface ReviewItem {
 export type ForcedTask =
   | { type: 'example'; stage: Stage; /** Index into EXAMPLES; without one an example not seen recently. */ pick?: number }
   | { type: 'back' }
+  | { type: 'choose' }
+  | { type: 'probe' }
   | { type: 'easy'; stage?: Stage };
 
 export interface RoundState {
@@ -278,6 +291,12 @@ export interface Progress {
   newestRun: number;
   /** The example of "23 + __ = 90" was shown: the moved gap comes in practice too. */
   backShown: boolean;
+  /** The example of choosing the inverse was shown: choosing comes in practice too. */
+  chooseShown: boolean;
+  /** The example of the check sum was shown: she types it now and then. */
+  probeShown: boolean;
+  /** An example starting at 100 was shown: tasks may start there. */
+  hundredShown: boolean;
   wrongStreak: number;
   correctStreak: number;
   round: RoundState;
@@ -353,6 +372,9 @@ export function freshProgress(now: number): Progress {
     recent: [],
     newestRun: 0,
     backShown: false,
+    chooseShown: false,
+    probeShown: false,
+    hundredShown: false,
     wrongStreak: 0,
     correctStreak: 0,
     round: { tasks: 0, points: 0, correct: 0 },
@@ -418,7 +440,7 @@ export class Engine {
     const p = this.progress;
     p.taskCounter += 1;
     this.currentSource = null;
-    const task = this.pickForced() ?? this.pickBackExample() ?? this.pickReview() ?? this.pickPractice();
+    const task = this.pickForced() ?? this.pickCatchUp() ?? this.pickReview() ?? this.pickPractice();
     const newest = this.unlockedStages().at(-1);
     if (task.kind !== 'example') p.newestRun = task.stage === newest ? p.newestRun + 1 : 0;
     p.recent = [...p.recent, task.problem.total].slice(-RECENT_SPAN);
@@ -443,7 +465,12 @@ export class Engine {
     const result: AnswerResult = {
       ok, points: 0, starEarned: false, unlocked: [], secured: [], offerPause: false, streak: null, roundComplete: null,
     };
-    if (task.kind === 'example') return result;
+    if (task.kind === 'example') {
+      if (task.choose) p.chooseShown = true;
+      if (task.probe) p.probeShown = true;
+      if (task.problem.total === 100) p.hundredShown = true;
+      return result;
+    }
     if (outcome.mistake) this.scheduleReview(task);
     if (outcome.shown && !p.forced.some((f) => f.type === 'example' && f.stage === task.stage)) {
       // Two wrong tries on one line: an example, then something easier.
@@ -545,23 +572,38 @@ export class Engine {
     if (!forced) return null;
     this.currentSource = 'forced';
     if (forced.type === 'back') return this.makeTask(BACK_EXAMPLE.stage, 'example', problemKey(BACK_EXAMPLE.problem));
+    if (forced.type === 'choose') return this.makeTask(CHOOSE_EXAMPLE.stage, 'example', problemKey(CHOOSE_EXAMPLE.problem), { choose: true });
+    if (forced.type === 'probe') return this.makeTask(PROBE_EXAMPLE.stage, 'example', problemKey(PROBE_EXAMPLE.problem), { probe: true });
     if (forced.type === 'easy') {
       const stage = forced.stage && this.stageState(forced.stage).unlocked ? forced.stage : this.easyStage();
       return this.practiceTask(stage);
     }
     const pool = EXAMPLES[levelOf(forced.stage)];
     const index = forced.pick !== undefined && pool[forced.pick] ? forced.pick : undefined;
-    const fresh = pool.filter(([total]) => !this.progress.recent.includes(total));
-    const [total, part] = index !== undefined ? pool[index] : pick(fresh.length ? fresh : pool, this.rng);
+    // The start at 100 is explained by its own example in stage 2, not by one picked after a mistake.
+    const known = pool.filter(([total]) => total < 100 || this.progress.hundredShown);
+    const fresh = known.filter(([total]) => !this.progress.recent.includes(total));
+    const [total, part] = index !== undefined ? pool[index] : pick(fresh.length ? fresh : known, this.rng);
     return this.makeTask(forced.stage, 'example', problemKey({ total, part, shape: 'front' }));
   }
 
-  /** The example of the moved gap, once stage 3 is ready and the next form was practised a little. */
-  private pickBackExample(): Task | null {
+  /**
+   * Examples of what comes next in a stage already open: choosing the inverse
+   * and the check sum right after the first examples of their form, the start
+   * at 100 for whoever passed stage 2 before it had that example, and the
+   * moved gap once stage 3 is ready and the next form was practised a little.
+   */
+  private pickCatchUp(): Task | null {
     const p = this.progress;
+    const open = (stage: Stage) => this.stageState(stage).unlocked;
     const next = this.stageState(BACK_EXAMPLE.stage);
-    if (p.backShown || !this.stageState(BACK_SHAPE_STAGE).ready || !next.unlocked || next.attempts < BACK_EXAMPLE_AFTER) return null;
-    p.forced.unshift({ type: 'back' });
+    let forced: ForcedTask | null = null;
+    if (!p.chooseShown && open(CHOOSE_EXAMPLE.stage)) forced = { type: 'choose' };
+    else if (!p.probeShown && open(PROBE_EXAMPLE.stage)) forced = { type: 'probe' };
+    else if (!p.hundredShown && STAGES.some((s) => levelOf(s) === 2 && open(s))) forced = HUNDRED_EXAMPLE;
+    else if (!p.backShown && this.stageState(BACK_SHAPE_STAGE).ready && next.unlocked && next.attempts >= BACK_EXAMPLE_AFTER) forced = { type: 'back' };
+    if (!forced) return null;
+    p.forced.unshift(forced);
     return this.pickForced();
   }
 
@@ -614,7 +656,7 @@ export class Engine {
 
   /** A problem of the stage's level whose sum was not used lately, preferably not yet in the window. */
   private freshProblem(stage: Stage): readonly [number, number] {
-    const all = PROBLEMS[levelOf(stage)];
+    const all = PROBLEMS[levelOf(stage)].filter(([total]) => total < 100 || this.progress.hundredShown);
     const recent = this.progress.recent;
     const seen = this.stageState(stage).window;
     const notRecent = all.filter(([total]) => !recent.includes(total));
@@ -622,8 +664,12 @@ export class Engine {
     return pick(unseen.length ? unseen : notRecent.length ? notRecent : all, this.rng);
   }
 
-  /** Builds the task for a key; null if the key does not fit the stage (old review). */
-  makeTask(stage: Stage, kind: TaskKind, key: string): Task | null {
+  /**
+   * Builds the task for a key; null if the key does not fit the stage (old
+   * review). Practice chooses and checks only after their examples; an
+   * example does so when `show` asks for it.
+   */
+  makeTask(stage: Stage, kind: TaskKind, key: string, show: { choose?: boolean; probe?: boolean } = {}): Task | null {
     const problem = parseKey(key);
     const level = levelOf(stage);
     if (!problem || levelOfProblem(problem.total, problem.part) !== level) return null;
@@ -637,8 +683,8 @@ export class Engine {
       kind,
       key,
       problem,
-      choose: practice && form >= 2 && this.rng() < CHOOSE_SHARE,
-      probe: practice && form === 3 && this.rng() < PROBE_SHARE,
+      choose: practice ? form >= 2 && this.progress.chooseShown && this.rng() < CHOOSE_SHARE : !!show.choose,
+      probe: practice ? form === 3 && level === 1 && this.progress.probeShown && this.rng() < PROBE_SHARE : !!show.probe,
     };
   }
 }

@@ -4,11 +4,12 @@ type Review = { stage: number; key: string; dueAt: number };
 
 /**
  * Fresh device playing locally. With `reviews`, the given problems come first
- * and the stages up to the highest one are open (no guided examples).
+ * and the stages up to the highest one are open (no guided examples); `open`
+ * opens stages without any examples shown.
  */
-async function startInverse(page: Page, reviews: Review[] = []): Promise<void> {
+async function startInverse(page: Page, reviews: Review[] = [], open = 0): Promise<void> {
   await page.goto('/');
-  await page.evaluate(async (reviews) => {
+  await page.evaluate(async ({ reviews, open }) => {
     localStorage.clear();
     const load = (path: string) => import(/* @vite-ignore */ path);
     const { freshProgress } = await load('/src/modules/inverse/engine.ts');
@@ -20,10 +21,15 @@ async function startInverse(page: Page, reviews: Review[] = []): Promise<void> {
       p.stages.forEach((s: { unlocked: boolean }, i: number) => (s.unlocked = i < top));
       p.forced = [];
       p.reviewQueue = reviews;
+      Object.assign(p, { backShown: true, chooseShown: true, probeShown: true, hundredShown: true });
+    }
+    if (open) {
+      p.stages.forEach((s: { unlocked: boolean }, i: number) => (s.unlocked = i < open));
+      p.forced = [];
     }
     saveProgress(p);
     sync.playLocally();
-  }, reviews);
+  }, { reviews, open });
   await page.goto('/#/mathe/umkehr');
   await expect(page.locator('.calc-card')).toBeVisible();
 }
@@ -42,15 +48,18 @@ test('the Mathe area offers "Umkehraufgaben" next to the clock', async ({ page }
   await expect(page.locator('.calc-card')).toBeVisible();
 });
 
-test('a guided example: the numbers to type light up, then the gap is filled', async ({ page }) => {
+test('a guided example explains line by line: the numbers to type light up, then the gap is filled', async ({ page }) => {
   await startInverse(page);
-  await expect(page.locator('.message')).toContainText('Gesucht ist die Zahl in der Lücke.');
+  await expect(page.locator('.message')).toHaveText(
+    'Die Umkehraufgabe rechnet rückwärts: 96 − 23. Zuerst die Zehner: 96 − 20 = 76. Tippe die Zahl ab, die leuchtet.',
+  );
   await expect(page.locator('.calc-task .calc-eq')).toHaveText(/\+\s*23\s*=\s*96/);
   await expect(page.locator('.calc-inverse .calc-eq')).toHaveText('96 − 23');
   await expect(page.locator('.calc-field.active .ghost')).toHaveText('76', { timeout: 10_000 });
   await enter(page, 76);
   await expect(page.locator('.calc-step .calc-copy')).toHaveText('76');
-  await expect(page.locator('.calc-field.active .ghost')).toHaveText('73');
+  await expect(page.locator('.message')).toHaveText('Dann die Einer: 76 − 3 = 73. Tippe die Zahl ab, die leuchtet.');
+  await expect(page.locator('.calc-field.active .ghost')).toHaveText('73', { timeout: 10_000 });
   await enter(page, 73);
   await expect(page.locator('.message')).toHaveText('Genau! 73 + 23 = 96.');
   await expect(page.locator('.calc-gap.filled')).toHaveText('73');
@@ -97,24 +106,41 @@ test('the moved gap, solved in one line', async ({ page }) => {
 test('choosing the inverse, help in the direct form brings back the two lines, then the check sum', async ({ page }) => {
   // Every chance taken: the choice and the typed check sum come.
   await page.addInitScript(() => (Math.random = () => 0.01));
-  await startInverse(page, [{ stage: 8, key: 'f:60:34', dueAt: 0 }]);
+  await startInverse(page, [{ stage: 7, key: 'f:68:25', dueAt: 0 }]);
   await expect(page.locator('.message')).toHaveText('Welche Umkehraufgabe passt?');
   await expect(page.locator('.calc-inverse .calc-field.pending')).toHaveText('?');
   await expect(page.locator('.keypad')).toBeHidden();
-  await page.locator('.calc-choice', { hasText: '60 + 34' }).click();
+  await page.locator('.calc-choice', { hasText: '68 + 25' }).click();
   await expect(page.locator('.message')).toHaveText('Die Umkehraufgabe rechnet rückwärts: Aus plus wird minus.');
   await page.locator('.next').click();
 
-  await expect(page.locator('.calc-inverse .calc-eq')).toHaveText(/^60 − 34 =/);
+  await expect(page.locator('.calc-inverse .calc-eq')).toHaveText(/^68 − 25 =/);
   await page.locator('[data-ref="help"]').click();
   await expect(page.locator('.message')).toHaveText('Wir rechnen in zwei Zeilen: zuerst die Zehner, dann die Einer.');
   await expect(page.locator('.calc-step .calc-eq')).toHaveCount(2);
-  await enter(page, 30);
-  await enter(page, 26);
+  await enter(page, 48);
+  await enter(page, 43);
   await expect(page.locator('.message')).toHaveText('Mach die Probe: Rechne die Plusaufgabe.');
-  await expect(page.locator('.calc-probe .calc-eq')).toHaveText(/^26 \+ 34 =/);
-  await enter(page, 60);
-  await expect(page.locator('.message')).toHaveText('Gemeinsam geschafft! 26 + 34 = 60.');
+  await expect(page.locator('.calc-probe .calc-eq')).toHaveText(/^43 \+ 25 =/);
+  await enter(page, 68);
+  await expect(page.locator('.message')).toHaveText('Gemeinsam geschafft! 43 + 25 = 68.');
+});
+
+test('choosing the inverse starts with its own example: the right one lights up', async ({ page }) => {
+  await startInverse(page, [], 4);
+  await expect(page.locator('.message')).toHaveText(
+    'Wir suchen die fehlende Zahl zur Plusaufgabe. Dafür rechnen wir rückwärts: 96 − 23. Tippe auf die Aufgabe, die leuchtet.',
+  );
+  await expect(page.locator('.calc-choice.suggested')).toHaveText('96 − 23', { timeout: 10_000 });
+  await page.locator('.calc-choice', { hasText: '96 + 23' }).click();
+  await expect(page.locator('.message')).toHaveText('Der leuchtende Knopf ist richtig.');
+  await page.locator('.calc-choice.suggested').click();
+  await expect(page.locator('.message')).toHaveText(
+    'Jetzt in einer Zeile: 96 − 20 − 3. Erst 20 zurück bis 76, dann 3 zurück bis 73. Tippe die Zahl ab, die leuchtet.',
+  );
+  await expect(page.locator('.calc-field.active .ghost')).toHaveText('73', { timeout: 10_000 });
+  await enter(page, 73);
+  await expect(page.locator('.message')).toHaveText('Genau! 73 + 23 = 96.');
 });
 
 test('keys typed while the parents\' area is open do not type, delete or send a number', async ({ page }) => {

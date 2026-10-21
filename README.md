@@ -264,9 +264,10 @@ leichten Zahlen, damit nie zwei Dinge auf einmal neu sind. So entstehen neun Stu
   geht schon rückwärts über den Zehner.
 - Eingetippt wird mit der großen Ziffern-Tastatur; das Feld, in dem gerade gerechnet wird,
   hat einen dicken Rahmen und einen blinkenden Strich.
-- Ab Stufe 3 steht die Lücke manchmal hinten (23 + __ = 90), ab „Eine Zeile“ wählt Leonie
-  manchmal zuerst die Umkehraufgabe (90 − 23 oder 90 + 23), bei „Direkt“ rechnet sie manchmal
-  die Probe selbst.
+- Nach Stufe 3 steht die Lücke manchmal hinten (23 + __ = 90), ab „Eine Zeile“ wählt Leonie
+  manchmal zuerst die Umkehraufgabe (90 − 23 oder 90 + 23), bei „Direkt“ ohne Zehnerübergang
+  rechnet sie manchmal die Probe selbst. Jede dieser Varianten kommt erst nach einem eigenen
+  Beispiel, ebenso Aufgaben, die bei 100 starten (Beispiel 100 − 34 in Stufe 2).
 - Nach einem falschen Ergebnis gibt es einen Tipp passend zum Fehler – zum Beispiel „zuerst
   nur die Zehner“, wenn zuerst die Einer abgezogen wurden, oder „Dann hast du einen Zehner
   weniger“ bei 70 − 3 = 77. Beim zweiten Fehlversuch zeigt die App die Zeile, danach kommen
@@ -277,7 +278,8 @@ Eine Aufgabe zählt als richtig, wenn alle Zeilen beim ersten Versuch ohne Hilfe
 mit Tipp oder Hilfe gibt es die halben Punkte. Die nächste Stufe öffnet sich erst nach zehn
 solchen Aufgaben – lieber mehr Übung pro Stufe als mehr Stufen. Eine neue Schreibweise
 beginnt mit zwei erklärten Beispielen, neue Zahlen in einer bekannten Schreibweise mit einem
-kurzen, das nur den Schritt über den Zehner zeigt. Ein Durchgang hat acht Aufgaben. Abzeichen,
+kurzen, das nur den Schritt über den Zehner zeigt. Ein Beispiel erklärt Zeile für Zeile, mit
+höchstens zwei kurzen Sätzen pro Zeile. Ein Durchgang hat acht Aufgaben. Abzeichen,
 Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
 ## Deutsch: Der, die, das

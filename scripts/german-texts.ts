@@ -18,9 +18,11 @@ import {
   BUILD_PROMPT, CHOOSE_PROMPT, COMPLETE_HELP, HINTS as HOWMANY_HINTS, MARKED_CARD, explanation as howManyExample, help as howManyHelp,
   mistake as howManyMistake, reveal as howManyReveal,
 } from '../src/modules/howmany/texts';
-import { BACK_EXAMPLE, EXAMPLES, STAGES as INVERSE_STAGES, levelOf, stepsOf, type Problem } from '../src/modules/inverse/engine';
 import {
-  CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, explanation as inverseExample,
+  BACK_EXAMPLE, CHOOSE_EXAMPLE, EXAMPLES, PROBE_EXAMPLE, STAGES as INVERSE_STAGES, formOf, levelOf, stepsOf, type Problem, type Stage as InverseStage,
+} from '../src/modules/inverse/engine';
+import {
+  CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, chooseExample, exampleText,
   help as inverseHelp, question as inverseQuestion,
 } from '../src/modules/inverse/texts';
 import { VALUES } from '../src/modules/notes/content';
@@ -88,10 +90,16 @@ export function germanTexts(): GermanText[] {
 
   // Umkehraufgaben: examples, questions, help and hints
   const front = ([total, part]: readonly [number, number]): Problem => ({ total, part, shape: 'front' });
+  // An example explains line by line.
+  const exampleLines = (stage: InverseStage, problem: Problem, probe = false) => {
+    for (const step of stepsOf({ form: formOf(stage), problem, probe })) add(`Umkehr ${stage}: Beispiel`, exampleText(stage, problem, step));
+  };
   for (const stage of INVERSE_STAGES) {
-    for (const example of EXAMPLES[levelOf(stage)]) add(`Umkehr ${stage}: Beispiel`, inverseExample(stage, front(example)));
+    for (const example of EXAMPLES[levelOf(stage)]) exampleLines(stage, front(example));
   }
-  add(`Umkehr ${BACK_EXAMPLE.stage}: Beispiel`, inverseExample(BACK_EXAMPLE.stage, BACK_EXAMPLE.problem));
+  exampleLines(BACK_EXAMPLE.stage, BACK_EXAMPLE.problem);
+  add(`Umkehr ${CHOOSE_EXAMPLE.stage}: Beispiel`, chooseExample(CHOOSE_EXAMPLE.problem));
+  exampleLines(PROBE_EXAMPLE.stage, PROBE_EXAMPLE.problem, true);
   add('Umkehr: Beispiel', EXAMPLE_TYPE);
   // Two lines without a ten to cross, from a round ten and over the ten; one line; directly with the check sum.
   const lines = [

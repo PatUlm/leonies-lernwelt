@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Engine, MAX_MASTERY, STAGES, diagnose, freshProgress, stepsOf, type Problem, type Step } from '../../src/modules/inverse/engine';
+import { Engine, MAX_MASTERY, STAGES, diagnose, formOf, freshProgress, stepsOf, type Problem, type Stage, type Step } from '../../src/modules/inverse/engine';
 import { statsFromProgress } from '../../src/modules/inverse/stats';
 import { sanitizeProgress } from '../../src/modules/inverse/storage';
-import { confirmation, crossesTen, explanation, gapTaskText, help, inverseOptions, termsText } from '../../src/modules/inverse/texts';
+import { chooseExample, confirmation, crossesTen, exampleText, gapTaskText, help, inverseOptions, termsText } from '../../src/modules/inverse/texts';
 import { spokenGerman } from '../../src/shared/spoken';
 
 const T0 = 1_700_000_000_000;
@@ -68,18 +68,36 @@ describe('diagnose', () => {
 });
 
 describe('inverse examples', () => {
-  it('explain the steps in words the speech reads well', () => {
-    const text = spokenGerman(explanation(3, front(93, 27)));
-    expect(text).toContain('Hier reichen die Einer nicht. 93 minus 20 gleich 73.');
-    expect(text).toContain('Für 73 minus 7 gehen wir erst 3 zurück bis 70, dann noch 4: 66.');
-    expect(spokenGerman(explanation(8, front(90, 23)))).toBe('Jetzt direkt vom glatten Zehner: 90 minus 23. Im Kopf: erst 20 zurück bis 70, dann noch 3: 67. Tippe die Zahl ab, die leuchtet.');
+  /** The example messages of a task, one per line. */
+  const lines = (stage: Stage, p: Problem, probe = false) =>
+    stepsOf({ form: formOf(stage), problem: p, probe }).map((s) => exampleText(stage, p, s));
+
+  it('explain line by line in words the speech reads well', () => {
+    expect(lines(1, front(96, 23))).toEqual([
+      'Die Umkehraufgabe rechnet rückwärts: 96 − 23. Zuerst die Zehner: 96 − 20 = 76. Tippe die Zahl ab, die leuchtet.',
+      'Dann die Einer: 76 − 3 = 73. Tippe die Zahl ab, die leuchtet.',
+    ]);
+    expect(spokenGerman(lines(3, front(93, 27))[1])).toBe('Für 73 minus 7 gehen wir erst 3 zurück bis 70, dann noch 4: 66. Tippe die Zahl ab, die leuchtet.');
+    expect(lines(2, front(100, 34))).toEqual([
+      '100 sind zehn Zehner. Wir nehmen drei Zehner weg: 100 − 30 = 70. Tippe die Zahl ab, die leuchtet.',
+      'Jetzt noch 4 zurück: 70 − 4 = 66. Tippe die Zahl ab, die leuchtet.',
+    ]);
+    expect(lines(6, front(93, 27))).toEqual(['Jetzt in einer Zeile: 93 − 20 − 7. Erst 20 zurück bis 73, dann 3 bis 70 und noch 4: 66. Tippe die Zahl ab, die leuchtet.']);
+    expect(lines(8, front(90, 23))).toEqual(['Jetzt direkt vom glatten Zehner: 90 − 23. Im Kopf erst 20 zurück bis 70, dann 3 zurück bis 67. Tippe die Zahl ab, die leuchtet.']);
+    expect(lines(7, front(96, 23), true)[1]).toBe('Mit der Probe prüfen wir die gefundene Zahl. 73 + 23 ergibt wieder 96. Tippe die Zahl ab, die leuchtet.');
+    expect(chooseExample(front(96, 23))).toBe('Wir suchen die fehlende Zahl zur Plusaufgabe. Dafür rechnen wir rückwärts: 96 − 23. Tippe auf die Aufgabe, die leuchtet.');
   });
 
-  it('explain the whole way for a new way of writing, only the step over the ten for new numbers', () => {
-    expect(explanation(1, front(96, 23))).toContain('Wir rechnen rückwärts mit der Umkehraufgabe 96 − 23.');
-    expect(explanation(2, front(90, 23))).toBe('Hier starten wir bei einem glatten Zehner. 90 − 20 = 70. Von 70 gehen wir 3 zurück, unter den Zehner: 70 − 3 = 67. Tippe die Zahlen ab, die leuchten.');
-    expect(explanation(6, front(93, 27))).toMatch(/^Den Weg über den Zehner kennst du schon\. Jetzt in einer Zeile: 93 − 20 − 7\./);
-    for (const stage of [2, 3, 5, 6, 8, 9] as const) expect(explanation(stage, front(stage % 3 === 2 ? 90 : 93, stage % 3 === 2 ? 23 : 27))).not.toMatch(/Gesucht|neu/i);
+  it('keep every line to two short sentences before what to type, and never say "neu"', () => {
+    for (const stage of STAGES) {
+      for (const p of [front(96, 23), front(90, 23), front(100, 34), front(93, 27)]) {
+        for (const text of lines(stage, p, formOf(stage) === 3)) {
+          const said = text.replace(' Tippe die Zahl ab, die leuchtet.', '');
+          expect(said.split(/[.!?](?:\s|$)/).filter(Boolean).length, said).toBeLessThanOrEqual(2);
+          expect(said).not.toMatch(/Gesucht|neu/i);
+        }
+      }
+    }
   });
 });
 

@@ -1,5 +1,6 @@
 import { plainStar } from '../../shared/decor';
 import { GameShell } from '../../shared/game/shell';
+import { MARKED_IS_RIGHT } from '../../shared/game/texts';
 import { escapeHtml } from '../../shared/html';
 import { createKeypad } from '../../shared/keypad';
 import type { ModuleContext, ModuleStats } from '../types';
@@ -11,7 +12,7 @@ import {
 import { badgeName, stageName, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import {
-  CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, confirmation, explanation,
+  CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, chooseExample, confirmation, exampleText,
   help, inverseOptions, inverseText, question, reveal, termsText,
 } from './texts';
 
@@ -87,7 +88,7 @@ export function mountInverseGame(root: HTMLElement, ctx: ModuleContext): () => v
   /** A mistake before any help: the task stays her own try. */
   let mistakeAlone = false;
   let expanded = false;
-  /** An example's numbers light up once its explanation has been read. */
+  /** An example's number (or choice) lights up once the explanation of its line has been read. */
   let ghost = false;
   let locked = false;
   /** The ones line just took over the tens result: it pops in once. */
@@ -132,30 +133,21 @@ export function mountInverseGame(root: HTMLElement, ctx: ModuleContext): () => v
     shell.holdAnswers();
     shell.setHelpEnabled(task.kind !== 'example');
 
+    locked = false;
     if (task.choose) {
       phase = 'choose';
       showChoices();
-      setMessage(CHOOSE_QUESTION, 'question');
+      if (task.kind === 'example') {
+        explainExample(chooseExample(task.problem), () => {
+          ui.choices.querySelector('[data-right="true"]')?.classList.add('suggested');
+        });
+      } else {
+        setMessage(CHOOSE_QUESTION, 'question');
+      }
     } else {
       startInput();
     }
     renderCard();
-
-    if (task.kind === 'example') {
-      const shown = task;
-      locked = true;
-      setMessage(explanation(task.stage, task.problem), 'explain');
-      shell.explain([ui.message.textContent ?? ''], {
-        unlock: () => task === shown && (locked = false),
-        reveal: () => {
-          if (task !== shown) return;
-          ghost = true;
-          renderCard();
-        },
-      });
-    } else {
-      locked = false;
-    }
 
     if (pendingToast) {
       shell.toast(pendingToast);
@@ -169,7 +161,28 @@ export function mountInverseGame(root: HTMLElement, ctx: ModuleContext): () => v
     keypad.element.hidden = false;
     keypad.setDisabled(false);
     updateSubmit();
-    if (task.kind !== 'example') setMessage(question(steps[stepIndex]), 'question');
+    if (task.kind !== 'example') {
+      setMessage(question(steps[stepIndex]), 'question');
+      return;
+    }
+    ghost = false;
+    explainExample(exampleText(task.stage, task.problem, steps[stepIndex]), () => {
+      ghost = true;
+      renderCard();
+    });
+  }
+
+  /** An example's message is read aloud at once; what to tap or type lights up afterwards. */
+  function explainExample(text: string, reveal: () => void): void {
+    const shown = task;
+    const at = stepIndex;
+    const current = () => task === shown && stepIndex === at;
+    locked = true;
+    setMessage(text, 'explain');
+    shell.explain([text], {
+      unlock: () => current() && (locked = false),
+      reveal: () => current() && reveal(),
+    });
   }
 
   function showChoices(): void {
@@ -192,14 +205,22 @@ export function mountInverseGame(root: HTMLElement, ctx: ModuleContext): () => v
   }
 
   function onChoice(button: HTMLButtonElement): void {
-    if (phase !== 'choose' || !shell.answersReady) return;
+    if (phase !== 'choose' || locked || !shell.answersReady) return;
     const buttons = [...ui.choices.querySelectorAll<HTMLButtonElement>('button')];
-    for (const b of buttons) b.disabled = true;
     const right = button.dataset.right === 'true';
+    if (task.kind === 'example' && !right) {
+      // Before the mark the explanation goes on; it is no mistake.
+      if (buttons.some((b) => b.classList.contains('suggested'))) {
+        setMessage(MARKED_IS_RIGHT, 'explain');
+        shell.speak([MARKED_IS_RIGHT]);
+      }
+      return;
+    }
+    for (const b of buttons) b.disabled = true;
     buttons.find((b) => b.dataset.right === 'true')!.classList.add('correct');
     if (right) {
       startInput();
-      setMessage(`${CHOOSE_RIGHT} ${question(steps[stepIndex])}`, 'question');
+      if (task.kind !== 'example') setMessage(`${CHOOSE_RIGHT} ${question(steps[stepIndex])}`, 'question');
       renderCard();
       return;
     }
@@ -525,8 +546,9 @@ export function mountInverseGame(root: HTMLElement, ctx: ModuleContext): () => v
        ganz richtig ist; Fehler ziehen nichts ab. „gelernt“ = nächste Stufe frei: ab ${READY_MASTERY} Lernpunkten, wenn zuletzt
        mindestens ${READY_WINDOW_CORRECT} von ${WINDOW} Aufgaben mit mindestens ${MIN_DISTINCT} verschiedenen Zahlen richtig waren. „sicher“ ab
        ${SECURE_MASTERY} Lernpunkten und mindestens ${SECURE_WINDOW_CORRECT} von ${WINDOW} richtigen Aufgaben, sobald die Stufe nach mehr als
-       ${SESSION_GAP_MS / 60_000} Minuten Pause wieder ohne Hilfe gelöst wird. Ab „Zwei Schritte – über den Zehner“ steht die Lücke manchmal
-       hinten (23 + __ = 90), ab „Eine Zeile“ wird manchmal zuerst die Umkehraufgabe gewählt, bei „Direkt“ manchmal die Probe gerechnet.
+       ${SESSION_GAP_MS / 60_000} Minuten Pause wieder ohne Hilfe gelöst wird. Nach „Zwei Schritte – über den Zehner“ steht die Lücke manchmal
+       hinten (23 + __ = 90), ab „Eine Zeile“ wird manchmal zuerst die Umkehraufgabe gewählt, bei „Direkt“ ohne Zehnerübergang
+       manchmal die Probe gerechnet – jeweils erst nach einem eigenen Beispiel.
        Ein Stern je ${CORRECT_PER_STAR} richtige Aufgaben, ein Pokal je ${ROUND_TASKS} Aufgaben.</p>
        <label class="setting"><input type="checkbox" data-ref="soundToggle" ${ctx.settings.sound ? 'checked' : ''}/> Töne</label>
        <p><button type="button" class="btn danger" data-ref="reset">Fortschritt löschen (3 Sek. halten)</button></p>`,

@@ -5,6 +5,18 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.16 – 2026-10-21
+
+### Geändert
+
+- **Umkehraufgaben: nur abfragen, was erklärt wurde, und kürzere Beispiele:** Ein Beispiel
+  erklärt jetzt Zeile für Zeile mit höchstens zwei kurzen Sätzen, statt den ganzen Weg in einem
+  langen Absatz vorzulesen. „Welche Umkehraufgabe passt?“ und die Probe kommen erst nach einem
+  eigenen Beispiel; die Probe rechnet Leonie nur noch ohne Zehnerübergang selbst, weil das
+  Plusrechnen über den Zehner hier nicht erklärt wird. Aufgaben, die bei 100 starten, kommen
+  erst nach dem neuen Beispiel 100 − 34 in Stufe 2. Wer schon weiter ist, sieht diese
+  Beispiele einmal vor der nächsten Aufgabe; der Fortschritt bleibt.
+
 ## 2026.10.15 – 2026-10-21
 
 ### Geändert

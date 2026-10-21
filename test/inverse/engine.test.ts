@@ -143,10 +143,13 @@ describe('inverse engine', () => {
       expect(new Set(correct.map((a) => a.total)).size).toBeGreaterThanOrEqual(MIN_DISTINCT);
       expect(new Set(correct.map((a) => a.part)).size).toBeGreaterThanOrEqual(MIN_DISTINCT);
       const count = examplesFor(stage);
-      expect(count).toBe(levelOf(stage) === 1 ? 2 : 1);
-      const next = play(engine, count + 1);
+      expect(count).toBe(levelOf(stage) === 1 || stage === 2 ? 2 : 1);
+      // Choosing the inverse (stage 4) and the check sum (stage 7) follow with an example of their own.
+      const extra = stage === 4 || stage === 7 ? 1 : 0;
+      const next = play(engine, count + extra + 1);
       expect(next.map((t) => [t.kind, t.stage]).slice(0, count)).toEqual(Array(count).fill(['example', stage]));
-      expect(next[count].kind).not.toBe('example');
+      if (extra) expect(next[count]).toMatchObject({ kind: 'example', stage, choose: stage === 4, probe: stage === 7 });
+      expect(next[count + extra].kind).not.toBe('example');
     }
   });
 
@@ -247,5 +250,42 @@ describe('inverse engine', () => {
 
   it('answers each problem with the difference', () => {
     expect(answerOf({ total: 90, part: 23, shape: 'front' })).toBe(67);
+  });
+  it('chooses, checks and starts at 100 only after their examples', () => {
+    const engine = new Engine(freshProgress(T0), seeded(21));
+    const tasks: Task[] = [];
+    for (let i = 0; i < 3000 && !engine.stageState(9).ready; i++) tasks.push(...play(engine, 1));
+    const firstExample = (match: (t: Task) => boolean) => tasks.findIndex((t) => t.kind === 'example' && match(t));
+    const firstPractice = (match: (t: Task) => boolean) => tasks.findIndex((t) => t.kind !== 'example' && match(t));
+    for (const match of [(t: Task) => t.choose, (t: Task) => t.probe, (t: Task) => t.problem.total === 100]) {
+      expect(firstExample(match)).toBeGreaterThanOrEqual(0);
+      expect(firstPractice(match)).toBeGreaterThan(firstExample(match));
+    }
+    // The check sum is typed only without a ten to cross when adding.
+    expect(tasks.filter((t) => t.probe && t.kind !== 'example').every((t) => t.level === 1)).toBe(true);
+  });
+
+  it('shows the new examples once to whoever is past their stage already', () => {
+    const p = freshProgress(T0);
+    for (const s of [1, 2, 3, 4, 5, 6, 7]) p.stages[s - 1].unlocked = true;
+    p.forced = [];
+    p.backShown = true;
+    const engine = new Engine(p, seeded(22));
+    const first = play(engine, 4);
+    expect(first.slice(0, 3).map((t) => [t.kind, t.choose, t.probe, t.problem.total])).toEqual([
+      ['example', true, false, 96], ['example', false, true, 96], ['example', false, false, 100],
+    ]);
+    expect(first[3].kind).not.toBe('example');
+    expect([p.chooseShown, p.probeShown, p.hundredShown]).toEqual([true, true, true]);
+  });
+  it('never explains the start at 100 with an example picked after a mistake', () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const p = freshProgress(T0);
+      for (const s of [1, 2, 3, 4, 5]) p.stages[s - 1].unlocked = true;
+      Object.assign(p, { chooseShown: true, probeShown: true, forced: [{ type: 'example', stage: 5 }], recent: [90] });
+      const [example] = play(new Engine(p, seeded(seed)), 1);
+      expect(example.problem.total).toBe(90);
+      expect(p.hundredShown).toBe(false);
+    }
   });
 });
