@@ -7,7 +7,7 @@ Die Module sind nach Schulfächern sortiert – Leonies Idee: Jeder **Lernbereic
 eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8) lernt damit, die
 Zeigeruhr zu lesen. Daneben löst sie in **„Umkehraufgaben“** Platzhalteraufgaben wie
 „__ + 23 = 90“ rückwärts. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
-Artikel. In Musik lernt sie mit **„Notenwerte“**, wie lange ganze, halbe, Viertel- und
+Artikel. In Musik lernt sie mit **„Notenwerte“**, wie lange halbe, Viertel- und
 Achtelnoten dauern – ihre eigene Idee. In Englisch lernt **„Farben, Zahlen, Tiere“** die ersten
 englischen Wörter. Weitere Module folgen.
 
@@ -369,31 +369,36 @@ Durchgang hat zehn Aufgaben; Abzeichen, Sterne und Pokale funktionieren wie bei 
 
 ## Musik: Notenwerte
 
-Leonies eigene Idee. Sie hat aufgeschrieben, was sie kennt: ganze, halbe, Viertel- und
-Achtelnoten, Hälse nach oben, jede Achtel mit eigenem Fähnchen, und Gruppen, die zusammen zwei
-Schläge dauern (zwei Viertel, Achtel-Achtel-Viertel, vier Achtel …). Genau so zeichnet die App
-die Noten, ohne Notensystem und ohne Pausen. Die Länge steht immer in Schlägen: Eine
-Viertelnote dauert einen Schlag. Unter den Noten stehen dafür **Felder**, eins je Schlag, jedes in zwei
-Hälften – eine Achtel füllt ein halbes Feld, eine ganze Note vier.
+Leonies eigene Idee. Sie hat aufgeschrieben, was sie kennt: halbe, Viertel- und Achtelnoten,
+Hälse nach oben, jede Achtel mit eigenem Fähnchen, und was zusammen in zwei Schläge passt (zwei
+Viertel, Achtel-Achtel-Viertel, vier Achtel …). Genau so zeichnet die App die Noten, ohne
+Notensystem und ohne Pausen; die ganze Note und vier Schläge kommen später. Die Länge steht
+immer in Schlägen: Eine Viertelnote dauert einen Schlag. Unter den Noten stehen dafür
+**Felder**, eins je Schlag, jedes in zwei Hälften – eine Achtel füllt ein halbes Feld, eine
+halbe Note zwei.
+
+Grundregel: **Abgefragt wird nur, was vorher erklärt wurde.** Jede Erklärung hat höchstens zwei
+kurze Sätze.
 
 | Stufe | Aufgabe | Antworten |
 |:-:|---|---|
-| 1 | Wie lange dauert diese Note? | drei Längen: halber Schlag, 1, 2 oder 4 Schläge |
-| 2 | Was dauert zusammen genauso lang? | drei Notengruppen, nur eine dauert so lang wie die Note |
-| 3 | Welche Note dauert so lange? | drei Noten |
-| 4 | Welche Note fehlt im 4/4-Takt? | drei Noten; es fehlt eine Viertel oder eine halbe Note |
+| 1 | Wie lange dauert diese Note? | Längen: halber Schlag, 1 oder 2 Schläge |
+| 2 | Welche Note dauert so lange? | drei Noten |
+| 3 | Welche Note fehlt für zwei Schläge? | drei Noten; es fehlt eine Achtel, eine Viertel oder (zwei leere Schläge) eine halbe Note |
 
-- In Stufe 2 und 4 stehen die Felder anfangs unter den Noten; nach den ersten Aufgaben kommen sie
-  erst mit der Hilfe und nach der Antwort. Ohne Felder haben alle Noten gleich viel Platz, und
-  die Lücke im Takt ist immer gleich breit – so verrät der Abstand nichts.
-- In Stufe 4 fehlt anfangs die letzte Note, später eine beliebige.
-- **„Anhören“** spielt die Note, die Länge oder den Takt: ein gehaltener Ton über einem leisen
-  Klick je Schlag, nach zwei Klicks zum Einzählen; die gerade klingende Note leuchtet blau. Eine
-  Lücke bleibt still, die Klicks laufen weiter. „Anhören“ klingt auch, wenn die Töne aus sind.
-- Nach einem Fehler sagt die App, warum es nicht passt: „Das wären fünf Schläge. In einen Takt
-  passen vier Schläge.“ Die Hilfe beschreibt die Note („Innen leer, mit Hals: Das ist eine
-  halbe Note.“), nennt die Note zur Länge oder lässt zählen.
-- Jede Stufe beginnt mit zwei erklärten Beispielen.
+- Stufe 1 beginnt mit Viertel und Achtel und bietet nur diese zwei Längen an. Nach vier
+  richtigen Antworten kommt die halbe Note mit einem eigenen Beispiel dazu.
+- In Stufe 3 stehen die Felder immer unter den Noten; unter der Lücke zeigen leere Felder, wie
+  viel noch fehlt. Anfangs fehlt die letzte Note, später eine beliebige. Die zwei leeren Schläge
+  (halbe Note) kommen nach vier richtigen Antworten mit einem eigenen Beispiel dazu.
+- **„Anhören“** spielt die Note, die Länge oder die zwei Schläge: ein gehaltener Ton über einem
+  leisen Klick je Schlag, nach zwei Klicks zum Einzählen; die gerade klingende Note leuchtet
+  blau. Eine Lücke bleibt still, die Klicks laufen weiter. „Anhören“ klingt auch, wenn die Töne
+  aus sind.
+- Nach einem Fehler sagt die App in zwei Sätzen, warum es nicht passt: „Damit werden es mehr als
+  zwei Schläge. Es fehlt ein Schlag: die Viertelnote.“ Die Hilfe beschreibt die Note
+  („Ausgemalt, mit Fähnchen: die Achtelnote.“), nennt die Note zur Länge oder lässt zählen.
+- Das Lob wechselt: „Richtig!“, „Genau!“, „Das passt!“.
 
 Die nächste Stufe öffnet sich nach zehn selbstständig richtigen Antworten, von denen zuletzt
 acht von zehn stimmen und bei denen jede Note dabei war. Ein Durchgang hat zehn Aufgaben;

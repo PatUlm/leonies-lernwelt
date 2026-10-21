@@ -1,22 +1,19 @@
-import {
-  BAR_EIGHTHS, EIGHTHS, TARGETS, VALUES, WRONG_GROUP_BEATS, barCode, blockRows, gapValue, groupsOf, isTarget, isValue, lengthOf, parseBar,
-  parseNotes, type Bar, type Target, type Value,
-} from './content';
+import { VALUES, gapValue, isValue, parseRow, rowCodes, type Row, type Value } from './content';
 
 /**
- * "Notenwerte", from Leonie's own sheet (whole, half, quarter, eighth note):
+ * "Notenwerte", from Leonie's own sheet (half, quarter, eighth note):
  *
- *   stage 1: note → length        a quarter note: [1 Schlag] [2 Schläge] [halber Schlag]
- *   stage 2: the same length      a half note: [♩♩] [♩] [♩♩♩] – as long as two quarters
- *   stage 3: length → note        2 Schläge: [𝅗𝅥] [♩] [𝅝]
- *   stage 4: a 4/4 bar            𝅗𝅥 ♩ _ – the note that fills the bar
+ *   stage 1: note → length        a quarter note: [1 Schlag] [halber Schlag] [2 Schläge]
+ *   stage 2: length → note        2 Schläge: [𝅗𝅥] [♩] [♪]
+ *   stage 3: two beats            ♩ _ – the note that makes two beats
  *
  * The length is counted in beats and shown as fields, one per beat, each in
- * two halves for the eighths. No rests, and no rhythm syllables: neither is
- * taught to her yet.
+ * two halves for the eighths. Only what was explained is asked: the notes of
+ * a stage come in steps, each with its examples first. No whole note, no
+ * rests and no rhythm syllables yet.
  */
-export type Stage = 1 | 2 | 3 | 4;
-export const STAGES: readonly Stage[] = [1, 2, 3, 4];
+export type Stage = 1 | 2 | 3;
+export const STAGES: readonly Stage[] = [1, 2, 3];
 
 /**
  * Learning points per stage: +MASTERY_CORRECT per independent correct answer,
@@ -30,18 +27,25 @@ export const MAX_MASTERY = 160;
 export const WINDOW = 10;
 export const READY_WINDOW_CORRECT = 8;
 export const SECURE_WINDOW_CORRECT = 9;
-/** Correct answers in the window must cover this many values: every note, every target, both gaps. */
-export const MIN_DISTINCT: Record<Stage, number> = { 1: 4, 2: 3, 3: 4, 4: 2 };
+/** Correct answers in the window must cover every note (in stage 3: every missing note). */
+export const MIN_DISTINCT: Record<Stage, number> = { 1: 3, 2: 3, 3: 3 };
 /**
- * Below this the fields stand under the groups (stage 2) and the notes of the
- * bar (stage 4), and the bar misses its last note; afterwards the fields come
- * with help and the answer, and the gap can be anywhere.
+ * Guided examples, in steps: the notes of a step are asked only once its
+ * examples have been shown. Stage 1 starts with the quarter and the eighth,
+ * the half note follows; stage 3 starts with one note before the gap, the
+ * empty two beats follow. Fixed lists, so the explanations can be recorded.
  */
+export const EXAMPLES: Record<Stage, readonly (readonly string[])[]> = {
+  1: [['q', 'e'], ['h']],
+  2: [['h', 'e']],
+  3: [['q_', 'qe_'], ['_']],
+};
+/** Learning points of a stage after which its next step comes, per step. */
+export const STEP_MASTERY = 40;
+/** Below this the gap of stage 3 is the last note; afterwards it can be anywhere. */
 export const INTRO_MASTERY = 40;
-/** "Was dauert genauso lang?": mostly the half note, as on her sheet. */
-export const TARGET_SHARE: Record<Target, number> = { h: 0.5, w: 0.3, q: 0.2 };
-/** Notes of a bar besides the gap: at most two pairs of eighths and a quarter, so it fits a phone. */
-export const BAR_MAX_NOTES = 5;
+/** Stage 3: how often each note is missing; the half note has a single row ("_"). */
+export const GAP_SHARE: Record<Value, number> = { q: 0.4, e: 0.4, h: 0.2 };
 /** Share of the newest stage once several are open; the one before gets most of the rest. */
 export const NEWEST_SHARE = 0.6;
 export const EASY_SHARE = 0.1;
@@ -57,18 +61,6 @@ export const RECENT_SPAN = 3;
 export const STREAK_PRAISE = 3;
 export const OPTIONS = 3;
 
-/**
- * Guided examples come from fixed lists, so their explanations can be
- * recorded beforehand. Stage 1 shows the beat with the quarter and its half
- * with the eighth; the half and the whole note are just more fields.
- */
-export const EXAMPLES: Record<Stage, readonly string[]> = {
-  1: ['q', 'e'],
-  2: ['h:qq', 'h:eeq'],
-  3: ['h', 'e'],
-  4: ['hq_', 'qq_'],
-};
-
 export type Rng = () => number;
 export type TaskKind = 'example' | 'practice' | 'review';
 
@@ -76,16 +68,14 @@ export interface Task {
   id: number;
   stage: Stage;
   kind: TaskKind;
-  /** Stages 1 and 3: the value ("q"); 2: target and group ("h:eeq"); 4: the bar ("hq_"). */
+  /** Stages 1 and 2: the value ("q"); 3: the row ("qe_"). */
   key: string;
-  /** What the task is about: the note (1, 3), the note to match (2) or the missing note (4). */
+  /** What the task is about: the note (1, 2) or the missing note (3). */
   value: Value;
-  /** The notes of each answer: one note in stages 1, 3 and 4 (shown as a length in stage 1), a group in stage 2. */
-  options: Value[][];
+  /** One note per answer, shown as a length in stage 1. */
+  options: Value[];
   correctIndex: number;
-  bar: Bar | null;
-  /** The fields stand under the notes of the groups and the bar. */
-  fields: boolean;
+  row: Row | null;
 }
 
 export interface Attempt {
@@ -95,6 +85,8 @@ export interface Attempt {
 
 export interface StageState {
   unlocked: boolean;
+  /** Steps of EXAMPLES shown so far: their notes may be asked. */
+  steps: number;
   /** Independent answers (no help used). */
   attempts: number;
   window: Attempt[];
@@ -117,7 +109,7 @@ export interface ReviewItem {
 export interface ForcedTask {
   type: 'example';
   stage: Stage;
-  /** Index into EXAMPLES; without one an example not seen recently. */
+  /** Index into exampleKeys(); without one an example shown before and not seen recently. */
   pick?: number;
 }
 
@@ -130,7 +122,7 @@ export interface RoundState {
 }
 
 export interface Progress {
-  version: 1;
+  version: 2;
   session: number;
   lastActive: number;
   /** When the last task was answered; opening without answering does not count. */
@@ -164,37 +156,38 @@ export interface AnswerResult {
   roundComplete: RoundState | null;
 }
 
-/** Key of a stage 2 task: "h:eeq". */
-export function groupKey(target: Target, group: readonly Value[]): string {
-  return `${target}:${group.join('')}`;
+/** The examples of a stage, all steps in a row. */
+export function exampleKeys(stage: Stage): string[] {
+  return EXAMPLES[stage].flat();
 }
 
-/** Stage 2: the note to match and the group as long as it; null for a broken key. */
-export function parseGroupKey(key: string): { target: Target; group: Value[] } | null {
-  const [target, code, ...rest] = key.split(':');
-  const group = code ? parseNotes(code) : null;
-  if (rest.length || !isTarget(target) || !group || group.length < 2 || lengthOf(group) !== EIGHTHS[target]) return null;
-  return { target, group };
+/** The note a key asks for: the note itself, or the one missing in the row. */
+export function keyValue(stage: Stage, key: string): Value | null {
+  if (stage === 3) {
+    const row = parseRow(key);
+    return row && gapValue(row);
+  }
+  return isValue(key) ? key : null;
 }
 
 /** True if the key makes a task of the stage. */
 export function validKey(stage: Stage, key: string): boolean {
-  if (stage === 2) return parseGroupKey(key) !== null;
-  if (stage === 4) return parseBar(key) !== null;
-  return isValue(key);
+  return keyValue(stage, key) !== null;
 }
 
-function introExamples(stage: Stage): ForcedTask[] {
-  return EXAMPLES[stage].map((_, pick) => ({ type: 'example', stage, pick }));
+/** Forced examples of one step. */
+function stepExamples(stage: Stage, step: number): ForcedTask[] {
+  const before = EXAMPLES[stage].slice(0, step).flat().length;
+  return EXAMPLES[stage][step].map((_, i) => ({ type: 'example', stage, pick: before + i }));
 }
 
-function freshStage(unlocked: boolean): StageState {
-  return { unlocked, attempts: 0, window: [], mastery: 0, ready: false, readySession: null, secure: false };
+export function freshStage(unlocked: boolean): StageState {
+  return { unlocked, steps: unlocked ? 1 : 0, attempts: 0, window: [], mastery: 0, ready: false, readySession: null, secure: false };
 }
 
 export function freshProgress(now: number): Progress {
   return {
-    version: 1,
+    version: 2,
     session: 1,
     lastActive: now,
     lastAnswered: null,
@@ -203,7 +196,7 @@ export function freshProgress(now: number): Progress {
     correctTotal: 0,
     stages: STAGES.map((s) => freshStage(s === 1)),
     reviewQueue: [],
-    forced: introExamples(1),
+    forced: stepExamples(1, 0),
     recent: [],
     wrongStreak: 0,
     correctStreak: 0,
@@ -250,6 +243,19 @@ export class Engine {
 
   unlockedStages(): Stage[] {
     return STAGES.filter((s) => this.stageState(s).unlocked);
+  }
+
+  /**
+   * The notes a stage may ask: those of the steps shown, all once every step
+   * was. Stage 2 explains only the half note and the eighth; the quarter is
+   * known from stage 1.
+   */
+  askedValues(stage: Stage): Value[] {
+    const steps = EXAMPLES[stage];
+    const shown = this.stageState(stage).steps;
+    if (shown >= steps.length) return [...VALUES];
+    const values = steps.slice(0, shown).flat().map((key) => keyValue(stage, key));
+    return VALUES.filter((v) => values.includes(v));
   }
 
   /** Call on app start and before each task; opens a new session after a long pause. */
@@ -313,6 +319,7 @@ export class Engine {
       p.wrongStreak = 0;
       p.correctStreak += 1;
       if (p.correctStreak % STREAK_PRAISE === 0) result.streak = p.correctStreak;
+      this.nextStep(task.stage);
     } else {
       p.correctStreak = 0;
       p.wrongStreak += 1;
@@ -346,6 +353,14 @@ export class Engine {
     this.progress.round = { tasks: 0, points: 0, correct: 0 };
   }
 
+  /** The examples of the next step, once the stage has enough learning points for it. */
+  private nextStep(stage: Stage): void {
+    const s = this.stageState(stage);
+    if (s.steps >= EXAMPLES[stage].length || s.mastery < STEP_MASTERY * s.steps) return;
+    this.progress.forced.push(...stepExamples(stage, s.steps));
+    s.steps += 1;
+  }
+
   /**
    * Marks stages ready or secure and unlocks the next one; returns the unlocked
    * stages. `solved`: the stage just answered correctly, the only one that may
@@ -365,8 +380,9 @@ export class Engine {
         const next = (stage + 1) as Stage;
         if (stage < STAGES.length && !this.stageState(next).unlocked) {
           this.stageState(next).unlocked = true;
+          this.stageState(next).steps = 1;
           unlocked.push(next);
-          p.forced.push(...introExamples(next));
+          p.forced.push(...stepExamples(next, 0));
         }
       }
       // Secure only when solved again on another day, not in one long sitting.
@@ -395,18 +411,22 @@ export class Engine {
   }
 
   private exampleKey({ stage, pick: index }: ForcedTask): string {
-    const pool = EXAMPLES[stage];
-    if (index !== undefined && pool[index]) return pool[index];
-    const fresh = pool.filter((key) => !this.progress.recent.includes(`${stage}:${key}`));
-    return pick(fresh.length ? fresh : pool, this.rng);
+    const all = exampleKeys(stage);
+    if (index !== undefined && all[index]) return all[index];
+    const shown = EXAMPLES[stage].slice(0, Math.max(1, this.stageState(stage).steps)).flat();
+    const fresh = shown.filter((key) => !this.progress.recent.includes(`${stage}:${key}`));
+    return pick(fresh.length ? fresh : shown, this.rng);
   }
 
   private pickReview(): Task | null {
     const p = this.progress;
     // Keys from an older version or a broken sync are dropped.
     p.reviewQueue = p.reviewQueue.filter((r) => validKey(r.stage, r.key));
+    // dueAt keeps it away for a few tasks; only the last task must not come again (with two notes open every key is recent).
+    const last = p.recent[p.recent.length - 1];
     for (const item of p.reviewQueue) {
-      if (item.dueAt > p.taskCounter || !this.stageState(item.stage).unlocked || p.recent.includes(`${item.stage}:${item.key}`)) continue;
+      if (item.dueAt > p.taskCounter || !this.stageState(item.stage).unlocked || last === `${item.stage}:${item.key}`) continue;
+      if (!this.askedValues(item.stage).includes(keyValue(item.stage, item.key)!)) continue;
       this.currentSource = item;
       return this.makeTask(item.stage, 'review', item.key)!;
     }
@@ -431,88 +451,45 @@ export class Engine {
     return pick(older, this.rng);
   }
 
-  /** Below INTRO_MASTERY while the stage is new. */
-  private intro(stage: Stage): boolean {
-    const s = this.stageState(stage);
-    return !s.ready && s.mastery < INTRO_MASTERY;
-  }
-
   /** Not among the last tasks; values not yet right in the window first, so every one comes up. */
-  private fresh(stage: Stage, keys: readonly string[], valueOf: (key: string) => Value): string {
+  private fresh(stage: Stage, keys: readonly string[]): string {
     const recent = this.progress.recent;
     const right = new Set(this.stageState(stage).window.filter((a) => a.ok).map((a) => a.value));
     const notRecent = keys.filter((k) => !recent.includes(`${stage}:${k}`));
-    const missing = notRecent.filter((k) => !right.has(valueOf(k)));
+    const missing = notRecent.filter((k) => !right.has(keyValue(stage, k)!));
+    // With only two notes open every key can be recent: then at least not the last task again.
+    const notLast = keys.filter((k) => `${stage}:${k}` !== recent[recent.length - 1]);
     // Missing values only now and then: otherwise the next value is easy to guess.
-    const pool = missing.length && this.rng() < 0.5 ? missing : notRecent.length ? notRecent : keys;
+    const pool = missing.length && this.rng() < 0.5 ? missing : notRecent.length ? notRecent : notLast.length ? notLast : keys;
     return pick(pool, this.rng);
   }
 
   private chooseKey(stage: Stage): string {
-    switch (stage) {
-      case 1:
-      case 3:
-        return this.fresh(stage, VALUES, (k) => k as Value);
-      case 2: {
-        // The quarter has a single group (two eighths): just seen, another note comes.
-        const keysOf = (t: Target) => groupsOf(EIGHTHS[t] / 2).map((g) => groupKey(t, g));
-        const open = TARGETS.filter((t) => keysOf(t).some((k) => !this.progress.recent.includes(`2:${k}`)));
-        const shares = (open.length ? open : TARGETS).map((t) => [t, TARGET_SHARE[t]] as const);
-        let r = this.rng() * shares.reduce((sum, [, share]) => sum + share, 0);
-        const [target] = shares.find(([, share]) => (r -= share) < 0) ?? shares[shares.length - 1];
-        return this.fresh(stage, keysOf(target), () => target);
-      }
-      case 4: {
-        let key = '';
-        for (let i = 0; i < 5 && (!key || this.progress.recent.includes(`4:${key}`)); i++) key = this.freshBar();
-        return key;
-      }
-    }
-  }
-
-  /** A quarter or a half missing; while the stage is new the last note, then any. */
-  private freshBar(): string {
-    const gap: Value = this.rng() < 0.5 ? 'q' : 'h';
-    const row = pick(blockRows((BAR_EIGHTHS - EIGHTHS[gap]) / 2, BAR_MAX_NOTES), this.rng);
-    const at = this.intro(4) ? row.length : Math.floor(this.rng() * (row.length + 1));
-    const before = row.slice(0, at).flat();
-    return barCode({ notes: [...before, gap, ...row.slice(at).flat()], gap: before.length });
-  }
-
-  /** The right value and two others, shuffled. */
-  private singleOptions(value: Value): { options: Value[][]; correctIndex: number } {
-    const others = shuffled(VALUES.filter((v) => v !== value), this.rng).slice(0, OPTIONS - 1);
-    const options = shuffled([value, ...others], this.rng);
-    return { options: options.map((v) => [v]), correctIndex: options.indexOf(value) };
+    if (stage !== 3) return this.fresh(stage, this.askedValues(stage));
+    // While the stage is new the last note is missing; "_" (the empty two beats) counts as last.
+    const intro = !this.stageState(3).ready && this.stageState(3).mastery < INTRO_MASTERY;
+    const codes = rowCodes().filter((code) => !intro || code.endsWith('_'));
+    const keysOf = (v: Value) => codes.filter((code) => keyValue(3, code) === v);
+    // The half note has a single row: just seen, another note is missing.
+    const asked = this.askedValues(3);
+    const open = asked.filter((v) => keysOf(v).some((k) => !this.progress.recent.includes(`3:${k}`)));
+    const shares = (open.length ? open : asked).map((v) => [v, GAP_SHARE[v]] as const);
+    let r = this.rng() * shares.reduce((sum, [, share]) => sum + share, 0);
+    const [value] = shares.find(([, share]) => (r -= share) < 0) ?? shares[shares.length - 1];
+    return this.fresh(stage, keysOf(value));
   }
 
   /** Builds the task for a key; null if the key does not exist (any more). */
   makeTask(stage: Stage, kind: TaskKind, key: string): Task | null {
-    const base = { id: this.progress.taskCounter, stage, kind, key, bar: null, fields: false };
-    if (stage === 1 || stage === 3) {
-      if (!isValue(key)) return null;
-      return { ...base, value: key, ...this.singleOptions(key) };
-    }
-    if (stage === 2) {
-      const parsed = parseGroupKey(key);
-      if (!parsed) return null;
-      const wrong = WRONG_GROUP_BEATS[parsed.target].map((beats) => pick(groupsOf(beats), this.rng));
-      const options = shuffled([parsed.group, ...wrong], this.rng);
-      return {
-        ...base,
-        value: parsed.target,
-        options,
-        correctIndex: options.indexOf(parsed.group),
-        fields: kind === 'example' || this.intro(2),
-      };
-    }
-    const bar = parseBar(key);
-    if (!bar) return null;
-    return { ...base, value: gapValue(bar), ...this.singleOptions(gapValue(bar)), bar, fields: kind === 'example' || this.intro(4) };
+    const value = keyValue(stage, key);
+    if (!value) return null;
+    // Stage 1 offers only the lengths explained so far; later stages know all three.
+    const others = shuffled((stage === 1 ? this.askedValues(1) : VALUES).filter((v) => v !== value), this.rng).slice(0, OPTIONS - 1);
+    const options = shuffled([value, ...others], this.rng);
+    return {
+      id: this.progress.taskCounter, stage, kind, key, value, options,
+      correctIndex: options.indexOf(value),
+      row: stage === 3 ? parseRow(key) : null,
+    };
   }
-}
-
-/** All notes of a stage 4 task once the gap is filled with `value`. */
-export function filledBar(bar: Bar, value: Value): Value[] {
-  return bar.notes.map((v, i) => (i === bar.gap ? value : v));
 }

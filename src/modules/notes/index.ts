@@ -18,7 +18,7 @@ const ICON = `<svg viewBox="0 0 100 100" aria-hidden="true">
 export const notesModule: LearningModule = {
   id: 'noten',
   title: 'Notenwerte',
-  description: 'Wie lange dauert eine Note? Ganze, halbe, Viertel- und Achtelnoten im 4/4-Takt.',
+  description: 'Wie lange dauert eine Note? Halbe, Viertel- und Achtelnoten in zwei Schlägen.',
   icon: ICON,
   stats: notesStats,
   mount: mountNotesGame,

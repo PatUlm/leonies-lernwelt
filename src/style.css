@@ -2053,7 +2053,7 @@ a.area-card:active {
   height: clamp(110px, 18vh, 170px);
 }
 
-.notes-svg.card-bar {
+.notes-svg.card-row {
   height: clamp(96px, 17vh, 160px);
 }
 
@@ -2072,7 +2072,7 @@ a.area-card:active {
   fill: var(--hour);
 }
 
-/* The note just put into the bar. */
+/* The note just put into the gap. */
 .note.filled {
   color: var(--good);
 }
@@ -2118,13 +2118,8 @@ a.area-card:active {
   height: 84px;
 }
 
-.answers.group-answers .notes-svg {
-  height: clamp(64px, 10vh, 92px);
-}
-
-/* Phones: groups and lengths one below the other, so four beats keep their room. */
+/* Phones: lengths one below the other, so two beats keep their room. */
 @media (max-width: 600px) {
-  .answers.group-answers,
   .answers.length-answers {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -2134,7 +2129,6 @@ a.area-card:active {
     min-height: 96px;
   }
 
-  .group-answers .answer.notes-answer,
   .length-answers .answer.notes-answer {
     min-height: 72px;
     padding: 4px 8px;
@@ -2145,10 +2139,6 @@ a.area-card:active {
     gap: 14px;
   }
 
-  .answers.group-answers .notes-svg {
-    height: 76px;
-  }
-
   .length-label {
     font-size: 18px;
   }
@@ -2156,7 +2146,7 @@ a.area-card:active {
 
 @media (orientation: landscape) and (max-height: 500px) {
   .notes-svg.card-notes,
-  .notes-svg.card-bar {
+  .notes-svg.card-row {
     height: 96px;
   }
 
@@ -2167,10 +2157,6 @@ a.area-card:active {
 
   .notes-answer .notes-svg {
     height: 60px;
-  }
-
-  .answers.group-answers .notes-svg {
-    height: 52px;
   }
 
   .length-svg {

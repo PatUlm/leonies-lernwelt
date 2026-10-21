@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { germanTexts } from '../../scripts/german-texts';
-import { Engine, EXAMPLES, STAGES, freshProgress, type Stage, type Task } from '../../src/modules/notes/engine';
+import { Engine, STAGES, exampleKeys, freshProgress, type Stage, type Task } from '../../src/modules/notes/engine';
 import { statsFromProgress } from '../../src/modules/notes/stats';
 import { sanitizeProgress } from '../../src/modules/notes/storage';
-import { confirmation, explanation, help, mistake, question } from '../../src/modules/notes/texts';
+import { PRAISE, confirmation, explanation, help, mistake, question } from '../../src/modules/notes/texts';
+import { ANSWER_FOLLOWS } from '../../src/shared/game/texts';
 import { spokenGerman } from '../../src/shared/spoken';
 import { seeded } from '../rng';
 
@@ -14,28 +15,32 @@ function taskOf(stage: Stage, key: string): Task {
 }
 
 describe('notes texts', () => {
-  it('explains the examples with the length in beats', () => {
+  it('explains every example in at most two short sentences before the answer', () => {
     const engine = new Engine(freshProgress(T0), seeded(1));
-    const [quarter, eighth] = EXAMPLES[1].map((key) => explanation(engine.makeTask(1, 'example', key)!).join(' '));
-    expect(quarter).toBe('Ausgemalt, mit Hals, ohne Fähnchen: Das ist eine Viertelnote. Die Viertelnote dauert einen Schlag. Ein Feld ist ein Schlag. Die richtige Antwort ist …');
-    expect(eighth).toContain('Zwei Achtel passen in einen Schlag.');
-    expect(explanation(engine.makeTask(4, 'example', 'qq_')!).join(' ')).toBe(
-      'In einen Takt passen vier Schläge. Hier sind schon zwei Schläge. Es fehlen zwei Schläge: die halbe Note. Die richtige Antwort ist …',
+    for (const stage of STAGES) {
+      for (const key of exampleKeys(stage)) {
+        const text = explanation(engine.makeTask(stage, 'example', key)!);
+        expect(text).toHaveLength(3);
+        expect(text[2]).toBe(ANSWER_FOLLOWS);
+      }
+    }
+    expect(explanation(engine.makeTask(1, 'example', 'q')!).join(' ')).toBe(
+      'Ausgemalt, ohne Fähnchen: die Viertelnote. Die Viertelnote dauert einen Schlag. Die richtige Antwort ist …',
+    );
+    expect(explanation(engine.makeTask(3, 'example', '_')!).join(' ')).toBe(
+      'Zusammen sollen es zwei Schläge sein. Beide Schläge fehlen noch. Die richtige Antwort ist …',
     );
   });
 
   it('says why a wrong answer does not fit', () => {
-    const group: Task = { ...taskOf(2, 'h:qq'), options: [['q', 'q'], ['h', 'q'], ['e', 'e']], correctIndex: 0 };
-    expect(mistake(group, 1)).toEqual(['Schauen wir zusammen.', 'Diese Noten dauern zusammen drei Schläge.', 'Die halbe Note dauert zwei Schläge.']);
-    expect(mistake(group, 2)[1]).toBe('Diese Noten dauern zusammen einen Schlag.');
+    const length: Task = { ...taskOf(2, 'h'), options: ['h', 'q', 'e'], correctIndex: 0 };
+    expect(mistake(length, 1)).toEqual(['Die Viertelnote dauert einen Schlag.', 'Die halbe Note dauert zwei Schläge.']);
 
-    const bar: Task = { ...taskOf(4, 'hq_'), options: [['q'], ['h'], ['e']], correctIndex: 0 };
-    expect(mistake(bar, 1)).toEqual([
-      'Schauen wir zusammen.', 'Das wären fünf Schläge.', 'In einen Takt passen vier Schläge.', 'Es fehlt ein Schlag: die Viertelnote.',
-    ]);
-    expect(mistake(bar, 2)[1]).toBe('Das sind erst dreieinhalb Schläge.');
-    const short: Task = { ...taskOf(4, 'qq_'), options: [['h'], ['e'], ['w']], correctIndex: 0 };
-    expect([mistake(short, 1)[1], mistake(short, 2)[1]]).toEqual(['Das sind erst zweieinhalb Schläge.', 'Das wären sechs Schläge.']);
+    const row: Task = { ...taskOf(3, 'q_'), options: ['q', 'h', 'e'], correctIndex: 0 };
+    expect(mistake(row, 1)).toEqual(['Damit werden es mehr als zwei Schläge.', 'Es fehlt ein Schlag: die Viertelnote.']);
+    expect(mistake(row, 2)[0]).toBe('Damit sind die zwei Schläge noch nicht voll.');
+    const empty: Task = { ...taskOf(3, '_'), options: ['h', 'q', 'e'], correctIndex: 0 };
+    expect(mistake(empty, 1)).toEqual(['Damit sind die zwei Schläge noch nicht voll.', 'Es fehlen zwei Schläge: die halbe Note.']);
   });
 
   it('has every sentence a task can say in the recordings', () => {
@@ -48,7 +53,7 @@ describe('notes texts', () => {
       const parts = [
         ...question(t), ...help(t), ...(t.kind === 'example' ? explanation(t) : []),
         ...t.options.flatMap((_, j) => (j === t.correctIndex ? [] : mistake(t, j))),
-        ...['Richtig!', 'Genau!', 'Gemeinsam geschafft!'].flatMap((lead) => confirmation(lead, t)),
+        ...[...PRAISE, 'Gemeinsam geschafft!'].flatMap((lead) => confirmation(lead, t)),
       ];
       for (const part of parts) seen.add(spokenGerman(part));
       engine.answer(t, t.correctIndex, false);
@@ -61,31 +66,52 @@ describe('notes texts', () => {
 describe('notes progress', () => {
   it('keeps valid fields from another device and drops broken ones', () => {
     const p = sanitizeProgress({
-      version: 1,
+      version: 2,
       points: 40,
       trophies: 2,
-      stages: [{ unlocked: true, mastery: 999, window: [{ ok: true, value: 'q' }, { ok: true, value: 'x' }] }, { unlocked: true }],
-      reviewQueue: [{ stage: 2, key: 'h:eeq', dueAt: 3 }, { stage: 2, key: 'h:q', dueAt: 3 }, { stage: 4, key: 'w_', dueAt: 1 }],
-      forced: [{ type: 'example', stage: 4, pick: 1 }, { type: 'example', stage: 4, pick: 9 }, { type: 'example', stage: 2 }],
-      recent: ['4:x', 'q', '1:q', '2:h:qq'],
+      stages: [{ unlocked: true, steps: 9, mastery: 999, window: [{ ok: true, value: 'q' }, { ok: true, value: 'w' }] }, { unlocked: true }],
+      reviewQueue: [{ stage: 3, key: 'qe_', dueAt: 3 }, { stage: 3, key: 'q', dueAt: 3 }, { stage: 1, key: 'w', dueAt: 1 }],
+      forced: [{ type: 'example', stage: 3, pick: 2 }, { type: 'example', stage: 3, pick: 3 }, { type: 'example', stage: 2 }],
+      recent: ['3:x', 'q', '1:q', '3:_'],
     }, T0);
     expect(p.points).toBe(40);
     expect(p.trophies).toBe(2);
-    expect(p.stages[0].mastery).toBe(160);
-    expect(p.stages[0].window).toEqual([{ ok: true, value: 'q' }]);
-    expect(p.stages[1].unlocked).toBe(true);
-    expect(p.stages[2].unlocked).toBe(false);
-    expect(p.reviewQueue).toEqual([{ stage: 2, key: 'h:eeq', dueAt: 3 }]);
-    expect(p.forced).toEqual([{ type: 'example', stage: 4, pick: 1 }, { type: 'example', stage: 2 }]);
-    expect(p.recent).toEqual(['1:q', '2:h:qq']);
-    expect(sanitizeProgress({ version: 2 }, T0)).toEqual(freshProgress(T0));
+    expect(p.stages[0]).toMatchObject({ steps: 2, mastery: 160, window: [{ ok: true, value: 'q' }] });
+    expect(p.stages[1]).toMatchObject({ unlocked: true, steps: 1 });
+    expect(p.stages[2]).toMatchObject({ unlocked: false, steps: 0 });
+    expect(p.reviewQueue).toEqual([{ stage: 3, key: 'qe_', dueAt: 3 }]);
+    expect(p.forced).toEqual([{ type: 'example', stage: 3, pick: 2 }, { type: 'example', stage: 2 }]);
+    expect(p.recent).toEqual(['1:q', '3:_']);
+    expect(sanitizeProgress({ version: 3 }, T0)).toEqual(freshProgress(T0));
+  });
+
+  it('starts the learning, round and streaks of version 1 anew and keeps points, stars and trophies', () => {
+    const p = sanitizeProgress({
+      version: 1,
+      points: 120,
+      correctTotal: 12,
+      trophies: 1,
+      round: { tasks: 9, points: 80, correct: 8 },
+      wrongStreak: 2,
+      correctStreak: 5,
+      stages: [{ unlocked: true, mastery: 100, ready: true }, { unlocked: true }, { unlocked: true }, { unlocked: true }],
+      reviewQueue: [{ stage: 2, key: 'h', dueAt: 1 }],
+      forced: [{ type: 'example', stage: 4, pick: 0 }],
+      recent: ['1:q'],
+    }, T0);
+    expect(p).toMatchObject({
+      version: 2, points: 120, correctTotal: 12, trophies: 1, reviewQueue: [], recent: [], wrongStreak: 0, correctStreak: 0,
+      round: { tasks: 0, points: 0, correct: 0 },
+    });
+    expect(p.stages).toEqual(freshProgress(T0).stages);
+    expect(p.forced).toEqual(freshProgress(T0).forced);
   });
 
   it('suggests discovering the module before the first answer', () => {
     const stats = statsFromProgress(freshProgress(T0), T0);
     expect(stats.started).toBe(false);
     expect(stats.suggestion.label).toBe('Notenwerte entdecken');
-    expect(stats.goals).toMatchObject({ done: 0, total: 4 });
+    expect(stats.goals).toMatchObject({ done: 0, total: 3 });
     expect(stats.nextGoal).toBe('Nächstes Ziel: Wie lange dauert die Note?');
   });
 });

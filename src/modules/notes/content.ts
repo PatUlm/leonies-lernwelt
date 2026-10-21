@@ -1,22 +1,22 @@
 /**
- * Note values as Leonie drew them for this module: whole, half, quarter and
- * eighth notes, stems up, eighths with a flag each (no beams), no staff and
- * no rests. A beat is a quarter; lengths are counted in eighths, so half a
- * beat stays a whole number.
+ * Note values as Leonie drew them for this module: half, quarter and eighth
+ * notes, stems up, eighths with a flag each (no beams), no staff and no
+ * rests. The whole note and four beats come later. A beat is a quarter;
+ * lengths are counted in eighths, so half a beat stays a whole number.
  */
-export type Value = 'e' | 'q' | 'h' | 'w';
-export const VALUES: readonly Value[] = ['e', 'q', 'h', 'w'];
+export type Value = 'e' | 'q' | 'h';
+export const VALUES: readonly Value[] = ['e', 'q', 'h'];
 
 /** Length in eighths: a beat is two. */
-export const EIGHTHS: Record<Value, number> = { e: 1, q: 2, h: 4, w: 8 };
-/** Eighths in a 4/4 bar. */
-export const BAR_EIGHTHS = 8;
+export const EIGHTHS: Record<Value, number> = { e: 1, q: 2, h: 4 };
+/** "Zwei Schläge": what the notes of a row add up to, as on her sheet. */
+export const ROW_BEATS = 2;
+export const ROW_EIGHTHS = ROW_BEATS * 2;
 
 export const NAMES: Record<Value, string> = {
   e: 'Achtelnote',
   q: 'Viertelnote',
   h: 'halbe Note',
-  w: 'ganze Note',
 };
 
 /** The length on an answer card. */
@@ -24,7 +24,6 @@ export const LENGTH_LABELS: Record<Value, string> = {
   e: 'halber Schlag',
   q: '1 Schlag',
   h: '2 Schläge',
-  w: '4 Schläge',
 };
 
 export function isValue(v: string): v is Value {
@@ -50,78 +49,61 @@ export function onBeat(notes: readonly Value[]): boolean {
   return at % 2 === 0;
 }
 
-/** Notes written as a string, e.g. "eeq". */
-export function parseNotes(code: string): Value[] | null {
-  const notes = [...code];
-  return notes.length > 0 && notes.every(isValue) && onBeat(notes) ? notes : null;
-}
-
-/** Building blocks of groups and bars, one or two beats long: an eighth never comes alone. */
-export type Block = readonly Value[];
+/** Building blocks of a row, one or two beats long: an eighth never comes alone. */
+type Block = readonly Value[];
 const BLOCKS: readonly Block[] = [['q'], ['e', 'e'], ['h']];
 
-/** Every row of blocks `beats` beats long with at most `maxNotes` notes. */
-export function blockRows(beats: number, maxNotes: number): Block[][] {
-  const out: Block[][] = [];
-  const grow = (row: Block[], notes: number, left: number) => {
+/** Every row of blocks `beats` beats long, as notes. */
+export function rowsOf(beats: number): Value[][] {
+  const out: Value[][] = [];
+  const grow = (row: Value[], left: number) => {
     if (left === 0) {
       out.push(row);
       return;
     }
     for (const block of BLOCKS) {
-      const len = lengthOf(block);
-      if (len <= left && notes + block.length <= maxNotes) grow([...row, block], notes + block.length, left - len);
+      if (lengthOf(block) <= left) grow([...row, ...block], left - lengthOf(block));
     }
   };
-  grow([], 0, beats * 2);
+  grow([], beats * 2);
   return out;
 }
 
-/** "Was dauert genauso lang?": a single note to match with a group of two to four notes. */
-export type Target = 'q' | 'h' | 'w';
-export const TARGETS: readonly Target[] = ['q', 'h', 'w'];
-export const GROUP_MAX_NOTES = 4;
-
-export function isTarget(v: string): v is Target {
-  return (TARGETS as readonly string[]).includes(v);
-}
-
-/** Groups of `beats` beats: at least two notes (the whole note only ever stands alone). */
-export function groupsOf(beats: number): Value[][] {
-  return blockRows(beats, GROUP_MAX_NOTES).map((row) => row.flat()).filter((g) => g.length >= 2);
-}
-
-/** Lengths of the groups that do not fit, in beats: one shorter and one longer, for a quarter the next two. */
-export const WRONG_GROUP_BEATS: Record<Target, readonly [number, number]> = {
-  q: [2, 3],
-  h: [1, 3],
-  w: [3, 5],
-};
-
-/** A 4/4 bar with one note missing (`gap` its index); the gap is a quarter or a half. */
-export interface Bar {
+/** Notes of two beats with one note missing (`gap` its index). */
+export interface Row {
   notes: Value[];
   gap: number;
 }
 
-export function gapValue(bar: Bar): Value {
-  return bar.notes[bar.gap];
+export function gapValue(row: Row): Value {
+  return row.notes[row.gap];
 }
 
-/** "hq_": the notes with "_" at the gap. */
-export function barCode(bar: Bar): string {
-  return bar.notes.map((v, i) => (i === bar.gap ? '_' : v)).join('');
+/** "qe_": the notes with "_" at the gap. */
+export function rowCode(row: Row): string {
+  return row.notes.map((v, i) => (i === row.gap ? '_' : v)).join('');
 }
 
-/** The missing note follows from the rest: what is left of four beats. */
-export function parseBar(code: string): Bar | null {
+/** The missing note follows from the rest: what is left of two beats. "_" alone is a half note. */
+export function parseRow(code: string): Row | null {
   const gap = code.indexOf('_');
   if (gap < 0 || code.indexOf('_', gap + 1) >= 0) return null;
   const rest = [...code.replace('_', '')];
   if (!rest.every(isValue)) return null;
-  const missing = BAR_EIGHTHS - lengthOf(rest as Value[]);
-  const value = missing === 2 ? 'q' : missing === 4 ? 'h' : null;
+  const missing = ROW_EIGHTHS - lengthOf(rest as Value[]);
+  const value = VALUES.find((v) => EIGHTHS[v] === missing);
   if (!value) return null;
   const notes = [...code].map((c) => (c === '_' ? value : c)) as Value[];
   return onBeat(notes) ? { notes, gap } : null;
+}
+
+/** Every row of two beats with one gap: "q_", "e_q", "_" … */
+export function rowCodes(): string[] {
+  const codes = rowsOf(ROW_BEATS).flatMap((notes) => notes.map((_, gap) => rowCode({ notes, gap })));
+  return [...new Set(codes)];
+}
+
+/** All notes of a row once the gap is filled with `value`. */
+export function filledRow(row: Row, value: Value): Value[] {
+  return row.notes.map((v, i) => (i === row.gap ? value : v));
 }

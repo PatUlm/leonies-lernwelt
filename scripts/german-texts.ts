@@ -23,11 +23,10 @@ import {
   CHOOSE_HELP, CHOOSE_QUESTION, CHOOSE_RIGHT, CHOOSE_WRONG, EXAMPLE_TYPE, HINTS, explanation as inverseExample,
   help as inverseHelp, question as inverseQuestion,
 } from '../src/modules/inverse/texts';
-import { BAR_EIGHTHS, EIGHTHS, TARGETS, VALUES, WRONG_GROUP_BEATS } from '../src/modules/notes/content';
-import { EXAMPLES as NOTES_EXAMPLES, Engine as NotesEngine, STAGES as NOTES_STAGES, freshProgress as freshNotes } from '../src/modules/notes/engine';
+import { VALUES } from '../src/modules/notes/content';
+import { Engine as NotesEngine, STAGES as NOTES_STAGES, exampleKeys, freshProgress as freshNotes } from '../src/modules/notes/engine';
 import {
-  BAR_FULL, BAR_HELP, BAR_RULE, GROUP_HELP, LOOKS, LOOK_TOGETHER, MISSING, QUESTIONS, RULES, SAME_AS, barLength,
-  explanation as notesExample, groupLength,
+  LOOKS, MISSING, PRAISE, QUESTIONS, ROW_FULL, ROW_HELP, RULES, TOO_LONG, TOO_SHORT, explanation as notesExample,
 } from '../src/modules/notes/texts';
 import { MARKED_IS_RIGHT } from '../src/shared/game/texts';
 import type { SpeechPart } from '../src/shared/speech';
@@ -135,16 +134,11 @@ export function germanTexts(): GermanText[] {
   // Notenwerte: every message is made of fixed sentences
   const notes = new NotesEngine(freshNotes(Date.now()));
   for (const stage of NOTES_STAGES) {
-    for (const key of NOTES_EXAMPLES[stage]) add(`Noten ${stage}: Beispiel`, ...notesExample(notes.makeTask(stage, 'example', key)!));
+    for (const key of exampleKeys(stage)) add(`Noten ${stage}: Beispiel`, ...notesExample(notes.makeTask(stage, 'example', key)!));
     add(`Noten ${stage}: Frage`, QUESTIONS[stage]);
   }
   add('Noten: Regel', ...VALUES.map((v) => RULES[v]), ...VALUES.map((v) => LOOKS[v]));
-  add('Noten: Hilfe', LOOK_TOGETHER, GROUP_HELP, BAR_RULE, BAR_HELP, MISSING.q, MISSING.h, BAR_FULL, ...TARGETS.map((t) => SAME_AS[t]));
-  // The wrong groups of stage 2 and the wrong notes in the gap of stage 4.
-  for (const target of TARGETS) add('Noten 2: Fehler', ...WRONG_GROUP_BEATS[target].map((beats) => groupLength(beats * 2)));
-  for (const gap of ['q', 'h'] as const) {
-    const rest = BAR_EIGHTHS - EIGHTHS[gap];
-    add('Noten 4: Fehler', ...VALUES.filter((v) => v !== gap).map((v) => barLength(rest + EIGHTHS[v])));
-  }
+  add('Noten 3: Hilfe', ROW_HELP, ROW_FULL, TOO_SHORT, TOO_LONG, ...VALUES.map((v) => MISSING[v]));
+  add('Noten: Lob', ...PRAISE, 'Gemeinsam geschafft!');
   return [...all].map(([text, source]) => ({ text, source }));
 }

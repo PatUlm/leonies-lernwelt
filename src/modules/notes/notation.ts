@@ -16,15 +16,10 @@ const FIELD_TOP = NOTE_H + 6;
 const FIELD_H = 22;
 const WITH_FIELDS_H = FIELD_TOP + FIELD_H + 4;
 const GAP_W = 50;
-/** Room for "4/4" at the start of a bar. */
-const METER_W = 34;
 
 /** One note centred on `x`. */
 function glyph(value: Value, x: number): string {
-  const hollow = value === 'h' || value === 'w';
-  if (value === 'w') {
-    return `<ellipse cx="${x}" cy="${HEAD_Y}" rx="12.5" ry="8.5" fill="var(--card, #fff)" stroke="currentColor" stroke-width="4"/>`;
-  }
+  const hollow = value === 'h';
   const hx = x - 4;
   const stemX = hx + 9.3;
   const head = `<ellipse cx="${hx}" cy="${HEAD_Y}" rx="10.5" ry="7.5" transform="rotate(-22 ${hx} ${HEAD_Y})"
@@ -49,18 +44,28 @@ function noteFields(value: Value, x: number): string {
   return `<rect class="field" x="${left + 1}" y="${FIELD_TOP}" width="${w - 2}" height="${FIELD_H}" rx="6"/>${lines}`;
 }
 
-function slotWidth(value: Value | null, fields: boolean): number {
-  if (value === null) return GAP_W;
-  return fields ? Math.max(SLOT, EIGHTHS[value] * CELL) : SLOT;
+/** The empty fields under a gap: as long as the missing note, only outlined. */
+function gapFields(value: Value, x: number): string {
+  const w = EIGHTHS[value] * CELL;
+  const left = x - w / 2;
+  const lines = Array.from({ length: EIGHTHS[value] - 1 }, (_, i) => {
+    const lx = left + (i + 1) * CELL;
+    const beat = (i + 1) % 2 === 0;
+    return `<line x1="${lx}" y1="${FIELD_TOP + 3}" x2="${lx}" y2="${FIELD_TOP + FIELD_H - 3}" stroke="currentColor" stroke-width="${beat ? 2.4 : 1.6}" opacity="0.55"${beat ? '' : ' stroke-dasharray="3 3"'}/>`;
+  }).join('');
+  return `<rect class="empty-field" x="${left + 1}" y="${FIELD_TOP}" width="${w - 2}" height="${FIELD_H}" rx="6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-dasharray="5 4" opacity="0.7"/>${lines}`;
+}
+
+function slotWidth(value: Value, isGap: boolean, fields: boolean): number {
+  const base = isGap ? GAP_W : SLOT;
+  return fields ? Math.max(base, EIGHTHS[value] * CELL) : base;
 }
 
 export interface RowOptions {
   /** The fields under the notes. */
   fields?: boolean;
-  /** Index of a missing note: a box with "?" (its fields stay away). */
+  /** Index of a missing note: a box with "?", with fields its length as empty fields. */
   gap?: number | null;
-  /** A 4/4 bar: "4/4" in front, a line through the heads and a bar line at the end. */
-  bar?: boolean;
   /** Index of the note just put into the gap: drawn in green. */
   filled?: number | null;
   /** Extra class on the svg, e.g. for the size. */
@@ -69,42 +74,36 @@ export interface RowOptions {
 
 /**
  * A row of notes. Without fields every note takes the same room, so the
- * spacing never gives a length away; the gap is always as wide.
+ * spacing never gives a length away. With fields the gap shows how much is
+ * missing, as on her sheet: the empty part of two beats.
  */
 export function notesSvg(notes: readonly Value[], options: RowOptions = {}): string {
-  const { fields = false, gap = null, bar = false, filled = null, className = '' } = options;
-  const widths = notes.map((v, i) => slotWidth(i === gap ? null : v, fields));
-  const start = bar ? METER_W + SPACE : 0;
-  let x = start;
+  const { fields = false, gap = null, filled = null, className = '' } = options;
+  const widths = notes.map((v, i) => slotWidth(v, i === gap, fields));
+  let x = 0;
   const parts: string[] = [];
   notes.forEach((v, i) => {
     const centre = x + widths[i] / 2;
     if (i === gap) {
       parts.push(`<g class="note gap-box" data-note="${i}">
-        <rect x="${x + 2}" y="${HEAD_Y - 30}" width="${GAP_W - 4}" height="44" rx="10" fill="var(--card, #fff)" stroke="var(--accent, #f59e0b)" stroke-width="3" stroke-dasharray="6 5"/>
+        <rect x="${centre - GAP_W / 2 + 2}" y="${HEAD_Y - 30}" width="${GAP_W - 4}" height="44" rx="10" fill="var(--card, #fff)" stroke="var(--accent, #f59e0b)" stroke-width="3" stroke-dasharray="6 5"/>
         <text x="${centre}" y="${HEAD_Y + 3}" text-anchor="middle" font-size="30" font-weight="800" fill="var(--accent, #f59e0b)">?</text>
+        ${fields ? gapFields(v, centre) : ''}
       </g>`);
     } else {
       parts.push(`<g class="note${i === filled ? ' filled' : ''}" data-note="${i}">${glyph(v, centre)}${fields ? noteFields(v, centre) : ''}</g>`);
     }
     x += widths[i] + (i < notes.length - 1 ? SPACE : 0);
   });
-  const end = x + (bar ? SPACE + 4 : 0);
   const height = fields ? WITH_FIELDS_H : NOTE_H;
-  const frame = bar
-    ? `<text x="${METER_W / 2}" y="${HEAD_Y - 6}" text-anchor="middle" font-size="26" font-weight="800" fill="currentColor">4</text>
-       <text x="${METER_W / 2}" y="${HEAD_Y + 18}" text-anchor="middle" font-size="26" font-weight="800" fill="currentColor">4</text>
-       <line x1="${METER_W}" y1="${HEAD_Y}" x2="${end}" y2="${HEAD_Y}" stroke="currentColor" stroke-width="1.6" opacity="0.45"/>
-       <line x1="${end - 1.5}" y1="${HEAD_Y - 24}" x2="${end - 1.5}" y2="${HEAD_Y + 24}" stroke="currentColor" stroke-width="3"/>`
-    : '';
-  return `<svg class="notes-svg ${className}" viewBox="-2 0 ${end + 4} ${height}" width="${end + 4}" height="${height}" aria-hidden="true">${frame}${parts.join('')}</svg>`;
+  return `<svg class="notes-svg ${className}" viewBox="-2 0 ${x + 4} ${height}" width="${x + 4}" height="${height}" aria-hidden="true">${parts.join('')}</svg>`;
 }
 
 /**
  * A length without a note: whole beats as boxes, each in two halves, filled
  * as far as the note lasts. Half a beat fills half a box. `room`: beats of
  * room, centred; answers side by side all get the room of the longest, so
- * they shrink alike in a narrow column and four beats never look shorter
+ * they shrink alike in a narrow column and two beats never look shorter
  * than one.
  */
 export function lengthSvg(value: Value, className = '', room = 0): string {

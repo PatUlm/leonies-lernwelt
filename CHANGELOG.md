@@ -5,6 +5,22 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.14 – 2026-10-21
+
+### Geändert
+
+- **Notenwerte: nur abfragen, was erklärt wurde, und zwei Schläge statt vier:** Bisher erklärte
+  Stufe 1 nur Viertel und Achtel, fragte aber alle vier Noten ab, und die Erklärungen waren zu
+  lang. Jetzt kommen nur halbe, Viertel- und Achtelnoten vor, die ganze Note folgt später. Stufe
+  1 beginnt mit Viertel und Achtel (zwei Antwortkarten); die halbe Note kommt nach den ersten
+  richtigen Antworten mit einem eigenen Beispiel dazu. Stufe 2: zur Länge die Note wählen. Stufe
+  3 übt wie in Leonies Heft, was in zwei Schläge passt: Welche Note fehlt in der Lücke (zum
+  Beispiel Viertel, Lücke, Achtel)? Die Felder darunter zeigen immer, wie viel noch fehlt; zwei
+  leere Schläge brauchen die halbe Note. Die Gruppenübung „Was dauert genauso lang?“ und der
+  4/4-Takt entfallen. Jede Erklärung hat höchstens zwei kurze Sätze; das Lob wechselt
+  („Richtig!“, „Genau!“, „Das passt!“). Wer schon gespielt hat, beginnt wieder bei Stufe 1;
+  Sterne, Pokale und Punkte bleiben.
+
 ## 2026.10.13 – 2026-10-20
 
 ### Hinzugefügt

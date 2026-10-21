@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { BAR_EIGHTHS, EIGHTHS, groupsOf, lengthOf, onBeat, parseBar, parseNotes } from '../../src/modules/notes/content';
+import { EIGHTHS, ROW_EIGHTHS, filledRow, lengthOf, onBeat, parseRow, rowCodes } from '../../src/modules/notes/content';
 import {
   EXAMPLES, Engine, HELP_POINTS, INTRO_MASTERY, MIN_DISTINCT, OPTIONS, POINTS, READY_MASTERY, ROUND_TASKS, SECURE_MASTERY, SESSION_GAP_MS,
-  STAGES, filledBar, freshProgress, parseGroupKey, validKey,
+  STAGES, STEP_MASTERY, freshProgress, validKey,
   type Stage, type Task,
 } from '../../src/modules/notes/engine';
 import { seeded } from '../rng';
@@ -23,48 +23,43 @@ function play(engine: Engine, n: number, wrong: (t: Task) => boolean = () => fal
 }
 
 /** Plays rightly until `stage` is unlocked. */
-function reach(engine: Engine, stage: Stage, now = T0): void {
-  for (let i = 0; i < 500 && !engine.stageState(stage).unlocked; i++) play(engine, 1, undefined, now);
+function reach(engine: Engine, stage: Stage, now = T0): Task[] {
+  const tasks: Task[] = [];
+  for (let i = 0; i < 500 && !engine.stageState(stage).unlocked; i++) tasks.push(...play(engine, 1, undefined, now));
   expect(engine.stageState(stage).unlocked).toBe(true);
+  return tasks;
 }
 
 describe('note values', () => {
   it('counts in eighths: a beat is two', () => {
-    expect(EIGHTHS).toEqual({ e: 1, q: 2, h: 4, w: 8 });
+    expect(EIGHTHS).toEqual({ e: 1, q: 2, h: 4 });
     expect(lengthOf(['e', 'e', 'q'])).toBe(4);
   });
 
   it('writes eighths in pairs on the beat, as on her sheet', () => {
     expect(onBeat(['e', 'e', 'q'])).toBe(true);
     expect(onBeat(['q', 'e', 'e'])).toBe(true);
-    for (const code of ['e', 'eqe', 'qe', 'eeeq']) expect(parseNotes(code)).toBeNull();
-    expect(parseNotes('eeqx')).toBeNull();
+    for (const notes of [['e'], ['e', 'q', 'e'], ['q', 'e']] as const) expect(onBeat(notes)).toBe(false);
   });
 
-  it('builds the groups of her sheet for two beats, and only groups of two or more notes', () => {
-    expect(groupsOf(2).map((g) => g.join('')).sort()).toEqual(['eeee', 'eeq', 'qee', 'qq']);
-    expect(groupsOf(1).map((g) => g.join(''))).toEqual(['ee']);
-    for (const beats of [1, 2, 3, 4, 5]) {
-      for (const g of groupsOf(beats)) {
-        expect(lengthOf(g)).toBe(beats * 2);
-        expect(g.length).toBeGreaterThanOrEqual(2);
-        expect(g.length).toBeLessThanOrEqual(4);
-        expect(g).not.toContain('w');
-      }
-    }
+  it('builds every row of two beats with one gap', () => {
+    expect(rowCodes().sort()).toEqual([
+      '_', '_ee', '_eee', '_eq', '_q', 'e_ee', 'e_q', 'ee_', 'ee_e', 'eee_', 'q_', 'q_e', 'qe_',
+    ]);
+    for (const code of rowCodes()) expect(lengthOf(parseRow(code)!.notes)).toBe(ROW_EIGHTHS);
   });
 
-  it('reads a bar with its gap: the missing note is what is left of four beats', () => {
-    expect(parseBar('hq_')).toEqual({ notes: ['h', 'q', 'q'], gap: 2 });
-    expect(parseBar('_qq')?.notes).toEqual(['h', 'q', 'q']);
-    for (const code of ['hq', 'h__', 'w_', 'eq_', 'hqq_', 'e_eq', '_ee']) expect(parseBar(code)).toBeNull();
-    expect(filledBar(parseBar('q_q')!, 'e')).toEqual(['q', 'e', 'q']);
+  it('reads a row with its gap: the missing note is what is left of two beats', () => {
+    expect(parseRow('q_')).toEqual({ notes: ['q', 'q'], gap: 1 });
+    expect(parseRow('e_q')).toEqual({ notes: ['e', 'e', 'q'], gap: 1 });
+    expect(parseRow('_')).toEqual({ notes: ['h'], gap: 0 });
+    for (const code of ['q', '__', 'h_', '_e', 'qq_', 'eq_', 'x_']) expect(parseRow(code)).toBeNull();
+    expect(filledRow(parseRow('q_e')!, 'e')).toEqual(['q', 'e', 'e']);
   });
 
   it('accepts only keys that make a task of their stage', () => {
-    expect(parseGroupKey('h:eeq')).toEqual({ target: 'h', group: ['e', 'e', 'q'] });
-    for (const key of ['h:q', 'h:qqq', 'e:ee', 'w:w', 'h', 'h:qq:x']) expect(parseGroupKey(key)).toBeNull();
-    expect([validKey(1, 'q'), validKey(3, 'w'), validKey(1, 'x'), validKey(4, 'qq_'), validKey(4, 'q')]).toEqual([true, true, false, true, false]);
+    expect([validKey(1, 'q'), validKey(2, 'h'), validKey(1, 'w'), validKey(3, 'qe_'), validKey(3, 'q'), validKey(1, 'q_')])
+      .toEqual([true, true, false, true, false, false]);
   });
 });
 
@@ -76,6 +71,33 @@ describe('notes engine', () => {
     expect([first.key, second.key]).toEqual(['q', 'e']);
     expect(engine.progress.round.tasks).toBe(0);
     expect(engine.progress.points).toBe(0);
+  });
+
+  it('asks only explained notes: the half note after its own example', () => {
+    const engine = new Engine(freshProgress(T0), seeded(2));
+    const before: Task[] = [];
+    while (engine.stageState(1).mastery < STEP_MASTERY) before.push(...play(engine, 1));
+    for (const t of before) {
+      expect(t.value).not.toBe('h');
+      expect(t.options).not.toContain('h');
+    }
+    expect(before.filter((t) => t.kind !== 'example').every((t) => t.options.length === 2)).toBe(true);
+    const [example, ...after] = play(engine, 40);
+    expect(example).toMatchObject({ kind: 'example', stage: 1, key: 'h' });
+    expect(after.some((t) => t.value === 'h')).toBe(true);
+    expect(after.every((t) => t.options.length === OPTIONS)).toBe(true);
+  });
+
+  it('brings the empty two beats in stage 3 only after their example', () => {
+    const engine = new Engine(freshProgress(T0), seeded(3));
+    reach(engine, 3);
+    const before: Task[] = [];
+    while (engine.stageState(3).mastery < STEP_MASTERY) before.push(...play(engine, 1));
+    expect(before.filter((t) => t.stage === 3 && t.key === '_' && t.kind !== 'example')).toEqual([]);
+    const after = play(engine, 80);
+    const firstEmpty = after.findIndex((t) => t.stage === 3 && t.key === '_');
+    expect(after[firstEmpty]).toMatchObject({ kind: 'example', stage: 3 });
+    expect(after.slice(firstEmpty + 1).some((t) => t.key === '_' && t.kind !== 'example')).toBe(true);
   });
 
   it('gives points and mastery only for an independent right answer', () => {
@@ -90,8 +112,8 @@ describe('notes engine', () => {
     expect(engine.stageState(1).window.map((a) => a.ok)).toEqual([true, false]);
   });
 
-  it('offers three different answers with the right one in every stage', () => {
-    const engine = new Engine(freshProgress(T0), seeded(3));
+  it('offers different answers with the right one in every stage', () => {
+    const engine = new Engine(freshProgress(T0), seeded(4));
     const tasks: Task[] = [];
     for (const stage of STAGES.slice(1)) {
       reach(engine, stage);
@@ -99,57 +121,34 @@ describe('notes engine', () => {
     }
     for (const t of tasks) {
       expect(t.options).toHaveLength(OPTIONS);
-      expect(new Set(t.options.map((o) => o.join(''))).size).toBe(OPTIONS);
-      const right = t.options[t.correctIndex];
-      if (t.stage === 2) {
-        // Exactly one group as long as the note.
-        expect(t.options.filter((o) => lengthOf(o) === EIGHTHS[t.value])).toEqual([right]);
-        for (const o of t.options) expect(onBeat(o)).toBe(true);
-      } else {
-        expect(right).toEqual([t.value]);
-      }
-      if (t.stage === 4) {
-        expect(lengthOf(t.bar!.notes)).toBe(BAR_EIGHTHS);
-        expect(['q', 'h']).toContain(t.value);
-        expect(t.bar!.notes[t.bar!.gap]).toBe(t.value);
+      expect(new Set(t.options).size).toBe(OPTIONS);
+      expect(t.options[t.correctIndex]).toBe(t.value);
+      if (t.stage === 3) {
+        expect(lengthOf(t.row!.notes)).toBe(ROW_EIGHTHS);
+        expect(t.row!.notes[t.row!.gap]).toBe(t.value);
       }
     }
     const positions = new Set(tasks.filter((t) => t.stage === 1).map((t) => t.correctIndex));
     expect(positions.size).toBe(OPTIONS);
   });
 
-  it('starts stages 2 and 4 with the fields, and the bar with its last note missing', () => {
-    const engine = new Engine(freshProgress(T0), seeded(4));
-    reach(engine, 4);
+  it('starts stage 3 with the last note missing, later anywhere, and every note is missing now and then', () => {
+    const engine = new Engine(freshProgress(T0), seeded(5));
+    reach(engine, 3);
     const early: Task[] = [];
     for (let i = 0; i < 30; i++) {
-      const intro = engine.stageState(4).mastery < INTRO_MASTERY;
+      const intro = engine.stageState(3).mastery < INTRO_MASTERY;
       const [t] = play(engine, 1);
-      if (intro && t.stage === 4 && t.kind === 'practice') early.push(t);
+      if (intro && t.stage === 3 && t.kind === 'practice') early.push(t);
     }
     expect(early.length).toBeGreaterThan(0);
-    for (const t of early) {
-      expect(t.fields).toBe(true);
-      expect(t.bar!.gap).toBe(t.bar!.notes.length - 1);
-    }
-    for (let i = 0; i < 200 && engine.stageState(4).mastery < INTRO_MASTERY; i++) play(engine, 1);
-    const later = play(engine, 80).filter((t) => t.stage === 4 && t.kind === 'practice');
-    expect(later.every((t) => !t.fields)).toBe(true);
-    expect(later.some((t) => t.bar!.gap < t.bar!.notes.length - 1)).toBe(true);
-    // Stages 1 and 3 show the length on the cards anyway.
-    expect(play(engine, 40).filter((t) => t.stage === 1 || t.stage === 3).every((t) => !t.fields)).toBe(true);
+    for (const t of early) expect(t.row!.gap).toBe(t.row!.notes.length - 1);
+    const later = play(engine, 200).filter((t) => t.stage === 3 && t.kind === 'practice');
+    expect(later.some((t) => t.row!.gap < t.row!.notes.length - 1)).toBe(true);
+    expect(new Set(later.map((t) => t.value))).toEqual(new Set(['e', 'q', 'h']));
   });
 
-  it('asks for the half note most often in stage 2, with every group of her sheet', () => {
-    const engine = new Engine(freshProgress(T0), seeded(5));
-    reach(engine, 2);
-    const tasks = play(engine, 400).filter((t) => t.stage === 2 && t.kind === 'practice');
-    const halves = tasks.filter((t) => t.value === 'h');
-    expect(halves.length / tasks.length).toBeGreaterThan(0.4);
-    expect(new Set(halves.map((t) => t.key))).toEqual(new Set(['h:qq', 'h:eeq', 'h:qee', 'h:eeee']));
-  });
-
-  it('unlocks the stages one by one, each only when every value was right, with its examples first', () => {
+  it('unlocks the stages one by one, each only when every note was right, with its examples first', () => {
     const engine = new Engine(freshProgress(T0), seeded(6));
     for (const stage of STAGES.slice(1)) {
       reach(engine, stage);
@@ -158,10 +157,10 @@ describe('notes engine', () => {
       expect(prev.mastery).toBeGreaterThanOrEqual(READY_MASTERY);
       const right = new Set(prev.window.filter((a) => a.ok).map((a) => a.value));
       expect(right.size).toBeGreaterThanOrEqual(MIN_DISTINCT[(stage - 1) as Stage]);
-      const count = EXAMPLES[stage].length;
-      const next = play(engine, count + 1);
-      expect(next.slice(0, count).map((t) => [t.kind, t.stage, t.key])).toEqual(EXAMPLES[stage].map((key) => ['example', stage, key]));
-      expect(next[count].kind).not.toBe('example');
+      const first = EXAMPLES[stage][0];
+      const next = play(engine, first.length + 1);
+      expect(next.slice(0, first.length).map((t) => [t.kind, t.stage, t.key])).toEqual(first.map((key) => ['example', stage, key]));
+      expect(next[first.length].kind).not.toBe('example');
     }
   });
 
@@ -177,27 +176,22 @@ describe('notes engine', () => {
     play(again, 2, () => true);
     const [example] = play(again, 1);
     expect(example).toMatchObject({ kind: 'example', stage: 1 });
+    expect(['q', 'e']).toContain(example.key);
   });
 
-  it('never repeats a task straight away', () => {
+  it('never repeats a task straight away, also with only two notes open', () => {
+    for (const seed of [1, 2, 3]) {
+      const start = new Engine(freshProgress(T0), seeded(seed));
+      const tasks: Task[] = [];
+      while (start.stageState(1).steps < 2) tasks.push(...play(start, 1));
+      for (let i = 1; i < tasks.length; i++) expect(tasks[i].key).not.toBe(tasks[i - 1].key);
+    }
     const engine = new Engine(freshProgress(T0), seeded(9));
-    reach(engine, 4);
+    reach(engine, 3);
     const tasks = play(engine, 200).filter((t) => t.kind === 'practice');
     for (let i = 1; i < tasks.length; i++) {
       if (tasks[i].stage === tasks[i - 1].stage) expect(tasks[i].key).not.toBe(tasks[i - 1].key);
     }
-  });
-
-  it('never brings the quarter with its only group (two eighths) twice in a row', () => {
-    const progress = freshProgress(T0);
-    progress.stages[1].unlocked = true;
-    progress.forced = [];
-    const engine = new Engine(progress, seeded(13));
-    // With help nothing is learnt: stage 2 stays the newest.
-    const tasks = play(engine, 600, () => false, T0, true).filter((t) => t.stage === 2);
-    expect(tasks.filter((t) => t.key === 'q:ee').length).toBeGreaterThan(20);
-    const straight = tasks.filter((t, i) => i > 0 && t.id === tasks[i - 1].id + 1 && t.key === tasks[i - 1].key);
-    expect(straight).toEqual([]);
   });
 
   it('ends a round after ten tasks with a trophy; examples do not count', () => {
@@ -226,8 +220,9 @@ describe('notes engine', () => {
     const results = [0, 1, 2, 3].map(() => {
       engine.touch(T0);
       const t = engine.nextTask();
-      return [t.kind, engine.answer(t, t.kind === 'example' ? t.correctIndex : (t.correctIndex + 1) % OPTIONS, false).offerPause];
+      const example = t.kind === 'example';
+      return [example, engine.answer(t, example ? t.correctIndex : (t.correctIndex + 1) % t.options.length, false).offerPause];
     });
-    expect(results).toEqual([['practice', false], ['practice', false], ['example', false], ['practice', true]]);
+    expect(results).toEqual([[false, false], [false, false], [true, false], [false, true]]);
   });
 });

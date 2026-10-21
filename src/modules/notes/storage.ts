@@ -1,7 +1,7 @@
 import { readJson, remove, writeJson } from '../../shared/storage';
 import { isValue } from './content';
 import {
-  EXAMPLES, MAX_MASTERY, RECENT_SPAN, STAGES, WINDOW, freshProgress, validKey,
+  EXAMPLES, MAX_MASTERY, RECENT_SPAN, STAGES, WINDOW, exampleKeys, freshProgress, validKey,
   type Attempt, type ForcedTask, type Progress, type ReviewItem, type Stage, type StageState,
 } from './engine';
 
@@ -34,10 +34,12 @@ function attempt(v: unknown): Attempt | null {
   return { ok: bool(v.ok), value: v.value };
 }
 
-function stageState(v: unknown, fresh: StageState): StageState {
+function stageState(v: unknown, fresh: StageState, stage: Stage): StageState {
   if (!isRecord(v)) return fresh;
+  const unlocked = bool(v.unlocked, fresh.unlocked);
   return {
-    unlocked: bool(v.unlocked, fresh.unlocked),
+    unlocked,
+    steps: unlocked ? num(v.steps, 1, 1, EXAMPLES[stage].length) : 0,
     attempts: num(v.attempts, 0),
     window: list(v.window, WINDOW).map(attempt).filter((a): a is Attempt => a !== null),
     mastery: num(v.mastery, 0, 0, MAX_MASTERY),
@@ -56,7 +58,7 @@ function forcedTask(v: unknown): ForcedTask | null {
   if (!isRecord(v) || v.type !== 'example' || !isStage(v.stage)) return null;
   if (v.pick === undefined) return { type: 'example', stage: v.stage };
   const pick = v.pick;
-  return typeof pick === 'number' && Number.isInteger(pick) && pick >= 0 && pick < EXAMPLES[v.stage].length
+  return typeof pick === 'number' && Number.isInteger(pick) && pick >= 0 && pick < exampleKeys(v.stage).length
     ? { type: 'example', stage: v.stage, pick }
     : null;
 }
@@ -70,22 +72,27 @@ function recentKey(v: unknown): v is string {
 
 /**
  * Progress can come from another device via the server, so every field is
- * checked: only known fields with valid values are taken over.
+ * checked: only known fields with valid values are taken over. Version 1 had
+ * other stages (whole note, groups, 4/4 bar): its learning, round and streaks
+ * start anew, while points, stars and trophies stay.
  */
-export function sanitizeProgress(raw: unknown, now: number): Progress {
+export function sanitizeProgress(input: unknown, now: number): Progress {
   const fresh = freshProgress(now);
-  if (!isRecord(raw) || raw.version !== 1) return fresh;
+  if (!isRecord(input) || (input.version !== 1 && input.version !== 2)) return fresh;
+  const raw: Raw = input.version === 1
+    ? { ...input, stages: [], reviewQueue: [], forced: fresh.forced, recent: [], round: fresh.round, wrongStreak: 0, correctStreak: 0 }
+    : input;
   const stored = Array.isArray(raw.stages) ? raw.stages : [];
   const round = isRecord(raw.round) ? raw.round : {};
   return {
-    version: 1,
+    version: 2,
     session: num(raw.session, 1, 1),
     lastActive: num(raw.lastActive, now),
     lastAnswered: typeof raw.lastAnswered === 'number' ? num(raw.lastAnswered, 0) : null,
     taskCounter: num(raw.taskCounter, 0),
     points: num(raw.points, 0),
     correctTotal: num(raw.correctTotal, 0),
-    stages: STAGES.map((s) => stageState(stored[s - 1], fresh.stages[s - 1])),
+    stages: STAGES.map((s) => stageState(stored[s - 1], fresh.stages[s - 1], s)),
     reviewQueue: list(raw.reviewQueue, 12).map(reviewItem).filter((r): r is ReviewItem => r !== null),
     forced: list(raw.forced, 12).map(forcedTask).filter((f): f is ForcedTask => f !== null),
     recent: list(raw.recent, RECENT_SPAN).filter(recentKey),

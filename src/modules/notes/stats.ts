@@ -3,16 +3,14 @@ import { Engine, ROUND_TASKS, SESSION_GAP_MS, STAGES, type Progress, type Stage 
 
 export const STAGE_NAMES: Record<Stage, string> = {
   1: 'Wie lange dauert die Note?',
-  2: 'Was dauert genauso lang?',
-  3: 'Welche Note passt zur Länge?',
-  4: 'Den Takt füllen',
+  2: 'Welche Note passt zur Länge?',
+  3: 'Zwei Schläge füllen',
 };
 
 export const BADGE_NAMES: Record<Stage, string> = {
   1: 'Wie lange eine Note dauert, weißt du schon sicher.',
-  2: 'Welche Noten zusammen genauso lang dauern, findest du schon sicher.',
-  3: 'Zu jeder Länge findest du schon sicher die Note.',
-  4: 'Einen Takt mit vier Schlägen füllst du schon sicher!',
+  2: 'Zu jeder Länge findest du schon sicher die Note.',
+  3: 'Zwei Schläge füllst du schon sicher!',
 };
 
 /** Days without practice after which the module is suggested for a refresh. */

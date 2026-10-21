@@ -3,17 +3,17 @@ import { GameShell } from '../../shared/game/shell';
 import { MARKED_IS_RIGHT } from '../../shared/game/texts';
 import { escapeHtml } from '../../shared/html';
 import type { ModuleContext, ModuleStats } from '../types';
-import { EIGHTHS, LENGTH_LABELS, NAMES, type Value } from './content';
+import { EIGHTHS, LENGTH_LABELS, NAMES, filledRow, type Value } from './content';
 import {
   CORRECT_PER_STAR, Engine, INTRO_MASTERY, MASTERY_CORRECT, READY_MASTERY, READY_WINDOW_CORRECT, ROUND_TASKS, SECURE_MASTERY,
-  SECURE_WINDOW_CORRECT, SESSION_GAP_MS, STAGES, WINDOW, filledBar,
+  SECURE_WINDOW_CORRECT, SESSION_GAP_MS, STAGES, STEP_MASTERY, WINDOW,
   type AnswerResult, type RoundState, type Task,
 } from './engine';
 import { lengthSvg, notesLabel, notesSvg } from './notation';
 import { RhythmPlayer, type PlayNote } from './player';
 import { BADGE_NAMES, STAGE_NAMES, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
-import { confirmation, explanation, help, mistake, question, type Text } from './texts';
+import { PRAISE, confirmation, explanation, help, mistake, question, type Text } from './texts';
 
 const CORRECT_DELAY_MS = 1800;
 const STAR_DELAY_MS = 900;
@@ -60,8 +60,8 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
   let task: Task;
   let phase: 'question' | 'feedback' = 'question';
   let helpUsed = false;
-  /** The fields stand under the notes: from the start while new, after help, after the answer. */
-  let fields = false;
+  /** Index into PRAISE: the next one, so the same praise does not come twice in a row. */
+  let praise = 0;
   /** An example's answers react only after a moment: she listens before tapping. */
   let locked = false;
   let buttons: HTMLButtonElement[] = [];
@@ -92,7 +92,6 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     renderScore();
     phase = 'question';
     helpUsed = false;
-    fields = task.fields;
     afterFeedback = null;
     ui.next.hidden = true;
     shell.holdAnswers();
@@ -106,7 +105,7 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
       return b;
     });
     renderOptions();
-    const kind = task.stage === 1 ? ' length-answers' : task.stage === 2 ? ' group-answers' : '';
+    const kind = task.stage === 1 ? ' length-answers' : '';
     ui.answers.className = `answers notes-answers options-${task.options.length}${kind}`;
     ui.answers.replaceChildren(...buttons);
     renderCard(null);
@@ -145,9 +144,7 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     shell.stopSpeaking();
     player.stop();
     const result = engine.answer(task, index, helpUsed);
-    fields = true;
-    renderOptions();
-    renderCard(task.options[task.correctIndex][0]);
+    renderCard(task.value);
     buttons.forEach((b, i) => {
       b.disabled = true;
       b.classList.remove('suggested');
@@ -165,7 +162,7 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     round.secured.push(...result.secured.map((s) => BADGE_NAMES[s]));
 
     if (result.ok) {
-      const lead = task.kind === 'example' ? 'Genau!' : helpUsed ? 'Gemeinsam geschafft!' : 'Richtig!';
+      const lead = task.kind === 'example' ? 'Genau!' : helpUsed ? 'Gemeinsam geschafft!' : PRAISE[praise++ % PRAISE.length];
       setMessage(confirmation(lead, task), 'good');
       if (result.streak) shell.toast(`${result.streak} hintereinander geschafft!`);
       sound.correct();
@@ -242,7 +239,7 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   // --- card and answers --------------------------------------------------------
 
-  /** What the card shows: the note, the note to match, the length or the bar; `filled` is the answer once given. */
+  /** What the card shows: the note, the length or the two beats; `filled` is the answer once given. */
   function renderCard(filled: Value | null): void {
     let content: string;
     // The drawing as words, for a screen reader.
@@ -252,19 +249,17 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
         content = notesSvg([task.value], { fields: filled !== null, className: 'card-notes' });
         break;
       case 2:
-        content = notesSvg([task.value], { fields, className: 'card-notes' });
-        break;
-      case 3:
         content = `<span class="length" data-note="0">${lengthSvg(task.value, 'card-length')}<span class="length-label">${escapeHtml(LENGTH_LABELS[task.value])}</span></span>`;
         label = LENGTH_LABELS[task.value];
         break;
-      case 4: {
-        const bar = task.bar!;
-        const notes = filled === null ? bar.notes : filledBar(bar, filled);
+      case 3: {
+        // The fields always stand under the notes, the gap shows the empty part.
+        const row = task.row!;
+        const notes = filled === null ? row.notes : filledRow(row, filled);
         content = filled === null
-          ? notesSvg(notes, { fields, gap: bar.gap, bar: true, className: 'card-bar' })
-          : notesSvg(notes, { fields, bar: true, filled: bar.gap, className: 'card-bar' });
-        label = `4/4-Takt: ${notes.map((v, i) => (filled === null && i === bar.gap ? 'Lücke' : notesLabel([v]))).join(', ')}`;
+          ? notesSvg(notes, { fields: true, gap: row.gap, className: 'card-row' })
+          : notesSvg(notes, { fields: true, filled: row.gap, className: 'card-row' });
+        label = `Zwei Schläge: ${notes.map((v, i) => (filled === null && i === row.gap ? 'Lücke' : notesLabel([v]))).join(', ')}`;
         break;
       }
     }
@@ -275,22 +270,15 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
 
   function renderOptions(): void {
     // Stage 1: the lengths side by side on one scale, the room of the longest.
-    const room = Math.max(...task.options.map((notes) => Math.ceil(EIGHTHS[notes[0]] / 2)));
-    task.options.forEach((notes, i) => {
+    const room = Math.max(...task.options.map((value) => Math.ceil(EIGHTHS[value] / 2)));
+    task.options.forEach((value, i) => {
       const b = buttons[i];
-      const value = notes[0];
-      switch (task.stage) {
-        case 1:
-          b.innerHTML = `<span class="length">${lengthSvg(value, '', room)}<span class="length-label">${escapeHtml(LENGTH_LABELS[value])}</span></span>`;
-          b.setAttribute('aria-label', LENGTH_LABELS[value]);
-          break;
-        case 2:
-          b.innerHTML = notesSvg(notes, { fields });
-          b.setAttribute('aria-label', notesLabel(notes));
-          break;
-        default:
-          b.innerHTML = notesSvg([value]);
-          b.setAttribute('aria-label', NAMES[value]);
+      if (task.stage === 1) {
+        b.innerHTML = `<span class="length">${lengthSvg(value, '', room)}<span class="length-label">${escapeHtml(LENGTH_LABELS[value])}</span></span>`;
+        b.setAttribute('aria-label', LENGTH_LABELS[value]);
+      } else {
+        b.innerHTML = notesSvg([value]);
+        b.setAttribute('aria-label', NAMES[value]);
       }
     });
   }
@@ -303,9 +291,9 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     }
     shell.stopSpeaking();
     let notes: PlayNote[];
-    if (task.stage === 4) {
-      const bar = task.bar!;
-      notes = (filled === null ? bar.notes : filledBar(bar, filled)).map((value, i) => ({ value, silent: filled === null && i === bar.gap }));
+    if (task.stage === 3) {
+      const row = task.row!;
+      notes = (filled === null ? row.notes : filledRow(row, filled)).map((value, i) => ({ value, silent: filled === null && i === row.gap }));
     } else {
       notes = [{ value: task.value }];
     }
@@ -327,17 +315,12 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     continueWith?.();
   });
 
-  /** Help costs half the points: a hint, and the fields under the notes. */
+  /** Help costs half the points. */
   function showHelp(): void {
     // `task` is unset until the first task is shown.
     if (!task || phase !== 'question' || task.kind === 'example' || locked) return;
     helpUsed = true;
     player.stop();
-    if (!fields && (task.stage === 2 || task.stage === 4)) {
-      fields = true;
-      renderOptions();
-      renderCard(null);
-    }
     setMessage(help(task), 'explain');
     shell.speak(message);
   }
@@ -357,12 +340,12 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     shell.showDialog(
       `<h2>Elternbereich</h2>
        <table class="progress-table"><tbody>${rows}</tbody></table>
-       <p class="legend">Ganze, halbe, Viertel- und Achtelnoten, ihre Länge in Schlägen (Viertel = 1 Schlag) und der 4/4-Takt;
-       keine Pausen. Stufe 1: zur Note die Länge wählen. Stufe 2: eine Notengruppe finden, die zusammen genauso lang dauert
-       (halbe Note = zwei Viertel = Achtel, Achtel, Viertel …). Stufe 3: zur Länge die Note wählen. Stufe 4: die fehlende Note
-       im 4/4-Takt einsetzen. Bis ${INTRO_MASTERY} Lernpunkte zeigen Stufe 2 und 4 die Schlagfelder unter den Noten, und in Stufe 4
-       fehlt die letzte Note; danach kommen die Felder mit der Hilfe. „Anhören“ spielt die Noten über einem leisen Schlag,
-       auch wenn die Töne aus sind.
+       <p class="legend">Halbe, Viertel- und Achtelnoten und ihre Länge in Schlägen (Viertel = 1 Schlag); noch keine ganze Note
+       und keine Pausen. Abgefragt wird nur, was vorher erklärt wurde. Stufe 1: zur Note die Länge wählen – erst Viertel und
+       Achtel, ab ${STEP_MASTERY} Lernpunkten kommt die halbe Note mit einem eigenen Beispiel dazu. Stufe 2: zur Länge die Note
+       wählen. Stufe 3: die Note einsetzen, die zu zwei Schlägen fehlt; die Schlagfelder stehen immer darunter. Bis
+       ${INTRO_MASTERY} Lernpunkte fehlt die letzte Note, danach eine beliebige, und ab ${STEP_MASTERY} kommen auch zwei leere
+       Schläge (halbe Note) dazu. „Anhören“ spielt die Noten über einem leisen Schlag, auch wenn die Töne aus sind.
        „übt 40“ = Lernpunkte der Stufe: +${MASTERY_CORRECT} je selbstständig richtige Antwort, Fehler ziehen nichts ab.
        „gelernt“ = nächste Stufe frei: ab ${READY_MASTERY} Lernpunkten, wenn zuletzt mindestens ${READY_WINDOW_CORRECT} von ${WINDOW}
        Antworten richtig waren und jede Note dabei war. „sicher“ ab ${SECURE_MASTERY} Lernpunkten und mindestens

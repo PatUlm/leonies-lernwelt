@@ -72,13 +72,15 @@ Mit dem Game-Designer für nach der ersten Version vorgesehen:
 
 ## Musik: Notenwerte
 
-Mit dem Game-Designer für nach der ersten Version vorgesehen:
+Mit dem Game-Designer für nach der ersten Version vorgesehen. Jeder neue Notenwert und jede neue
+Aufgabenart bekommt zuerst ein eigenes kurzes Beispiel (nur abfragen, was erklärt wurde):
 
-- **Feinere Taktlücken:** eine fehlende Achtel (zuerst die zweite eines Paars, mit sichtbarer
-  Schlagteilung), danach Lücken aus mehreren Noten mit Gruppen als Antwort. Dann passen oft
-  mehrere Antworten (eine Viertel oder zwei Achtel); entweder nur eine anbieten oder alle
-  gleich langen gelten lassen.
-- **Pausen:** zuerst die Viertelpause als „ein Schlag Stille“ – sobald die Schule sie einführt.
+- **Pausen in den zwei Schlägen:** zuerst die Viertelpause als „ein Schlag Stille“, als Lücke
+  und als Antwortkarte – sobald die Schule sie einführt.
+- **Ganze Note und vier Schläge:** die Lückenübung auf vier Schläge erweitern, mit der ganzen
+  Note als neuem Wert.
+- **Lücken aus mehreren Noten** mit Gruppen als Antwort. Dann passen oft mehrere Antworten (eine
+  Viertel oder zwei Achtel); entweder nur eine anbieten oder alle gleich langen gelten lassen.
 - **Achtel mit Balken:** als andere Schreibweise derselben Achtel, nicht zugleich mit neuem Stoff.
 - **Rhythmen bauen und nachklatschen:** frei bauen und anhören; Nachklatschen ohne Bewertung.
 - **„kurz, mittel, lang“:** Leonie nennt die Noten so. Welche Note welcher Begriff ist, ist noch
