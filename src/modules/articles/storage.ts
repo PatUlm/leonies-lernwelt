@@ -1,6 +1,6 @@
 import { readJson, remove, writeJson } from '../../shared/storage';
 import {
-  MAX_MASTERY, STAGES, WINDOW, freshProgress,
+  INTRO_MASTERY, MAX_MASTERY, SENTENCE_EXAMPLE, STAGES, WINDOW, freshProgress,
   type Attempt, type ForcedTask, type Progress, type ReviewItem, type Stage, type StageState,
 } from './engine';
 
@@ -61,17 +61,35 @@ function forcedTask(v: unknown): ForcedTask | null {
 }
 
 /**
+ * Version 1 asked more than its examples explained. Its learners get the new
+ * examples once, before their next task: the word "Artikel" and "das" in
+ * stage 1, the sentence example once sentences have started, and a thing
+ * joining in a story. The stage 4 examples moved one place for the new one.
+ */
+function catchUp(p: Progress): ForcedTask[] {
+  const moved = p.forced.map((f) => (f.stage === 4 && f.pick !== undefined && f.pick >= 2 ? { ...f, pick: f.pick + 1 } : f));
+  const s = (stage: Stage) => p.stages[stage - 1];
+  const extra: ForcedTask[] = [
+    { type: 'example', stage: 1, pick: 0 },
+    { type: 'example', stage: 1, pick: 2 },
+    ...(s(3).unlocked && (s(3).ready || s(3).mastery >= INTRO_MASTERY) ? [{ type: 'example', stage: 3, pick: SENTENCE_EXAMPLE } as const] : []),
+    ...(s(4).unlocked ? [{ type: 'example', stage: 4, pick: 2 } as const] : []),
+  ];
+  return [...moved, ...extra.filter((e) => !moved.some((f) => f.stage === e.stage && f.pick === e.pick))];
+}
+
+/**
  * Progress can come from another device via the server, so every field is
  * checked: only known fields with valid values are taken over. Unknown review
  * keys are dropped later by the engine.
  */
 export function sanitizeProgress(raw: unknown, now: number): Progress {
   const fresh = freshProgress(now);
-  if (!isRecord(raw) || raw.version !== 1) return fresh;
+  if (!isRecord(raw) || (raw.version !== 1 && raw.version !== 2)) return fresh;
   const stored = Array.isArray(raw.stages) ? raw.stages : [];
   const round = isRecord(raw.round) ? raw.round : {};
-  return {
-    version: 1,
+  const p: Progress = {
+    version: 2,
     session: num(raw.session, 1, 1),
     lastActive: num(raw.lastActive, now),
     lastAnswered: typeof raw.lastAnswered === 'number' ? num(raw.lastAnswered, 0) : null,
@@ -87,6 +105,8 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     round: { tasks: num(round.tasks, 0), points: num(round.points, 0), correct: num(round.correct, 0) },
     trophies: num(raw.trophies, 0),
   };
+  if (raw.version === 1) p.forced = catchUp(p);
+  return p;
 }
 
 export function loadProgress(now: number): Progress {

@@ -295,6 +295,12 @@ gibt es nicht.
 | 3 | Nomen entdecken | Ist TISCH ein Nomen? Später: Tippe auf das Nomen im Satz. |
 | 4 | Kennen wir es schon? | Auf dem Bild ist ein Hund. ___ Hund gefällt mir. → Der<br>Ein Hund ist auf dem Bild. Außerdem ist ___ Katze auf dem Bild. → eine |
 
+Abgefragt wird nur, was ein Beispiel vorher erklärt hat: Stufe 1 beginnt mit drei Beispielen
+(der Hund, die Katze, das Auto, dazu der Begriff „Artikel“), Stufe 4 mit dreien (ein Hund,
+derselbe Hund, eine Katze kommt dazu). Die Sätze in Stufe 3 beginnen mit einem eigenen
+Beispiel und enthalten nur der, die, das, ein und eine. Jede Rückmeldung hat höchstens zwei
+Sätze.
+
 Fehler ziehen keine Lernpunkte ab, und es gibt keinen Tempo-Bonus – Lesen braucht Zeit.
 Ein Durchgang hat immer zehn Übungsaufgaben; die erklärten Beispiele zu einer neuen Stufe
 zählen nicht mit. Sicher (mit Abzeichen) ist eine Stufe erst, wenn sie auch in einer

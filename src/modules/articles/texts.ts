@@ -1,19 +1,19 @@
 import { ANSWER_FOLLOWS } from '../../shared/game/texts';
-import { storyTemplates, type Task } from './engine';
+import { EXAMPLE_KEYS, storyTemplates, type Task } from './engine';
 import { capitalize, indefinite, shout } from './words';
 
 /**
  * Everything the child reads or hears in "der, die, das". Article and noun
  * always come together ("der Apfel"): there is no rule to guess the article,
- * it is learnt with the word.
+ * it is learnt with the word. At most two short sentences per message.
  */
 
 const SWAP_RULE = 'Aus der und das wird ein, aus die wird eine.';
 const NOUN_PROBE = 'Passt der, die oder das davor? Dann ist es ein Nomen.';
-const STORY_RULE =
-  'Kommt etwas Neues dazu, heißt es ein oder eine. Geht es um dieselbe Sache, heißt es der, die oder das.';
-const STORY_HELP =
-  'Erzählen wir gerade von etwas Neuem? Dann passt ein oder eine. Geht es um dieselbe Sache wie vorher? Dann passt der, die oder das.';
+/** The first example of stage 1 names what the module calls them. */
+const ARTICLE_TERM = 'Der, die und das heißen Artikel.';
+const STORY_NEW_RULE = 'Für etwas Neues nehmen wir ein oder eine.';
+const STORY_SAME_RULE = 'Für dieselbe Sache nehmen wir der, die oder das.';
 
 /** "der Apfel" */
 function definite(task: Task): string {
@@ -27,7 +27,7 @@ function normal(task: Task): string {
 
 export function question(task: Task): string {
   const q = {
-    article: 'Welcher Artikel passt?',
+    article: 'der, die oder das?',
     indefinite: 'ein oder eine?',
     noun: 'Ist das ein Nomen?',
     sentence: 'Tippe auf das Nomen.',
@@ -51,10 +51,10 @@ export function confirmation(task: Task): string {
     case 'sentence':
       return `${capitalize(definite(task))} – ${shout(w)} ist das Nomen.`;
     case 'story': {
-      const { kind, before } = task.story!;
+      const { kind } = task.story!;
       if (kind === 'first') return `${capitalize(definite(task))} kommt zum ersten Mal vor: ${indefinite(task.article!)} ${w}.`;
-      if (kind === 'known') return `Es ist noch ${task.article}selbe ${w}. Deshalb heißt es jetzt: ${definite(task)}.`;
-      return `Zuerst war ${indefinite(before!.article)} ${before!.word} da. Jetzt kommt ${indefinite(task.article!)} ${w} dazu.`;
+      if (kind === 'known') return `Es ist noch ${task.article}selbe ${w}: ${definite(task)}.`;
+      return `${capitalize(definite(task))} kommt neu dazu: ${indefinite(task.article!)} ${w}.`;
     }
   }
 }
@@ -64,19 +64,23 @@ export function explanation(task: Task): string {
   const answer = ANSWER_FOLLOWS;
   switch (task.variant) {
     case 'article':
-      return `Es heißt ${definite(task)}. ${answer}`;
+      return task.key === EXAMPLE_KEYS[1][0]
+        ? `Es heißt ${definite(task)}. ${ARTICLE_TERM} ${answer}`
+        : `Es heißt ${definite(task)}. ${answer}`;
     case 'indefinite':
       return `${definite(task)} – ${indefinite(task.article!)} ${task.word}. ${SWAP_RULE} ${answer}`;
     case 'noun':
       return task.article
-        ? `Passt der, die oder das davor? ${capitalize(definite(task))} – ja! ${answer}`
+        ? `Passt der, die oder das davor? ${capitalize(definite(task))} – ja, ${shout(task.word)} ist ein Nomen. ${answer}`
         : `Passt der, die oder das davor? „der ${task.word}“, „die ${task.word}“, „das ${task.word}“ – nein! ${answer}`;
+    case 'sentence':
+      return `Tippe im Satz auf das Nomen. Vor ${shout(task.word)} passt ${task.article}: ${definite(task)}. ${answer}`;
     default:
       return `${confirmation(task)} ${answer}`;
   }
 }
 
-/** After "Schauen wir zusammen.": the right form and the probe that finds it. */
+/** After a mistake: the right form and the probe or rule that finds it. */
 export function mistake(task: Task): string {
   const w = task.word;
   switch (task.variant) {
@@ -91,7 +95,7 @@ export function mistake(task: Task): string {
     case 'sentence':
       return `Vor ${shout(w)} passt ein Artikel: ${definite(task)}. Das ist das Nomen.`;
     case 'story':
-      return `${confirmation(task)} ${STORY_RULE}`;
+      return `${confirmation(task)} ${task.story!.kind === 'known' ? STORY_SAME_RULE : STORY_NEW_RULE}`;
   }
 }
 
@@ -103,9 +107,9 @@ export function help(task: Task): string {
       return `Es heißt ${definite(task)}. ${SWAP_RULE}`;
     case 'noun':
     case 'sentence':
-      return `${NOUN_PROBE} Auch die Mehrzahl hilft oft: ein Tisch – viele Tische.`;
+      return NOUN_PROBE;
     case 'story':
-      return STORY_HELP;
+      return `${STORY_NEW_RULE} ${STORY_SAME_RULE}`;
   }
 }
 

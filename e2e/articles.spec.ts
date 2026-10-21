@@ -37,16 +37,17 @@ test('the Deutsch area offers "Der, die, das"', async ({ page }) => {
   await expect(page.locator('.word-card')).toBeVisible();
 });
 
-test('guided examples, then a mistake shows the right article in the gap', async ({ page }) => {
+test('guided examples of der, die and das, then a mistake shows the right article in the gap', async ({ page }) => {
   await startArticles(page);
-  for (let i = 0; i < 2; i++) {
+  await expect(page.locator('.message')).toContainText('Der, die und das heißen Artikel.');
+  for (let i = 0; i < 3; i++) {
     await expect(page.locator('.message')).toContainText('Die richtige Antwort ist …');
     await page.locator('.answer.suggested').click();
     await expect(page.locator('.message')).toContainText('Genau!');
     await expect(page.locator('.answer.correct')).toHaveCount(0, { timeout: 10_000 });
   }
 
-  await expect(page.locator('.message')).toHaveText('Welcher Artikel passt?');
+  await expect(page.locator('.message')).toHaveText('der, die oder das?');
   await expect(page.locator('.answer')).toHaveText(['der', 'die', 'das']);
   await expect(page.locator('.gap')).toHaveText('___');
   const word = (await page.locator('.word-line').textContent())!.replace('___', '').trim();
@@ -59,7 +60,7 @@ test('guided examples, then a mistake shows the right article in the gap', async
   }, word);
   const wrong = ['der', 'die', 'das'].find((a) => a !== right)!;
   await page.locator('.answer', { hasText: new RegExp(`^${wrong}$`) }).click();
-  await expect(page.locator('.message')).toContainText(`Schauen wir zusammen. Es heißt ${right} ${word}.`);
+  await expect(page.locator('.message')).toHaveText(`Es heißt ${right} ${word}. Lerne das Wort immer mit seinem Artikel.`);
   await expect(page.locator('.gap.filled')).toHaveText(right);
   await expect(page.locator('.answer.wrong')).toHaveText(wrong);
   await page.locator('.next').click();
@@ -82,7 +83,7 @@ test('a story: the known thing takes der, buttons and gap are capitalised at the
   await expect(page.locator('.answer')).toHaveText(['Der', 'Ein']);
   await page.locator('.answer', { hasText: 'Der' }).click();
   await expect(page.locator('.story-line').nth(1)).toHaveText('Der Ball gefällt mir.');
-  await expect(page.locator('.message')).toContainText('Es ist noch derselbe Ball.');
+  await expect(page.locator('.message')).toContainText('Es ist noch derselbe Ball: der Ball.');
 });
 
 test('a story: a second thing joins with eine, in the middle of the sentence', async ({ page }) => {
@@ -92,7 +93,7 @@ test('a story: a second thing joins with eine, in the middle of the sentence', a
   await expect(page.locator('.answer')).toHaveText(['die', 'eine']);
   await page.locator('.answer', { hasText: 'eine' }).click();
   await expect(page.locator('.story-line').nth(1)).toHaveText('Außerdem ist eine Katze auf dem Bild.');
-  await expect(page.locator('.message')).toContainText('Zuerst war ein Hund da. Jetzt kommt eine Katze dazu.');
+  await expect(page.locator('.message')).toContainText('Die Katze kommt neu dazu: eine Katze.');
 });
 
 test('after a right answer, the next task waits until the explanation has been read aloud', async ({ page }) => {

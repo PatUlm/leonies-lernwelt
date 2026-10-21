@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Engine, freshProgress, type Task } from '../../src/modules/articles/engine';
+import { Engine, SENTENCE_EXAMPLE, freshProgress, type Task } from '../../src/modules/articles/engine';
 import { sanitizeProgress } from '../../src/modules/articles/storage';
 import { REFRESH_AFTER_MS, statsFromProgress } from '../../src/modules/articles/stats';
-import { cardSpeech, confirmation, mistake, storyLines } from '../../src/modules/articles/texts';
+import { cardSpeech, confirmation, explanation, help, mistake, storyLines } from '../../src/modules/articles/texts';
 import {
   ARTICLES, DISCOVER_NOUNS, NOT_NOUNS, NOUNS, SENTENCES, STORY_INTROS, STORY_KNOWN, STORY_NEW, storyPairFits,
 } from '../../src/modules/articles/words';
@@ -32,6 +32,8 @@ describe('word lists', () => {
 
   it('has exactly one capitalised word besides the first in each sentence: the noun', () => {
     for (const s of SENTENCES) {
+      // Only the articles taught here.
+      for (const w of ['dem', 'den', 'mein', 'meine']) expect(s.words.map((x) => x.toLowerCase())).not.toContain(w);
       const capitalised = s.words.map((w, i) => (i > 0 && /^[A-ZÄÖÜ]/.test(w) ? i : -1)).filter((i) => i >= 0);
       expect(capitalised.length ? capitalised : [s.noun]).toEqual([s.noun]);
       expect(s.words.join(' ')).not.toContain('ß');
@@ -59,12 +61,27 @@ describe('texts', () => {
     const known = task(4, 't:known:Katze:0:3');
     expect(storyLines(known, '___')).toEqual(['Auf dem Bild ist eine Katze.', 'Mir gefällt ___ Katze.']);
     expect(known.options).toEqual(['die', 'eine']);
-    expect(confirmation(known)).toBe('Es ist noch dieselbe Katze. Deshalb heißt es jetzt: die Katze.');
+    expect(confirmation(known)).toBe('Es ist noch dieselbe Katze: die Katze.');
+    expect(mistake(known)).toBe('Es ist noch dieselbe Katze: die Katze. Für dieselbe Sache nehmen wir der, die oder das.');
     expect(cardSpeech(known)).toBe('Auf dem Bild ist eine Katze. Mir gefällt Lücke Katze.');
     const joining = task(4, 't:new:Katze:3:0:Hund');
     expect(storyLines(joining, '___')).toEqual(['Ein Hund ist auf dem Bild.', '___ Katze ist auch auf dem Bild.']);
     expect(joining.options[joining.correctIndex]).toBe('Eine');
-    expect(confirmation(joining)).toBe('Zuerst war ein Hund da. Jetzt kommt eine Katze dazu.');
+    expect(confirmation(joining)).toBe('Die Katze kommt neu dazu: eine Katze.');
+    expect(mistake(joining)).toBe('Die Katze kommt neu dazu: eine Katze. Für etwas Neues nehmen wir ein oder eine.');
+  });
+
+  it('names the articles in the first example, explains sentences, and keeps help short', () => {
+    const engine = new Engine(freshProgress(T0), seeded(1));
+    expect(explanation(engine.makeTask(1, 'example', 'Hund')!)).toBe(
+      'Es heißt der Hund. Der, die und das heißen Artikel. Die richtige Antwort ist …',
+    );
+    expect(explanation(engine.makeTask(1, 'example', 'Auto')!)).toBe('Es heißt das Auto. Die richtige Antwort ist …');
+    expect(explanation(engine.makeTask(3, 'example', 's:7')!)).toBe(
+      'Tippe im Satz auf das Nomen. Vor BUCH passt das: das Buch. Die richtige Antwort ist …',
+    );
+    expect(help(task(3, 'w:Tisch'))).toBe('Passt der, die oder das davor? Dann ist es ein Nomen.');
+    expect(SENTENCE_EXAMPLE).toBeGreaterThan(0);
   });
 
   it('builds every story sentence around one gap, half of them with the article first', () => {
@@ -105,8 +122,26 @@ describe('stored progress', () => {
     expect(broken.stages[0]).toMatchObject({ unlocked: true, mastery: 0, window: [] });
     expect(broken.stages[1].unlocked).toBe(false);
     expect(broken.reviewQueue).toEqual([{ stage: 1, key: 'Apfel', dueAt: 3 }]);
-    expect(broken.forced).toEqual([]);
     expect(broken.round.tasks).toBe(0);
+  });
+
+  it('gives learners of version 1 the new examples once, before their next task', () => {
+    const p = sanitizeProgress({
+      version: 1,
+      lastAnswered: T0,
+      stages: [{ unlocked: true, ready: true }, { unlocked: true, ready: true }, { unlocked: true, mastery: 40 }, { unlocked: true }],
+      forced: [{ type: 'example', stage: 4, pick: 2 }],
+    }, T0);
+    expect(p.version).toBe(2);
+    expect(p.forced).toEqual([
+      { type: 'example', stage: 4, pick: 3 },
+      { type: 'example', stage: 1, pick: 0 },
+      { type: 'example', stage: 1, pick: 2 },
+      { type: 'example', stage: 3, pick: SENTENCE_EXAMPLE },
+      { type: 'example', stage: 4, pick: 2 },
+    ]);
+    const fresh = sanitizeProgress({ ...freshProgress(T0), version: 1 }, T0);
+    expect(fresh.forced).toEqual(freshProgress(T0).forced);
   });
 });
 
@@ -124,7 +159,8 @@ describe('stats', () => {
       engine.answer(t, t.correctIndex, false);
     }
     const playing = statsFromProgress(engine.progress, T0);
-    expect(playing.round).toEqual({ done: 3, target: 10, unit: 'Aufgaben' });
+    // Three examples first, then two tasks.
+    expect(playing.round).toEqual({ done: 2, target: 10, unit: 'Aufgaben' });
     expect(playing.suggestion.priority).toBe(SUGGESTION_PRIORITY.continueRound);
 
     engine.progress.round.tasks = 0;

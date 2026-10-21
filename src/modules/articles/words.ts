@@ -106,26 +106,29 @@ function sentence(text: string, noun: string, article: Article): Sentence {
   return { words, noun: index, article };
 }
 
-/** One noun per sentence, no names (they are nouns too), no ß (shown in capitals). */
+/**
+ * One noun per sentence, no names (they are nouns too), no ß (shown in capitals),
+ * and only the articles taught here: no dem, den or mein.
+ */
 export const SENTENCES: readonly Sentence[] = [
   sentence('Die Wolke ist sehr dunkel.', 'Wolke', 'die'),
   sentence('Ich laufe in das Haus.', 'Haus', 'das'),
   sentence('Ich öffne das Fenster.', 'Fenster', 'das'),
   sentence('Die Pfütze ist riesig.', 'Pfütze', 'die'),
   sentence('Der Hund wird nass.', 'Hund', 'der'),
-  sentence('Ich fahre mit dem Fahrrad.', 'Fahrrad', 'das'),
+  sentence('Das Fahrrad ist neu.', 'Fahrrad', 'das'),
   sentence('Heute ist die Pause lang.', 'Pause', 'die'),
   sentence('Das Buch liegt hier.', 'Buch', 'das'),
-  sentence('Wir spielen mit dem Ball.', 'Ball', 'der'),
-  sentence('Meine Katze schläft viel.', 'Katze', 'die'),
+  sentence('Der Ball rollt weg.', 'Ball', 'der'),
+  sentence('Die Katze schläft viel.', 'Katze', 'die'),
   sentence('Der Apfel ist rot.', 'Apfel', 'der'),
   sentence('Ich male eine Blume.', 'Blume', 'die'),
   sentence('Die Sonne scheint hell.', 'Sonne', 'die'),
   sentence('Ich esse ein Eis.', 'Eis', 'das'),
   sentence('Schnell rennt der Hase.', 'Hase', 'der'),
   sentence('Das Auto fährt langsam.', 'Auto', 'das'),
-  sentence('Ich sehe den Mond.', 'Mond', 'der'),
-  sentence('Morgen kommt mein Opa.', 'Opa', 'der'),
+  sentence('Der Mond leuchtet.', 'Mond', 'der'),
+  sentence('Der Opa kommt morgen.', 'Opa', 'der'),
 ];
 
 /** Mini stories: the first sentence introduces the thing, the second knows it. */

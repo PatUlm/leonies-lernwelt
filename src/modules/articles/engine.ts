@@ -26,22 +26,30 @@ export const READY_WINDOW_CORRECT = 6;
 export const SECURE_WINDOW_CORRECT = 7;
 /** Correct answers in the window must cover this many different words. */
 export const MIN_DISTINCT_WORDS = 5;
-export const EXAMPLES_PER_STAGE = 2;
 /**
  * Guided examples come from fixed pools, so their explanations can be recorded
  * beforehand: a new stage starts with the first ones, a mistake brings back
- * one not seen recently. Story keys: the same dog first new, then known.
+ * one not seen recently. Only what an example explained is asked: stage 1
+ * shows der, die and das; stage 4 the same dog first new, then known, then a
+ * cat joining it. The sentence of stage 3 comes once sentences start.
  */
 export const EXAMPLE_KEYS: Record<Stage, readonly string[]> = {
   1: ['Hund', 'Katze', 'Auto', 'Apfel', 'Blume', 'Buch'],
   2: ['Hund', 'Katze', 'Auto', 'Blume', 'Apfel', 'Buch'],
-  3: ['w:Tisch', 'w:rennt', 'w:Pause', 'w:und', 'w:Lineal', 'w:weich'],
-  4: ['t:first:Hund:0:0', 't:known:Hund:0:0', 't:first:Katze:3:3', 't:known:Katze:3:3', 't:first:Auto:0:0', 't:known:Auto:0:0'],
+  3: ['w:Tisch', 'w:rennt', 'w:Pause', 'w:und', 'w:Lineal', 'w:weich', 's:7'],
+  4: [
+    't:first:Hund:0:0', 't:known:Hund:0:0', 't:new:Katze:0:1:Hund',
+    't:first:Katze:3:3', 't:known:Katze:3:3', 't:first:Auto:0:0', 't:known:Auto:0:0', 't:new:Hund:3:4:Auto',
+  ],
 };
+/** How many of the first examples a new stage starts with. */
+export const INTRO_EXAMPLES: Record<Stage, number> = { 1: 3, 2: 2, 3: 2, 4: 3 };
+/** Index of the sentence example ("Das Buch liegt hier."), shown when sentences start in stage 3. */
+export const SENTENCE_EXAMPLE = EXAMPLE_KEYS[3].indexOf('s:7');
 
 /** The examples a new stage starts with. */
-function introExamples(stage: Stage): ForcedTask[] {
-  return Array.from({ length: EXAMPLES_PER_STAGE }, (_, pick) => ({ type: 'example', stage, pick }));
+export function introExamples(stage: Stage): ForcedTask[] {
+  return Array.from({ length: INTRO_EXAMPLES[stage] }, (_, pick) => ({ type: 'example', stage, pick }));
 }
 
 /** The word of an example key, as kept in the recent words. */
@@ -120,7 +128,7 @@ export interface RoundState {
 }
 
 export interface Progress {
-  version: 1;
+  version: 2;
   session: number;
   lastActive: number;
   /** When the last task was answered; opening without answering does not count. */
@@ -203,7 +211,7 @@ function freshStage(unlocked: boolean): StageState {
 
 export function freshProgress(now: number): Progress {
   return {
-    version: 1,
+    version: 2,
     session: 1,
     lastActive: now,
     lastAnswered: null,
@@ -311,7 +319,14 @@ export class Engine {
     const wasSecure = STAGES.filter((s) => this.stageState(s).secure);
     state.attempts += 1;
     state.window = [...state.window, { ok, word: task.word }].slice(-WINDOW);
-    if (ok) state.mastery = Math.min(MAX_MASTERY, state.mastery + MASTERY_CORRECT);
+    if (ok) {
+      const before = state.mastery;
+      state.mastery = Math.min(MAX_MASTERY, state.mastery + MASTERY_CORRECT);
+      // Sentences start in stage 3 now: their example first.
+      if (task.stage === 3 && !state.ready && before < INTRO_MASTERY && state.mastery >= INTRO_MASTERY) {
+        p.forced.push({ type: 'example', stage: 3, pick: SENTENCE_EXAMPLE });
+      }
+    }
 
     if (ok) {
       this.award(result, STAGE_POINTS[task.stage]);
@@ -405,8 +420,10 @@ export class Engine {
     const pool = EXAMPLE_KEYS[stage];
     // The first examples of a stage as given: the story pair shows the same dog twice.
     if (index !== undefined && pool[index]) return pool[index];
-    const fresh = pool.filter((key) => !this.progress.recent.includes(exampleWord(key)));
-    return pick(fresh.length ? fresh : pool, this.rng);
+    // Before the sentences of stage 3 start, their example is not shown either.
+    const shown = stage === 3 && this.intro(3) ? pool.filter((key) => !key.startsWith('s:')) : pool;
+    const fresh = shown.filter((key) => !this.progress.recent.includes(exampleWord(key)));
+    return pick(fresh.length ? fresh : shown, this.rng);
   }
 
   private pickReview(): Task | null {
@@ -450,10 +467,15 @@ export class Engine {
     return pick(unseen.length ? unseen : notRecent.length ? notRecent : items, this.rng);
   }
 
+  /** While the stage is new: "ein oder eine?" with "der Apfel", "Nomen entdecken" without sentences. */
+  private intro(stage: Stage): boolean {
+    const state = this.stageState(stage);
+    return !state.ready && state.mastery < INTRO_MASTERY;
+  }
+
   /** Key of a new item for the stage. */
   private chooseKey(stage: Stage): string {
-    const state = this.stageState(stage);
-    const intro = !state.ready && state.mastery < INTRO_MASTERY;
+    const intro = this.intro(stage);
     switch (stage) {
       case 1:
       case 2:
@@ -504,7 +526,7 @@ export class Engine {
         word: noun.word,
         article: noun.article,
         emoji: noun.emoji,
-        showDefinite: stage === 2 && (kind === 'example' || (!state.ready && state.mastery < INTRO_MASTERY)),
+        showDefinite: stage === 2 && (kind === 'example' || this.intro(2)),
         options,
         correctIndex: options.indexOf(correct),
       };

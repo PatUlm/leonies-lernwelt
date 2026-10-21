@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  EXAMPLES_PER_STAGE, Engine, HELP_POINTS, MASTERY_CORRECT, RECENT_SPAN, ROUND_TASKS, SESSION_GAP_MS, STAGE_POINTS,
+  EXAMPLE_KEYS, Engine, HELP_POINTS, INTRO_EXAMPLES, INTRO_MASTERY, MASTERY_CORRECT, RECENT_SPAN, ROUND_TASKS, SESSION_GAP_MS, STAGE_POINTS,
   freshProgress, type Stage, type Task,
 } from '../../src/modules/articles/engine';
 import { capitalize, indefinite } from '../../src/modules/articles/words';
 import { seeded } from '../rng';
 
 const T0 = 1_700_000_000_000;
+/** The examples stage 1 starts with. */
+const INTRO = INTRO_EXAMPLES[1];
 
 function wrongIndex(t: Task): number {
   return t.correctIndex === 0 ? 1 : 0;
@@ -31,11 +33,12 @@ function reach(engine: Engine, stage: Stage): void {
 }
 
 describe('articles engine', () => {
-  it('starts with guided examples of "der, die oder das?" that earn nothing', () => {
+  it('starts with guided examples of der, die and das that earn nothing', () => {
     const engine = new Engine(freshProgress(T0), seeded(1));
-    const [first, second] = play(engine, EXAMPLES_PER_STAGE);
-    expect([first.kind, second.kind]).toEqual(['example', 'example']);
-    expect(first.variant).toBe('article');
+    const examples = play(engine, INTRO);
+    expect(examples.map((t) => [t.kind, t.variant, t.article])).toEqual([
+      ['example', 'article', 'der'], ['example', 'article', 'die'], ['example', 'article', 'das'],
+    ]);
     expect(engine.progress.round.tasks).toBe(0);
     expect(engine.progress.points).toBe(0);
     expect(engine.stageState(1).mastery).toBe(0);
@@ -43,7 +46,7 @@ describe('articles engine', () => {
 
   it('asks for the article of the noun with der, die and das', () => {
     const engine = new Engine(freshProgress(T0), seeded(2));
-    // Two examples and six answers: just before "ein oder eine?" opens.
+    // Three examples and five answers: before "ein oder eine?" opens.
     for (const t of play(engine, 8)) {
       expect(t.options).toEqual(['der', 'die', 'das']);
       expect(t.options[t.correctIndex]).toBe(t.article);
@@ -75,7 +78,7 @@ describe('articles engine', () => {
 
   it('never takes learning points away for a mistake', () => {
     const engine = new Engine(freshProgress(T0), seeded(5));
-    play(engine, 2 + 3);
+    play(engine, INTRO + 3);
     const before = engine.stageState(1).mastery;
     expect(before).toBe(3 * MASTERY_CORRECT);
     play(engine, 1, () => false);
@@ -84,7 +87,7 @@ describe('articles engine', () => {
 
   it('brings a mistaken word back a few tasks later', () => {
     const engine = new Engine(freshProgress(T0), seeded(6));
-    play(engine, 2);
+    play(engine, INTRO);
     const [missed] = play(engine, 1, () => false);
     const later = play(engine, RECENT_SPAN + 3);
     const review = later.find((t) => t.kind === 'review');
@@ -94,7 +97,7 @@ describe('articles engine', () => {
 
   it('shows an example after two mistakes in a row and offers a pause after three', () => {
     const engine = new Engine(freshProgress(T0), seeded(7));
-    play(engine, 2);
+    play(engine, INTRO);
     play(engine, 2, () => false);
     expect(engine.progress.forced).toEqual([{ type: 'example', stage: 1 }]);
     play(engine, 1); // the example
@@ -105,7 +108,7 @@ describe('articles engine', () => {
 
   it('gives a trophy after ten tasks, right or wrong', () => {
     const engine = new Engine(freshProgress(T0), seeded(8));
-    play(engine, 2);
+    play(engine, INTRO);
     play(engine, ROUND_TASKS - 1, (t) => t.id % 2 === 0);
     engine.touch(T0);
     const t = engine.nextTask();
@@ -117,7 +120,7 @@ describe('articles engine', () => {
 
   it('gives half the points after help and no learning points', () => {
     const engine = new Engine(freshProgress(T0), seeded(9));
-    play(engine, 2);
+    play(engine, INTRO);
     engine.touch(T0);
     const t = engine.nextTask();
     const result = engine.answer(t, t.correctIndex, true);
@@ -171,12 +174,15 @@ describe('articles engine', () => {
     }
   });
 
-  it('starts "Nomen entdecken" with single words and adds sentences later', () => {
+  it('starts "Nomen entdecken" with single words and adds sentences later, after their example', () => {
     const engine = new Engine(freshProgress(T0), seeded(12));
     reach(engine, 3);
-    const early = play(engine, 6).filter((t) => t.stage === 3);
+    const early: Task[] = [];
+    while (engine.stageState(3).mastery < INTRO_MASTERY) early.push(...play(engine, 1).filter((t) => t.stage === 3));
     expect(early.length).toBeGreaterThan(0);
     expect(early.every((t) => t.variant === 'noun')).toBe(true);
+    const [example] = play(engine, 1);
+    expect(example).toMatchObject({ kind: 'example', stage: 3, variant: 'sentence', key: 's:7' });
     reach(engine, 4);
     const later = play(engine, 80).filter((t) => t.stage === 3);
     expect(later.some((t) => t.variant === 'sentence')).toBe(true);
@@ -205,12 +211,13 @@ describe('articles engine', () => {
     }
   });
 
-  it('keeps the examples of a story to one thing', () => {
+  it('starts the stories with the same dog new, then known, then a cat joining it', () => {
     const engine = new Engine(freshProgress(T0), seeded(15));
     reach(engine, 4);
     const examples = play(engine, 10).filter((t) => t.stage === 4 && t.kind === 'example');
-    expect(examples).toHaveLength(EXAMPLES_PER_STAGE);
-    for (const t of examples) expect(t.story!.kind).not.toBe('new');
+    expect(examples.map((t) => t.key)).toEqual(EXAMPLE_KEYS[4].slice(0, INTRO_EXAMPLES[4]));
+    expect(examples.map((t) => t.story!.kind)).toEqual(['first', 'known', 'new']);
+    expect(examples[2].story!.before!.word).toBe('Hund');
   });
 
   it('drops reviews whose word no longer exists', () => {

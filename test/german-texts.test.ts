@@ -16,7 +16,7 @@ describe('German texts to record', () => {
   it('contain the examples and the fixed sentences', () => {
     const all = texts.map((t) => t.text);
     expect(all).toContain('Der leuchtende Knopf ist richtig.');
-    expect(all).toContain('Es heißt der Hund. Die richtige Antwort ist …');
+    expect(all).toContain('Es heißt die Katze. Die richtige Antwort ist …');
     expect(all.some((t) => t.startsWith('Es ist Nachmittag.'))).toBe(true);
     // English examples: the German parts around the recorded English word.
     expect(all).toEqual(expect.arrayContaining(['Neues Wort:', 'heißt rot.', 'Die richtige Antwort ist …']));

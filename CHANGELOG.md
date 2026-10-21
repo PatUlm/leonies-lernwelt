@@ -5,6 +5,19 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.15 – 2026-10-21
+
+### Geändert
+
+- **Der, die, das: nur abfragen, was erklärt wurde:** Stufe 1 erklärte nur „der“ und „die“,
+  fragte aber auch „das“; jetzt beginnt sie mit drei Beispielen (der Hund, die Katze, das Auto)
+  und erklärt den Begriff „Artikel“. Die Satzaufgabe „Tippe auf das Nomen.“ beginnt mit einem
+  eigenen Beispiel, und die Sätze enthalten kein „dem“, „den“ oder „mein“ mehr. Die Geschichten
+  zeigen vorab auch, wie etwas Neues dazukommt („Die Katze kommt neu dazu: eine Katze.“).
+  Rückmeldungen und Hilfen sind kürzer, die Hilfe zum Nomen ohne die Mehrzahl. Wer schon
+  gespielt hat, sieht die neuen Beispiele einmal vor der nächsten Aufgabe; der Fortschritt
+  bleibt.
+
 ## 2026.10.14 – 2026-10-21
 
 ### Geändert

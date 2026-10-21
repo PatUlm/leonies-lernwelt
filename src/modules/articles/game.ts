@@ -207,7 +207,7 @@ export function mountArticleGame(root: HTMLElement, ctx: ModuleContext): () => v
       shell.later(() => shell.whenIdle(() => afterAnswer(result)), delay);
       return;
     }
-    setMessage(`Schauen wir zusammen. ${mistake(task)}`, 'explain');
+    setMessage(mistake(task), 'explain');
     showNext(() => afterAnswer(result));
   }
 
