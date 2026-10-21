@@ -143,6 +143,13 @@ Nacht**. In etwa jeder zweiten Aufgabe ist dieselbe Uhr in der anderen Tageshäl
 falschen Antworten – so lernt das Kind, auf die Tageszeit zu achten: „Nach zwölf Uhr mittags
 zählen wir weiter: dreizehn, vierzehn, fünfzehn …“
 
+Jede Tageszeit kommt erst nach einem eigenen Beispiel dran – beim Ablesen, beim Zeigerstellen
+und beim Eintippen jeweils einzeln, denn dort wird in verschiedene Richtungen umgerechnet:
+„Nach Mitternacht beginnt der Tag bei null: 12:15 Uhr in der Nacht ist 0:15 Uhr.“ Zeiger
+stellen und Eintippen in den anderen Kapiteln bekommen eine Tageszeit erst, wenn diese
+Umrechnung erklärt wurde. Beispiele haben höchstens zwei kurze Sätze; beim Ablesen nennen sie
+die Uhrzeit in Ziffern, die Worte („zehn vor acht“) kommen mit ihren eigenen Beispielen.
+
 Danach wird selbst umgerechnet, in beide Richtungen (je volle, halbe und Viertelstunden,
 15 Bonuspunkte):
 

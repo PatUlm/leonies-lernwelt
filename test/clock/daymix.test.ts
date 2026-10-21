@@ -20,6 +20,9 @@ function learnt(seed: number, phase: DayMix['phase']): Engine {
   }
   engine.progress.forced = [];
   engine.progress.dayMix = { phase, since: 1, recent: [] };
+  // Every time of day explained in every track.
+  const all = ['afternoon', 'forenoon', 'evening', 'noon', 'night'] as const;
+  engine.progress.contextsShown = { daytime: [...all], daySet: [...all], dayInput: [...all] };
   return engine;
 }
 

@@ -2,8 +2,8 @@ import { ANSWER_FOLLOWS } from '../../shared/game/texts';
 import { SUFFIX, contextConfirmation, contextSentence, hour24, type DayContext } from './daytime';
 import type { AnswerOption } from './distractors';
 import type { TaskMode, Track } from './engine';
-import { capitalize, formatSpoken, formatSpokenCapitalized, numberWord } from './german';
-import { formatDigital, wrapHour, type ClockTime } from './time';
+import { capitalize, formatSpoken, numberWord } from './german';
+import { formatDaytime, formatDigital, wrapHour, type ClockTime } from './time';
 
 /** Which part of the clock a hint is about; the clock highlights it. */
 export type HintFocus = 'hour' | 'minute';
@@ -60,7 +60,7 @@ function minuteHandSentence(minute: number): string {
   const rest = minute % 5;
   if (rest === 0) return `Der lange Zeiger zeigt auf die ${minuteNumber(minute)}. Das sind ${minute} Minuten.`;
   const strokes = rest === 1 ? 'einen Strich' : `${rest} Striche`;
-  return `Der lange Zeiger steht ${strokes} nach der ${minuteNumber(minute)}. Das sind ${minute} Minuten.`;
+  return `Der lange Zeiger steht ${strokes} nach der ${minuteNumber(minute)}. ${minute === 1 ? 'Das ist eine Minute' : `Das sind ${minute} Minuten`}.`;
 }
 
 function hourHandSentence(t: ClockTime, chosenHour: number): string {
@@ -144,13 +144,13 @@ function towards24(context: DayContext, hour: number): string {
   }
 }
 
-/** From the 24-hour value back to the clock: "21 Uhr ist 9 Uhr am Abend. Rechne zwölf weniger: 21 − 12 = 9." */
+/** From the 24-hour value back to the clock: "21 Uhr am Abend ist 9 Uhr: 21 − 12 = 9." */
 function towardsClock(context: DayContext, hour: number): string {
   const h24 = hour24(context, hour);
   switch (context) {
     case 'afternoon':
     case 'evening':
-      return `${h24} Uhr ist ${hour} Uhr ${SUFFIX[context]}. Rechne zwölf weniger: ${h24} − 12 = ${hour}.`;
+      return `${h24} Uhr ${SUFFIX[context]} ist ${hour} Uhr: ${h24} − 12 = ${hour}.`;
     case 'forenoon':
       return `${h24} Uhr ist am Vormittag: Die Stunde bleibt ${hour}.`;
     case 'noon':
@@ -192,13 +192,22 @@ export function contextRule(context: DayContext): string {
   }
 }
 
-/** How to set the hands; at full hours only the hour hand moves. */
+/** How to set the hands, in one sentence before "Fertig"; at full hours only the hour hand moves. */
 function setInstruction(t: ClockTime, hourOnly: boolean): string {
   const hands = hourOnly
-    ? `Der lange Zeiger steht schon auf der 12. Zieh den kurzen Zeiger ${hourPlace(t)}.`
+    ? `Der lange Zeiger bleibt auf der 12, zieh den kurzen Zeiger ${hourPlace(t)}.`
     : `Zieh den langen Zeiger ${minutePlace(t.minute)} und den kurzen Zeiger ${hourPlace(t)}.`;
   return `${hands} Dann tippe auf „Fertig“.`;
 }
+
+/** The rule of a time of day in a daytime example, before the clock time it maps: why the hour is written that way. */
+const CONTEXT_EXAMPLE_RULES: Record<DayContext, string> = {
+  afternoon: 'Nach zwölf Uhr mittags zählen wir weiter',
+  evening: 'Nach zwölf Uhr mittags zählen wir weiter',
+  forenoon: 'Am Vormittag bleibt die Stunde, wie sie ist',
+  noon: 'Am Mittag bleibt die 12',
+  night: 'Nach Mitternacht beginnt der Tag bei null',
+};
 
 /** Explanation for a guided example (not scored). */
 export function explainExample(task: TaskInfo): string {
@@ -207,9 +216,8 @@ export function explainExample(task: TaskInfo): string {
   const next = wrapHour(hour + 1);
   const digital = formatDigital(t);
   if (track === 'daytime' && task.context) {
-    const h24 = hour24(task.context, hour);
-    const rule = h24 >= 13 ? ` ${AFTERNOON_RULE}` : h24 === 0 ? ' Nach Mitternacht beginnt der Tag wieder bei null.' : '';
-    return `Das Bild zeigt die Tageszeit.${rule} ${contextConfirmation(task.context, t)}`;
+    // One sentence after "Es ist Abend.": the rule and the clock time it maps, in digits (the words may not be known yet).
+    return `${CONTEXT_EXAMPLE_RULES[task.context]}: ${digital} ${SUFFIX[task.context]} ist ${formatDaytime(t, hour24(task.context, hour))}.`;
   }
   if (track === 'daySet' && task.context) {
     return `${towardsClock(task.context, hour)} ${setInstruction(t, !!task.hourOnly)}`;
@@ -217,7 +225,7 @@ export function explainExample(task: TaskInfo): string {
   if (track === 'dayInput' && task.context) {
     const written = `${hour24(task.context, hour)}:${String(minute).padStart(2, '0')}`;
     const digits = [...written.replace(':', '')].join(' ');
-    return `Die Uhr zeigt ${formatSpoken(t)}. Das Bild zeigt die Tageszeit. ${towards24(task.context, hour)} Tippe ${digits} – das ist ${written} Uhr.`;
+    return `${towards24(task.context, hour)} Tippe ${digits} – das ist ${written} Uhr.`;
   }
   if (track === 'set') {
     return setInstruction(t, !!task.hourOnly);
@@ -243,22 +251,26 @@ export function explainExample(task: TaskInfo): string {
     return `Noch ${minutes(60 - minute)} bis ${next} Uhr: ${digital} ist „${spoken}“.`;
   }
 
+  // Two sentences: the minutes, then the hour with the time; in digits, the words come in their own track.
+  const time = `Es ist ${digital}.`;
   const hourPart =
     minute === 0
-      ? `Der kurze Zeiger zeigt auf die ${hour}.`
+      ? `Der kurze Zeiger zeigt auf die ${hour}: ${time}`
       : minute >= 30
-        ? `Der kurze Zeiger ist zwischen der ${hour} und der ${next}, aber noch nicht bei der ${next}. Die Stunde ist ${hour}.`
-        : `Der kurze Zeiger ist gerade an der ${hour} vorbei. Die Stunde ist ${hour}.`;
+        ? `Der kurze Zeiger ist noch nicht bei der ${next}: ${time}`
+        : `Der kurze Zeiger ist gerade an der ${hour} vorbei: ${time}`;
   let minutePart: string;
   if (minute === 0) minutePart = 'Der lange Zeiger zeigt nach oben auf die 12: volle Stunde.';
   else if (minute === 30) minutePart = 'Der lange Zeiger zeigt nach unten auf die 6: eine halbe Stunde, 30 Minuten.';
   else if (minute === 15) minutePart = 'Der lange Zeiger zeigt auf die 3: eine Viertelstunde, 15 Minuten.';
   else if (minute === 45) minutePart = 'Der lange Zeiger zeigt auf die 9: drei Viertelstunden, 45 Minuten.';
-  else if (minute % 5 === 0) {
-    const steps = Array.from({ length: minute / 5 }, (_, i) => (i + 1) * 5).join(', ');
-    minutePart = `Zähle in Fünferschritten bis zum langen Zeiger: ${steps}.`;
-  } else minutePart = minuteHandSentence(minute);
-  return `${minutePart} ${hourPart} Es ist ${digital} – ${formatSpokenCapitalized(t)}.`;
+  else if (minute % 5 === 0) minutePart = `Zähle in Fünferschritten bis zum langen Zeiger: ${minute} Minuten.`;
+  else {
+    const rest = minute % 5;
+    const strokes = rest === 1 ? 'einen Strich' : `${rest} Striche`;
+    minutePart = `Der lange Zeiger steht ${strokes} nach der ${minuteNumber(minute)}: ${minute === 1 ? 'eine Minute' : `${minute} Minuten`}.`;
+  }
+  return `${minutePart} ${hourPart}`;
 }
 
 /** A guided example as shown and read: choosing ends with the answer that lights up then. */
@@ -279,19 +291,28 @@ export function withContext(context: DayContext | undefined, t: ClockTime, text:
  */
 export function helpText(task: { track: Track; mode: TaskMode; context?: DayContext; hourOnly: boolean }, target: string): { shown: string; spoken: string } {
   if (task.mode === 'set') {
-    const rule = task.context
-      ? 'Ist die Stunde größer als zwölf, rechne zwölf weniger. Zwölf bleibt zwölf. Bei null Uhr gehört der kurze Zeiger zur Zwölf. '
-      : '';
+    // Two short sentences, then what to tap: the rule of the time of day only where it applies.
+    const rule = task.context ? SET_RULES[task.context] : 'Die kleinen Zahlen außen helfen dir.';
     const hands = task.hourOnly
-      ? 'Der lange orange Zeiger steht schon auf der Zwölf. Zieh den kurzen blauen Zeiger zur richtigen Stunde. Tippe dann auf Fertig.'
-      : 'Zieh zuerst den langen orangen Zeiger zu den Minuten. Die kleinen Zahlen außen helfen dir. Stelle danach den kurzen blauen Zeiger zur Stunde. Tippe dann auf Fertig.';
-    return { shown: `Stelle die Uhr auf ${target}. ${rule}${hands}`, spoken: `Schau auf die Zielzeit. ${rule}${hands}` };
+      ? 'Der lange orange Zeiger bleibt auf der Zwölf, zieh nur den kurzen blauen zur Stunde.'
+      : 'Zieh zuerst den langen orangen Zeiger zu den Minuten, dann den kurzen blauen zur Stunde.';
+    const text = `${rule} ${hands} Tippe dann auf Fertig.`;
+    return { shown: `Stelle die Uhr auf ${target}. ${text}`, spoken: text };
   }
-  let rule = '';
-  if (task.track === 'text') rule = ' Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.';
-  if (task.track === 'halb') rule = ' Bei „vor halb“ und „nach halb“ sagt man schon die nächste Stunde.';
-  if (task.track === 'daytime' || (task.track === 'digital' && task.context)) rule = ' Nach zwölf Uhr mittags zählen wir weiter: aus 3 Uhr wird 15 Uhr.';
-  if (task.mode === 'input' && task.context) rule = ` ${contextRule(task.context)}`;
-  const text = `Der kurze blaue Zeiger zeigt die Stunde. Der lange orange Zeiger zeigt die Minuten – die kleinen Zahlen außen helfen beim Zählen.${rule}`;
+  let rule = 'Die kleinen Zahlen außen helfen beim Zählen.';
+  if (task.track === 'text') rule = 'Bei „halb“ und bei „vor“ sagt man schon die nächste Stunde.';
+  if (task.track === 'halb') rule = 'Bei „vor halb“ und „nach halb“ sagt man schon die nächste Stunde.';
+  // Words stay the same in either half of the day: there the rule of the words helps.
+  if (task.context && task.track !== 'text' && task.track !== 'halb') rule = contextRule(task.context);
+  const text = `Der kurze blaue Zeiger zeigt die Stunde, der lange orange die Minuten. ${rule}`;
   return { shown: text, spoken: text };
 }
+
+/** Setting the hands for a 24-hour time: the rule of its time of day, no hour given away. */
+const SET_RULES: Record<DayContext, string> = {
+  afternoon: 'Ist die Stunde größer als zwölf, rechne zwölf weniger.',
+  evening: 'Ist die Stunde größer als zwölf, rechne zwölf weniger.',
+  forenoon: 'Am Vormittag bleibt die Stunde, wie sie ist.',
+  noon: 'Zwölf bleibt zwölf.',
+  night: 'Bei null Uhr gehört der kurze Zeiger zur Zwölf.',
+};

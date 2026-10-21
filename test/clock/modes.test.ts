@@ -118,7 +118,7 @@ describe('"vor halb" phrasing', () => {
 });
 
 describe('introducing side tracks', () => {
-  it('starts one new side track tier at a time, text before the time of day before setting', () => {
+  it('starts one new side track tier at a time, text first', () => {
     const engine = new Engine(freshProgress(T0), seeded(9));
     const order: Track[] = [];
     for (let i = 0; i < 3000 && order.length < 3; i++) {
@@ -129,7 +129,9 @@ describe('introducing side tracks', () => {
       expect(sides.length).toBeLessThanOrEqual(1);
       for (const u of sides) if (!order.includes(u.track)) order.push(u.track);
     }
-    expect(order).toEqual(['text', 'daytime', 'set']);
+    // The time of day and setting the hands follow, whichever is due first.
+    expect(order[0]).toBe('text');
+    expect([...order].sort()).toEqual(['daytime', 'set', 'text']);
   });
 });
 

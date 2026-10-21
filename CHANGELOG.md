@@ -5,6 +5,20 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.17 – 2026-10-21
+
+### Geändert
+
+- **Die Uhr: nur abfragen, was erklärt wurde:** Vormittag, Abend, Mittag und Mitternacht
+  kamen dran, bevor ein Beispiel sie erklärt hatte, und Zeiger stellen oder Eintippen nach
+  24-Stunden-Zeit tauchten in den anderen Kapiteln auf, bevor die Umrechnung erklärt war. Jetzt
+  kommt jede Tageszeit erst nach ihrem Beispiel, beim Ablesen, Zeigerstellen und Eintippen
+  jeweils einzeln. „zwanzig vor“ und „fünfundzwanzig vor“ haben eigene Beispiele, Eintippen
+  zeigt auch eine vierstellige Uhrzeit. Beispiele und Hilfen sind auf zwei kurze Sätze gekürzt;
+  Ablesebeispiele nennen die Uhrzeit in Ziffern statt in noch nicht gelernten Worten. „Das sind
+  1 Minuten“ heißt jetzt „eine Minute“. Wer schon weiter ist, bekommt die fehlenden Beispiele
+  einmal vor der nächsten Aufgabe, die sie braucht; der Fortschritt bleibt.
+
 ## 2026.10.16 – 2026-10-21
 
 ### Geändert

@@ -115,7 +115,6 @@ export const EASY_SHARE = 0.1;
 export const WINDOW = 8;
 /** Correct answers in the window must cover this many different hours. */
 export const MIN_DISTINCT_HOURS = 3;
-export const EXAMPLES_PER_TIER = 2;
 
 interface ExampleTime {
   time: ClockTime;
@@ -132,10 +131,20 @@ const CLOCK_EXAMPLES: Record<Tier, readonly ExampleTime[]> = {
   5: [at(3, 5), at(7, 55), at(12, 35)],
   6: [at(3, 7), at(7, 58), at(12, 1)],
 };
-/** The three time-of-day tracks share theirs; noon and night only once they are reached. */
+/**
+ * The three time-of-day tracks share theirs; a time of day only once it is
+ * reached. Each tier has one of every time of day: a time of day reached later
+ * is explained in each track before it is asked there (explainedContexts).
+ */
 const DAY_EXAMPLES: Partial<Record<Tier, readonly ExampleTime[]>> = {
-  1: [at(3, 0, 'afternoon'), at(5, 0, 'afternoon'), at(1, 0, 'afternoon'), at(12, 0, 'noon'), at(12, 0, 'night')],
-  2: [at(3, 30, 'afternoon'), at(5, 30, 'afternoon'), at(1, 30, 'afternoon'), at(12, 30, 'noon'), at(12, 30, 'night')],
+  1: [
+    at(3, 0, 'afternoon'), at(5, 0, 'afternoon'), at(1, 0, 'afternoon'), at(12, 0, 'noon'), at(12, 0, 'night'),
+    at(9, 0, 'forenoon'), at(7, 0, 'evening'),
+  ],
+  2: [
+    at(3, 30, 'afternoon'), at(5, 30, 'afternoon'), at(1, 30, 'afternoon'), at(12, 30, 'noon'), at(12, 30, 'night'),
+    at(9, 30, 'forenoon'), at(7, 30, 'evening'),
+  ],
   3: [at(7, 15, 'evening'), at(9, 45, 'forenoon'), at(5, 45, 'afternoon'), at(12, 15, 'noon'), at(12, 15, 'night')],
 };
 const HALB_EXAMPLES: Partial<Record<Tier, readonly ExampleTime[]>> = {
@@ -145,12 +154,23 @@ const HALB_EXAMPLES: Partial<Record<Tier, readonly ExampleTime[]>> = {
 
 /**
  * Guided examples come from fixed lists, so their explanations can be
- * recorded beforehand: a new tier starts with the first ones, a mistake brings
- * back one not seen recently.
+ * recorded beforehand: a new tier starts with the first ones (introPicks), a
+ * mistake brings back one not seen recently.
  */
 export function exampleTimes(track: Track, tier: Tier): readonly ExampleTime[] {
   if (track === 'halb') return HALB_EXAMPLES[tier] ?? [];
   return (DAY_TRACKS.includes(track) ? DAY_EXAMPLES[tier] : CLOCK_EXAMPLES[tier]) ?? [];
+}
+
+/**
+ * The examples a new tier starts with: the first two; the words of tiers 4
+ * and 5 also with "zwanzig vor" and "fünfundzwanzig vor", typing with a
+ * four-digit time (12:xx) instead of the second three-digit one.
+ */
+export function introPicks(track: Track, tier: Tier): number[] {
+  if (track === 'text' && (tier === 4 || tier === 5)) return [0, 1, 2];
+  if (track === 'input') return [0, 2];
+  return [0, 1];
 }
 /** Tasks between two uses of the same time. */
 export const RECENT_SPAN = 4;
@@ -244,13 +264,16 @@ export interface DayMix {
   recent: DayAttempt[];
 }
 
+/** The tracks that explain a time of day: reading it, setting the hands for it, typing it. */
+export type DayTrack = 'daytime' | 'daySet' | 'dayInput';
+
 export type ForcedTask =
   /** `pick`: index into exampleTimes(); without one an example not seen recently. */
   | { type: 'example'; track: Track; tier: Tier; pick?: number }
   | { type: 'easy' };
 
 export interface Progress {
-  version: 1;
+  version: 2;
   session: number;
   lastActive: number;
   /** When the last task was answered; opening without answering does not count. */
@@ -270,6 +293,8 @@ export interface Progress {
   round: RoundState;
   trophies: number;
   dayMix: DayMix;
+  /** Times of day whose example each time-of-day track has shown: only these are asked there. */
+  contextsShown: Record<DayTrack, DayContext[]>;
 }
 
 export type TaskKind = 'example' | 'practice' | 'review' | 'easy';
@@ -342,7 +367,7 @@ export function freshProgress(now: number): Progress {
     TRACKS.map((track) => [track, TIERS.map((t) => freshTier(track === 'digital' && t === 1))]),
   ) as Record<Track, TierState[]>;
   return {
-    version: 1,
+    version: 2,
     session: 1,
     lastActive: now,
     lastAnswered: null,
@@ -360,6 +385,7 @@ export function freshProgress(now: number): Progress {
     round: { target: MIN_ROUND_TARGET, points: 0, correct: 0, tasks: 0 },
     trophies: 0,
     dayMix: { phase: 'off', since: 0, recent: [] },
+    contextsShown: { daytime: [], daySet: [], dayInput: [] },
   };
 }
 
@@ -416,6 +442,19 @@ export class Engine {
     return TIERS.filter((t) => this.tierState(track, t).unlocked);
   }
 
+  /** The track whose examples explain the times of day for `track`: setting and typing have their own. */
+  static dayTrackOf(track: Track): DayTrack {
+    if (track === 'set' || track === 'daySet') return 'daySet';
+    if (track === 'input' || track === 'dayInput') return 'dayInput';
+    return 'daytime';
+  }
+
+  /** Times of day that may be asked in `track`: reached and explained there. */
+  askableContexts(track: Track): DayContext[] {
+    const shown = this.progress.contextsShown[Engine.dayTrackOf(track)];
+    return this.dayContexts().filter((c) => shown.includes(c));
+  }
+
   /** Contexts of the daytime track reached so far: afternoon first, noon and night last. */
   dayContexts(): DayContext[] {
     const contexts: DayContext[] = ['afternoon'];
@@ -434,7 +473,8 @@ export class Engine {
     const recent = this.progress.recent;
     const fresh = (c: DayContext) =>
       CONTEXT_HOURS[c].some((hour) => trackMinutes(track, tier).some((minute) => !recent.includes(timeKey({ hour, minute }))));
-    const reached = this.dayContexts();
+    const reached = this.askableContexts(track);
+    if (!reached.length) return 'afternoon';
     const contexts = reached.filter(fresh).length ? reached.filter(fresh) : reached;
     let r = this.rng() * contexts.reduce((sum, c) => sum + CONTEXT_WEIGHTS[c], 0);
     for (const c of contexts) {
@@ -451,6 +491,8 @@ export class Engine {
   private mixesDaytime(track: Track, tier: Tier): boolean {
     const phase = this.progress.dayMix.phase;
     if (phase === 'off' || !MIXED_TRACKS.includes(track)) return false;
+    // Setting the hands for "21:30" and typing "21:30" are explained in their own tracks first.
+    if (!this.askableContexts(track).length) return false;
     const s = this.tierState(track, tier);
     const known = new Set(s.window.filter((a) => a.ok).map((a) => `${a.hour}:${a.minute}`));
     if (!s.ready && known.size < DAY_MIX_AFTER) return false;
@@ -549,6 +591,10 @@ export class Engine {
     };
 
     if (task.kind === 'example') {
+      if (task.context && DAY_TRACKS.includes(task.track)) {
+        const shown = p.contextsShown[Engine.dayTrackOf(task.track)];
+        if (!shown.includes(task.context)) shown.push(task.context);
+      }
       if (hint) {
         result.hint = hint.text;
         result.hintFocus = hint.focus;
@@ -709,12 +755,15 @@ export class Engine {
   }
 
   private exampleTime({ track, tier, pick: index }: { track: Track; tier: Tier; pick?: number }): ExampleTime | undefined {
-    const reached = this.dayContexts();
-    const pool = exampleTimes(track, tier).filter((e) => !e.context || reached.includes(e.context));
+    // After a mistake: an example of a time of day already explained here.
+    const known = this.askableContexts(track);
+    const reached = known.length ? known : this.dayContexts();
+    const all = exampleTimes(track, tier);
+    const pool = all.filter((e) => !e.context || reached.includes(e.context));
     const recent = this.progress.recent;
     const fresh = pool.filter((e) => !recent.includes(timeKey(e.time)));
-    // The given one unless it was just shown: a time never comes twice within a few tasks.
-    if (index !== undefined && pool[index] && fresh.includes(pool[index])) return pool[index];
+    // A given example is what the tier starts with: it comes even if its time was just shown.
+    if (index !== undefined && all[index]) return all[index];
     if (fresh.length) return pick(fresh, this.rng);
     // All of them were just shown (three times, four recent ones): the one shown longest ago.
     return [...pool].sort((a, b) => recent.lastIndexOf(timeKey(a.time)) - recent.lastIndexOf(timeKey(b.time)))[0];
@@ -725,6 +774,8 @@ export class Engine {
     const idx = p.reviewQueue.findIndex((r) => r.dueAt <= p.taskCounter && !p.recent.includes(timeKey(r)));
     if (idx < 0) return null;
     const item = p.reviewQueue[idx];
+    // A time of day not explained in its track yet (a review from before that rule): its example first.
+    if (item.context && !this.askableContexts(item.track).includes(item.context)) return this.contextExample(Engine.dayTrackOf(item.track));
     this.currentSource = item;
     const time = { hour: item.hour, minute: item.minute };
     const tier = TRACK_TIERS[item.track].includes(tierOf(item.minute)) ? tierOf(item.minute) : TRACK_TIERS[item.track][0];
@@ -735,7 +786,20 @@ export class Engine {
     const warmupTier = this.chooseWarmupTier();
     if (warmupTier) return this.makeTask('digital', warmupTier, 'practice', undefined, true);
     const track = this.chooseTrack();
-    return this.makeTask(track, this.chooseTier(track), 'practice');
+    return this.contextExample(track) ?? this.makeTask(track, this.chooseTier(track), 'practice');
+  }
+
+  /**
+   * A time of day reached but not yet explained in this time-of-day track:
+   * its example comes instead of the task, in the track's first tier.
+   */
+  private contextExample(track: Track): Task | null {
+    if (!DAY_TRACKS.includes(track)) return null;
+    const shown = this.progress.contextsShown[Engine.dayTrackOf(track)];
+    const missing = this.dayContexts().find((c) => !shown.includes(c));
+    const tier = this.unlockedTiers(track)[0];
+    const example = missing && tier ? exampleTimes(track, tier).find((e) => e.context === missing) : undefined;
+    return example ? this.makeTask(track, tier, 'example', example) : null;
   }
 
   /** During the warm-up: an earlier clock tier, the weaker ones more often. */
@@ -870,7 +934,7 @@ export class Engine {
       const s = this.tierState(track, tier);
       s.unlocked = true;
       unlocked.push({ track, tier });
-      for (let pick = 0; pick < EXAMPLES_PER_TIER; pick++) p.forced.push({ type: 'example', track, tier, pick });
+      for (const pick of introPicks(track, tier)) p.forced.push({ type: 'example', track, tier, pick });
     };
 
     for (const track of TRACKS) {

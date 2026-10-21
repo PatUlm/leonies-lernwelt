@@ -94,13 +94,42 @@ function forcedTask(v: unknown): ForcedTask | null {
 }
 
 /**
+ * Version 1 asked some things before their examples. Its learners see what
+ * those examples showed as explained – the afternoon in every time-of-day
+ * track begun, forenoon and evening where tier 3 began – and get the rest
+ * before the next task that needs it: the other times of day (Engine), the
+ * words "zwanzig vor" and "fünfundzwanzig vor" and typing a four-digit time
+ * (here).
+ */
+function catchUp(p: Progress): void {
+  for (const track of ['daytime', 'daySet', 'dayInput'] as const) {
+    const tiers = p.tracks[track];
+    p.contextsShown[track] = [
+      ...(tiers[0].unlocked ? ['afternoon' as const] : []),
+      ...(tiers[2].unlocked ? ['forenoon' as const, 'evening' as const] : []),
+    ];
+  }
+  const words = ([4, 5] as const).filter((tier) => p.tracks.text[tier - 1].unlocked);
+  p.forced.push(...words.map((tier): ForcedTask => ({ type: 'example', track: 'text', tier, pick: 2 })));
+  // Typing starts with a four-digit time now: instead of the second three-digit example, or once more.
+  p.forced = p.forced.map((f) => (f.type === 'example' && f.track === 'input' && f.pick === 1 ? { ...f, pick: 2 } : f));
+  if (p.tracks.input[0].unlocked && !p.forced.some((f) => f.type === 'example' && f.track === 'input' && f.pick === 2)) {
+    p.forced.push({ type: 'example', track: 'input', tier: 1, pick: 2 });
+  }
+}
+
+function contexts(v: unknown): DayContext[] {
+  return Array.isArray(v) ? CONTEXTS.filter((c) => v.includes(c)) : [];
+}
+
+/**
  * Progress can come from another device via the server, so every field is
  * checked: only known fields with valid values are taken over (no strings
  * where the UI expects numbers). Fields added later get their defaults.
  */
 export function sanitizeProgress(raw: unknown, now: number): Progress {
   const fresh = freshProgress(now);
-  if (!isRecord(raw) || raw.version !== 1) return fresh;
+  if (!isRecord(raw) || (raw.version !== 1 && raw.version !== 2)) return fresh;
   const tracks = Object.fromEntries(
     TRACKS.map((track) => {
       const stored = isRecord(raw.tracks) ? raw.tracks[track] : undefined;
@@ -111,6 +140,7 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     }),
   ) as Progress['tracks'];
   const round = isRecord(raw.round) ? raw.round : {};
+  const shown = isRecord(raw.contextsShown) ? raw.contextsShown : {};
   const taskCounter = num(raw.taskCounter, 0);
   const lastActive = num(raw.lastActive, now);
   const lastAnswered =
@@ -119,8 +149,8 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
       : raw.lastAnswered === undefined && taskCounter > 0
         ? lastActive
         : null;
-  return {
-    version: 1,
+  const p: Progress = {
+    version: 2,
     session: num(raw.session, 1, 1),
     lastActive,
     lastAnswered,
@@ -143,7 +173,14 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     },
     trophies: num(raw.trophies, 0),
     dayMix: dayMix(raw.dayMix, fresh.dayMix),
+    contextsShown: {
+      daytime: contexts(shown.daytime),
+      daySet: contexts(shown.daySet),
+      dayInput: contexts(shown.dayInput),
+    },
   };
+  if (raw.version === 1) catchUp(p);
+  return p;
 }
 
 export function loadProgress(now: number): Progress {

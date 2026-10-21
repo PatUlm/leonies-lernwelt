@@ -53,7 +53,7 @@ describe('hints for 24-hour times', () => {
 
   it('setting: converts back, minutes first', () => {
     expect(daySetHint({ hour: 9, minute: 30 }, 'evening', { hour: 1, minute: 30 }).text).toBe(
-      '21 Uhr ist 9 Uhr am Abend. Rechne zwölf weniger: 21 − 12 = 9. Stelle den kurzen Zeiger zwischen die 9 und die 10.',
+      '21 Uhr am Abend ist 9 Uhr: 21 − 12 = 9. Stelle den kurzen Zeiger zwischen die 9 und die 10.',
     );
     expect(daySetHint({ hour: 12, minute: 0 }, 'night', { hour: 6, minute: 0 }).text).toContain('0 Uhr ist Mitternacht');
     expect(daySetHint({ hour: 9, minute: 30 }, 'evening', { hour: 9, minute: 0 }).focus).toBe('minute');
@@ -68,10 +68,10 @@ describe('hints for 24-hour times', () => {
 
   it('names only the hour hand when the minute hand stays on the 12', () => {
     expect(explainExample({ track: 'set', time: { hour: 2, minute: 0 }, hourOnly: true })).toBe(
-      'Der lange Zeiger steht schon auf der 12. Zieh den kurzen Zeiger genau auf die 2. Dann tippe auf „Fertig“.',
+      'Der lange Zeiger bleibt auf der 12, zieh den kurzen Zeiger genau auf die 2. Dann tippe auf „Fertig“.',
     );
     expect(explainExample({ track: 'daySet', time: { hour: 3, minute: 0 }, context: 'afternoon', hourOnly: true })).toContain(
-      'Der lange Zeiger steht schon auf der 12. Zieh den kurzen Zeiger genau auf die 3.',
+      'Der lange Zeiger bleibt auf der 12, zieh den kurzen Zeiger genau auf die 3.',
     );
     expect(explainExample({ track: 'set', time: { hour: 2, minute: 0 } })).toContain('Zieh den langen Zeiger auf die 12');
   });

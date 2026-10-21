@@ -16,6 +16,8 @@ async function startMixed(page: Page): Promise<void> {
       for (const tier of [1, 2, 3]) Object.assign(p.tracks[track][tier - 1], { unlocked: true, ready: true, mastery: 60 });
     }
     p.dayMix = { phase: 'transfer', since: 1, recent: [] };
+    // Every time of day reached was explained in its example.
+    p.contextsShown.daytime = ['afternoon', 'forenoon', 'evening', 'noon', 'night'];
     p.reviewQueue = [{ track: 'digital', hour: 3, minute: 45, context: 'afternoon', dueAt: 0 }];
     saveProgress(p);
     sync.playLocally();
@@ -69,7 +71,7 @@ test('the time of day stands right above the answers, through the feedback, and 
   await expect.poll(spoken).toHaveLength(1);
   const [first] = await spoken();
   expect(first.match(/Es ist Nachmittag\./g)).toHaveLength(1);
-  expect(first).toMatch(/^Es ist Nachmittag\. Das Bild zeigt die Tageszeit\..* Die richtige Antwort ist …$/);
+  expect(first).toMatch(/^Es ist Nachmittag\. Nach zwölf Uhr mittags zählen wir weiter: .* Die richtige Antwort ist …$/);
 
   // Stays during the feedback ...
   await page.locator('.answer.suggested').click();
