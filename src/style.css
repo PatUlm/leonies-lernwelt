@@ -1630,6 +1630,12 @@ a.area-card:active {
   grid-template-columns: repeat(2, 1fr);
 }
 
+/* The very first example of a module: one answer, nothing explained to compare with yet. */
+.answers.options-1 {
+  grid-template-columns: minmax(0, 260px);
+  justify-content: center;
+}
+
 .word-answers .answer {
   font-size: clamp(24px, 4vw, 34px);
 }

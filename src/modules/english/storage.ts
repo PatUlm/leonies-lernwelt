@@ -98,6 +98,8 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     reviewQueue: list(raw.reviewQueue, 12).map(reviewItem).filter((r): r is ReviewItem => r !== null),
     forced: list(raw.forced, 16).map(forcedTask).filter((f): f is ForcedTask => f !== null),
     recent: list(raw.recent, 8).filter((r): r is string => str(r)),
+    variantsShown: (['listen', 'read', 'word'] as const).filter((v) => Array.isArray(raw.variantsShown) && raw.variantsShown.includes(v)),
+    shapeShown: bool(raw.shapeShown),
     wrongStreak: num(raw.wrongStreak, 0),
     correctStreak: num(raw.correctStreak, 0),
     round: { tasks: num(round.tasks, 0), points: num(round.points, 0), correct: num(round.correct, 0) },

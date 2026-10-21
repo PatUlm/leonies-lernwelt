@@ -16,13 +16,14 @@ const WHAT: Record<Category, string> = {
   animal: 'Welches Tier ist das?',
 };
 
-export function question(task: Task): Text {
+/** `shapeNote`: a colour on another shape for the first time. */
+export function question(task: Task, shapeNote = false): Text {
   const q = {
     listen: `Hör gut zu: ${WHAT[task.word.category]}`,
     read: `Lies das Wort: ${WHAT[task.word.category]}`,
     word: 'Wie heißt das auf Englisch?',
   }[task.variant];
-  return [task.familiar ? `Das kannst du schon! ${q}` : q];
+  return [...(shapeNote ? [`${SHAPE_NOTE} `] : []), task.familiar ? `Das kannst du schon! ${q}` : q];
 }
 
 /** "red heißt rot." */
@@ -30,9 +31,19 @@ export function meaning(word: Word): Text {
   return [{ en: word.en }, ` heißt ${word.de}.`];
 }
 
+/** The first example of reading the word or picking it: what is new about the task. */
+export const VARIANT_INTROS: Record<'read' | 'word', string> = {
+  read: 'Jetzt liest du das Wort selbst. ',
+  word: 'Jetzt suchst du das englische Wort zum Bild. ',
+};
+
+/** Said once, before a colour first stands on another shape than the circle. */
+export const SHAPE_NOTE = 'Die Farbe zählt, nicht die Form.';
+
 /** Guided example: the word with its meaning; the answer lighting up completes it. */
 export function example(task: Task): Text {
-  return [...(task.isNew ? ['Neues Wort: '] : []), ...meaning(task.word), ` ${ANSWER_FOLLOWS}`];
+  const lead = task.isNew ? ['Neues Wort: '] : task.variantIntro && task.variant !== 'listen' ? [VARIANT_INTROS[task.variant]] : [];
+  return [...lead, ...meaning(task.word), ` ${ANSWER_FOLLOWS}`];
 }
 
 /**

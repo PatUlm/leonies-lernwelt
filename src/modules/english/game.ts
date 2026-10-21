@@ -12,7 +12,7 @@ import {
 import { SHAPES, picture, type Shape } from './pictures';
 import { BADGE_NAMES, STAGE_NAMES, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
-import { example, help, meaning, mistake, question, withoutEnglish, type Text } from './texts';
+import { SHAPE_NOTE, example, help, meaning, mistake, question, withoutEnglish, type Text } from './texts';
 
 const CORRECT_DELAY_MS = 1500;
 const STAR_DELAY_MS = 900;
@@ -104,6 +104,12 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
     shell.setHelpEnabled(task.kind !== 'example');
     // A familiar colour now and then on another shape, so she knows the colour, not one card.
     shape = task.kind !== 'example' && engine.familiar(task.word) ? SHAPES[Math.floor(Math.random() * SHAPES.length)] : 'circle';
+    // The first colour on another shape says why once.
+    const shapeNote = shape !== 'circle' && task.word.category === 'colour' && !engine.progress.shapeShown;
+    if (shapeNote) {
+      engine.progress.shapeShown = true;
+      saveProgress(engine.progress);
+    }
 
     buttons = task.options.map((option, i) => {
       const b = document.createElement('button');
@@ -135,8 +141,10 @@ export function mountEnglishGame(root: HTMLElement, ctx: ModuleContext): () => v
       });
     } else {
       locked = false;
-      setMessage(question(task), 'question');
-      if (task.variant === 'listen') sayWord();
+      setMessage(question(task, shapeNote), 'question');
+      // The note first, then the word to hear: one speech, so neither cuts the other off.
+      if (shapeNote) shell.speak([SHAPE_NOTE, ...(task.variant === 'listen' && engine.listen ? [{ en: task.word.en }] : [])]);
+      else if (task.variant === 'listen') sayWord();
     }
 
     if (pendingToast) {

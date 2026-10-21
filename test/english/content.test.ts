@@ -27,21 +27,37 @@ describe('word lists', () => {
     );
   });
 
-  it('always has another picture of the same kind to compare, through all stages', () => {
+  it('always has another picture of the same kind to compare, through all stages, but only one already explained', () => {
     const engine = new Engine(freshProgress(T0), seeded(2));
+    const explained = new Set<string>();
+    const variants = new Set<string>();
     for (let i = 0; i < 1000 && !engine.stageState(7).ready; i++) {
       engine.touch(T0);
       const t = engine.nextTask();
-      expect(t.options.length, t.key).toBeGreaterThanOrEqual(2);
+      // Only an example may stand alone: the words of its stage are still to be explained.
+      if (t.kind !== 'example') expect(t.options.length, t.key).toBeGreaterThanOrEqual(2);
+      for (const o of t.options) if (o !== t.word) expect(explained.has(o.en), `${o.en} in ${t.key}`).toBe(true);
+      // Reading and picking the word come after an example of their own.
+      if (t.kind === 'example') variants.add(t.variant);
+      else expect(variants.has(t.variant), t.key).toBe(true);
+      if (t.kind === 'example') explained.add(t.word.en);
       engine.answer(t, t.correctIndex, false);
     }
     expect(engine.stageState(7).ready).toBe(true);
+    expect([...variants].sort()).toEqual(['listen', 'read', 'word']);
   });
 });
 
 describe('texts', () => {
   const engine = new Engine(freshProgress(T0), seeded(1));
   const task = (key: string) => engine.makeTask(1, 'practice', key)!;
+
+  it('says what is new the first time a word is read or picked, and why the shape changes', () => {
+    const fresh = new Engine(freshProgress(T0), seeded(1));
+    expect(plain(example(fresh.makeTask(1, 'example', 'w:red')!))).toBe('Jetzt suchst du das englische Wort zum Bild. red heißt rot. Die richtige Antwort ist …');
+    expect(plain(example(fresh.makeTask(1, 'example', 'r:red')!))).toBe('Jetzt liest du das Wort selbst. red heißt rot. Die richtige Antwort ist …');
+    expect(plain(question(task('l:red'), true))).toBe('Die Farbe zählt, nicht die Form. Hör gut zu: Welche Farbe ist das?');
+  });
 
   it('keeps English words apart from the German text', () => {
     expect(meaning(wordByEn('red')!)).toEqual([{ en: 'red' }, ' heißt rot.']);

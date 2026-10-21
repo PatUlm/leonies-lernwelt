@@ -11,7 +11,7 @@ import type { DayContext } from '../src/modules/clock/daytime';
 import { DAY_TRACKS, MIXED_TRACKS, TRACKS, TRACK_TIERS, exampleTimes, modeOf, setStep } from '../src/modules/clock/engine';
 import { exampleMessage, explainExample, helpText, withContext } from '../src/modules/clock/hints';
 import type { Task as EnglishTask } from '../src/modules/english/engine';
-import { example, help as englishHelp } from '../src/modules/english/texts';
+import { SHAPE_NOTE, VARIANT_INTROS, example, help as englishHelp } from '../src/modules/english/texts';
 import { WORDS } from '../src/modules/english/words';
 import { STAGES as HOWMANY_STAGES, exampleKeys as howManyExampleKeys, parseKey as parseHowMany } from '../src/modules/howmany/engine';
 import {
@@ -124,6 +124,8 @@ export function germanTexts(): GermanText[] {
       for (const dropped of [false, true]) add('Englisch: Hilfe', ...german(englishHelp({ word, variant } as EnglishTask, true, dropped)));
     }
   }
+  add('Englisch: Beispiel', ...Object.values(VARIANT_INTROS));
+  add('Englisch: Frage', SHAPE_NOTE);
 
   // How many?: the German parts around the English words and sentences
   for (const stage of HOWMANY_STAGES) {

@@ -341,7 +341,10 @@ englische Wort wählen. Anweisungen und Erklärungen bleiben deutsch („red hei
 | 6 | orange, purple, pink, brown, grey, eleven, twelve |
 | 7 | thirteen bis twenty |
 
-Neue Wörter kommen zu zweit oder dritt, jedes zuerst als erklärtes Beispiel. Zur Auswahl
+Neue Wörter kommen zu zweit oder dritt, jedes zuerst als erklärtes Beispiel; ein Beispiel zeigt
+nur Bilder, die schon erklärt sind. Wort lesen und englisches Wort wählen kommen erst nach je
+einem eigenen Beispiel, und bevor eine Farbe zum ersten Mal auf einer anderen Form steht, sagt
+die App: „Die Farbe zählt, nicht die Form.“ Zur Auswahl
 stehen anfangs zwei, später drei Bilder derselben Art; ähnlich klingende Zahlen (six und
 sixteen) erst, wenn beide sitzen. Hilfe nimmt bei drei Bildern eine falsche Antwort weg;
 beim Hören und Lesen spielt sie das Wort langsam vor, beim Wort-Wählen verrät sie den ersten

@@ -112,6 +112,10 @@ export interface Progress {
   forced: ForcedTask[];
   /** Words of the last tasks, so none comes straight back. */
   recent: string[];
+  /** Ways of asking whose example was shown: reading the word and picking the word come after one each. */
+  variantsShown: Variant[];
+  /** "Die Farbe zählt, nicht die Form." was said once, before a colour first came on another shape. */
+  shapeShown: boolean;
   wrongStreak: number;
   correctStreak: number;
   round: RoundState;
@@ -130,6 +134,8 @@ export interface Task {
   word: Word;
   /** For an example: the word is introduced just now. */
   isNew: boolean;
+  /** For an example: the first of its way of asking (reading or picking the word). */
+  variantIntro: boolean;
   options: Word[];
   correctIndex: number;
   /** A stage she already masters ("Das kannst du schon!"). */
@@ -184,6 +190,8 @@ export function freshProgress(now: number): Progress {
     reviewQueue: [],
     forced: newWordExamples(1, 0, introCount(1)),
     recent: [],
+    variantsShown: [],
+    shapeShown: false,
     wrongStreak: 0,
     correctStreak: 0,
     round: { tasks: 0, points: 0, correct: 0 },
@@ -290,7 +298,10 @@ export class Engine {
     const result: AnswerResult = {
       ok, points: 0, starEarned: false, unlocked: [], secured: [], offerPause: false, streak: null, roundComplete: null,
     };
-    if (task.kind === 'example') return result;
+    if (task.kind === 'example') {
+      if (!p.variantsShown.includes(task.variant)) p.variantsShown.push(task.variant);
+      return result;
+    }
     if (!ok) this.scheduleReview(task);
 
     if (helped) {
@@ -421,6 +432,9 @@ export class Engine {
     for (const item of p.reviewQueue) {
       if (item.dueAt > p.taskCounter || !this.stageState(item.stage).unlocked) continue;
       if (p.recent.includes(parseKey(item.key)!.word.en)) continue;
+      // Asked in a way not explained yet (a review from before that rule): its example first.
+      const intro = this.variantExample(item.stage, item.key);
+      if (intro) return intro;
       this.currentSource = item;
       return this.makeTask(item.stage, 'review', item.key)!;
     }
@@ -429,7 +443,20 @@ export class Engine {
 
   private pickPractice(): Task {
     const stage = this.chooseStage();
-    return this.makeTask(stage, 'practice', this.chooseKey(stage))!;
+    const key = this.chooseKey(stage);
+    return this.variantExample(stage, key) ?? this.makeTask(stage, 'practice', key)!;
+  }
+
+  /** The first time a word is to be read or picked: an example of that way of asking instead. */
+  private variantExample(stage: Stage, key: string): Task | null {
+    const variant = this.askedVariant(parseKey(key)!.variant);
+    if (variant === 'listen' || this.progress.variantsShown.includes(variant)) return null;
+    return this.makeTask(stage, 'example', key, false);
+  }
+
+  /** Without an English voice nothing can be heard: the word is read instead. */
+  private askedVariant(variant: Variant): Variant {
+    return variant === 'listen' && !this.listen ? 'read' : variant;
   }
 
   /** The newest stage first, the one before as practice, older ones now and then. */
@@ -488,11 +515,13 @@ export class Engine {
     if (!this.validKey(stage, key)) return null;
     const parsed = parseKey(key)!;
     const { word } = parsed;
-    // Without an English voice nothing can be heard: the word is read instead.
-    const variant = parsed.variant === 'listen' && !this.listen ? 'read' : parsed.variant;
+    const variant = this.askedVariant(parsed.variant);
     const state = this.stageState(stage);
     const count = !state.ready && state.mastery < TWO_OPTIONS_MASTERY ? 2 : 3;
-    const others = shuffled(this.distractors(word), this.rng).slice(0, count - 1);
+    // An example offers no word whose own example is still to come.
+    const waiting = kind === 'example' ? this.progress.forced.filter((f) => f.word !== word.en).map((f) => f.word) : [];
+    const known = this.distractors(word).filter((w) => !waiting.includes(w.en));
+    const others = shuffled(known, this.rng).slice(0, count - 1);
     const options = shuffled([word, ...others], this.rng);
     return {
       id: this.progress.taskCounter,
@@ -502,6 +531,8 @@ export class Engine {
       key: `${variant[0]}:${word.en}`,
       word,
       isNew: kind === 'example' && isNew,
+      // Hearing is how every word is introduced; reading and picking the word get an example of their own.
+      variantIntro: kind === 'example' && !isNew && variant !== 'listen' && !this.progress.variantsShown.includes(variant),
       options,
       correctIndex: options.indexOf(word),
       familiar: kind !== 'example' && state.secure,

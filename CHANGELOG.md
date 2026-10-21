@@ -5,6 +5,17 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.19 – 2026-10-21
+
+### Geändert
+
+- **Farben, Zahlen, Tiere: nur abfragen, was erklärt wurde:** Die Wörter wurden immer erst
+  nach ihrem Beispiel gefragt, aber „Lies das Wort“ und „Wie heißt das auf Englisch?“ kamen ohne
+  eigenes Beispiel, und ein Beispiel konnte ein Bild zeigen, dessen Wort erst danach erklärt
+  wurde. Jetzt beginnen beide Aufgabenformen mit einem Beispiel („Jetzt liest du das Wort
+  selbst.“), Beispiele zeigen nur schon erklärte Bilder, und vor der ersten Farbe auf einer
+  anderen Form heißt es einmal: „Die Farbe zählt, nicht die Form.“
+
 ## 2026.10.18 – 2026-10-21
 
 ### Geändert

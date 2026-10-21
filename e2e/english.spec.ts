@@ -76,7 +76,8 @@ async function startEnglish(page: Page, skipExamples = false): Promise<void> {
     const { saveProgress } = await load('/src/modules/english/storage.ts');
     const { sync } = await load('/src/shared/sync.ts');
     const p = freshProgress(Date.now());
-    if (skipExamples) p.forced = [];
+    // Without the examples: their words and ways of asking count as explained.
+    if (skipExamples) Object.assign(p, { forced: [], variantsShown: ['listen', 'read', 'word'] });
     saveProgress(p);
     sync.playLocally();
   }, skipExamples);
@@ -98,7 +99,8 @@ test('a new word is shown, spoken in English and tapped with help of the glowing
   await startEnglish(page);
   await expect(page.locator('.message')).toHaveText('Neues Wort: red heißt rot. Die richtige Antwort ist …');
   await expect(page.locator('.word-card .en-word')).toHaveText('red');
-  await expect(page.locator('.answer')).toHaveCount(2);
+  // The very first word has nothing explained to compare with yet.
+  await expect(page.locator('.answer')).toHaveCount(1);
   expect(await spoken(page)).toContainEqual({ text: 'red', lang: 'en-GB' });
   await page.locator('.answer.suggested').click();
   await expect(page.locator('.message')).toContainText('Genau! red heißt rot.');
