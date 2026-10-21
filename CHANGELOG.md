@@ -5,6 +5,18 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.10.18 – 2026-10-21
+
+### Geändert
+
+- **How many?: nur abfragen, was erklärt wurde:** Stufe 1 erklärte nur „ghost“, fragte aber
+  auch „cat“ und „dog“; Stufe 3 erklärte „one“ und „three“, fragte aber bis „five“. Jetzt kommen
+  Katze und Hund in Stufe 1 und die Zahlwörter „two“, „four“ und „five“ in Stufe 3 nach den
+  ersten richtigen Antworten mit eigenem Beispiel dazu; die falsche Zahl unter den Kärtchen ist
+  immer schon erklärt. „How many“ wird übersetzt („fragt: Wie viele?“), Beispiele und der Tipp
+  zur Reihenfolge sind kürzer. Wer schon weiter ist, sieht die neuen Beispiele einmal; der
+  Fortschritt bleibt.
+
 ## 2026.10.17 – 2026-10-21
 
 ### Geändert

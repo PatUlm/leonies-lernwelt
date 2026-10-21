@@ -49,15 +49,19 @@ export const NEWS = 'Neue Übungen! Sterne und Pokale bleiben.';
 export function explanation(stage: Stage, p: Problem): Text {
   const one = p.count === 1;
   const here = `${one ? 'Hier ist nur' : 'Hier sind'} ${germanCount(p)}.`;
+  const counted = germanCount(p);
   switch (stage) {
     case 1:
-      return [`${here} Auf Englisch heißt das:`, ...answer(1, p), one ? 'Bei einem bleibt das s weg.' : 'Bei mehreren kommt ein s dazu.', TAP_MARKED_ONE];
+      return [
+        `${counted.charAt(0).toUpperCase()}${counted.slice(1)} ${one ? 'heißt' : 'heißen'} auf Englisch:`, ...answer(1, p),
+        one ? 'Bei einem bleibt das s weg.' : 'Bei mehreren kommt ein s dazu.', TAP_MARKED_ONE,
+      ];
     case 2:
       return [`${here} ${one ? 'Bei einem heißt es „is“:' : 'Bei mehreren heißt es „are“:'}`, ...answer(2, p), TAP_MARKED_ONE];
     case 3:
       return one
-        ? [`Im ganzen Satz sagen wir auch, wie viele es sind. Hier ist genau ${germanCount(p)}:`, ...answer(3, p), 'Mit „one“ sagen wir: genau eins.', TAP_MARKED]
-        : [`${here} Zähle genau, eine Zahl passt nicht:`, ...answer(3, p), TAP_MARKED];
+        ? [`„How many“ fragt: Wie viele? Hier ist genau ${counted}:`, ...answer(3, p), TAP_MARKED]
+        : [`Hier sind ${counted}. Zähle genau, eine Zahl passt nicht:`, ...answer(3, p), TAP_MARKED];
   }
 }
 
@@ -66,7 +70,7 @@ export const HINTS: Record<Diagnosis, string> = {
   plural: 'Eins oder mehrere? Bei einem bleibt das s weg, bei mehreren kommt ein s dazu.',
   verb: 'Eins oder mehrere? Bei einem heißt es „is“, bei mehreren „are“.',
   count: 'Zähle noch einmal genau.',
-  order: 'Achte auf die Reihenfolge: zuerst „There“, dann „is“ oder „are“, dann die Zahl und zum Schluss das Wort zum Bild.',
+  order: 'Achte auf die Reihenfolge: „There“, „is“ oder „are“, die Zahl, dann das Wort zum Bild.',
 };
 
 /** Help for the first place still open; the right card lights up with it. */

@@ -1,7 +1,7 @@
 import { readJson, remove, writeJson } from '../../shared/storage';
 import { nounOf } from './content';
 import {
-  MAX_MASTERY, RECENT_SPAN, STAGES, WINDOW, freshProgress, parseKey,
+  EXAMPLES, MAX_MASTERY, RECENT_SPAN, STAGES, WINDOW, freshProgress, parseKey,
   type Attempt, type ForcedTask, type Progress, type ReviewItem, type Stage, type StageState,
 } from './engine';
 
@@ -35,10 +35,13 @@ function attempt(v: unknown): Attempt | null {
   return { ok: bool(v.ok), count: v.count, noun: v.noun };
 }
 
-function stageState(v: unknown, fresh: StageState): StageState {
+/** Progress from before the steps of examples starts at the first: the later ones follow as its learning points allow. */
+function stageState(v: unknown, fresh: StageState, stage: Stage): StageState {
   if (!isRecord(v)) return fresh;
+  const unlocked = bool(v.unlocked, fresh.unlocked);
   return {
-    unlocked: bool(v.unlocked, fresh.unlocked),
+    unlocked,
+    steps: unlocked ? num(v.steps, 1, 1, EXAMPLES[stage].length) : 0,
     attempts: num(v.attempts, 0),
     window: list(v.window, WINDOW).map(attempt).filter((a): a is Attempt => a !== null),
     mastery: num(v.mastery, 0, 0, MAX_MASTERY),
@@ -83,7 +86,7 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
   return {
     ...kept,
     version: 2,
-    stages: STAGES.map((s) => stageState(stored[s - 1], fresh.stages[s - 1])),
+    stages: STAGES.map((s) => stageState(stored[s - 1], fresh.stages[s - 1], s)),
     reviewQueue: list(raw.reviewQueue, 12).map(reviewItem).filter((r): r is ReviewItem => r !== null),
     forced: list(raw.forced, 12).map(forcedTask).filter((f): f is ForcedTask => f !== null),
     recent: list(raw.recent, RECENT_SPAN).filter((r): r is string => typeof r === 'string' && parseKey(r) !== null),

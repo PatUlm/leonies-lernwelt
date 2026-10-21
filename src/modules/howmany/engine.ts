@@ -71,12 +71,21 @@ export const PROBLEMS: readonly Problem[] = NOUNS.flatMap((noun) => NUMBER_WORDS
 /**
  * Guided examples come from fixed lists, so their explanations can be
  * recorded beforehand: each stage shows one thing and several of the same.
+ * Only what an example showed is asked, so they come in steps: stage 1 brings
+ * the cat and the dog one after the other, stage 3 the number words "two",
+ * then "four" and "five". A step comes after STEP_MASTERY learning points each.
  */
-export const EXAMPLES: Record<Stage, readonly string[]> = {
-  1: ['ghost:1', 'ghost:3'],
-  2: ['dog:1', 'dog:3'],
-  3: ['ghost:1', 'ghost:3'],
+export const EXAMPLES: Record<Stage, readonly (readonly string[])[]> = {
+  1: [['ghost:1', 'ghost:3'], ['cat:2'], ['dog:1']],
+  2: [['dog:1', 'dog:3']],
+  3: [['ghost:1', 'ghost:3'], ['dog:2'], ['cat:4', 'ghost:5']],
 };
+export const STEP_MASTERY = 30;
+
+/** The examples of a stage, all steps in a row: what ForcedTask.pick indexes. */
+export function exampleKeys(stage: Stage): string[] {
+  return EXAMPLES[stage].flat();
+}
 
 /** The sentence of a task, lower case: one word in stage 1, without a number in stage 2. */
 export function sentenceOf(stage: Stage, p: Problem): string[] {
@@ -105,12 +114,15 @@ export function roleOf(stage: Stage, place: number): Role {
  * stage 3 the answer with the other noun form, the other verb and a number
  * next to the right one.
  */
-export function cardsFor(stage: Stage, p: Problem, rng: Rng): string[] {
+export function cardsFor(stage: Stage, p: Problem, rng: Rng, counts: readonly number[] = NUMBER_WORDS.map((_, i) => i + 1)): string[] {
   const one = p.count === 1;
   if (stage === 1) return shuffled([p.noun.one, p.noun.many], rng);
   if (stage === 2) return shuffled(['is', 'are'], rng);
-  const near = one ? 2 : p.count === MAX_COUNT ? MAX_COUNT - 1 : p.count + (rng() < 0.5 ? -1 : 1);
-  const cards = [...answerWords(p.count, p.noun), one ? p.noun.many : p.noun.one, one ? 'are' : 'is', NUMBER_WORDS[near - 1]];
+  // The wrong number is one already explained (`counts`), next to the right one if possible.
+  const others = counts.filter((c) => c !== p.count);
+  const distance = Math.min(...others.map((c) => Math.abs(c - p.count)));
+  const near = others.length ? [pick(others.filter((c) => Math.abs(c - p.count) === distance), rng)] : [];
+  const cards = [...answerWords(p.count, p.noun), one ? p.noun.many : p.noun.one, one ? 'are' : 'is', ...near.map((c) => NUMBER_WORDS[c - 1])];
   return shuffled(cards, rng);
 }
 
@@ -133,6 +145,8 @@ export interface Attempt {
 
 export interface StageState {
   unlocked: boolean;
+  /** Steps of EXAMPLES shown so far: their nouns and numbers may be asked. */
+  steps: number;
   /** Independent tasks (no help before the first mistake). */
   attempts: number;
   window: Attempt[];
@@ -152,7 +166,7 @@ export interface ReviewItem {
   dueAt: number;
 }
 
-/** A guided example; `pick` indexes EXAMPLES of the stage. */
+/** A guided example; `pick` indexes exampleKeys() of the stage. */
 export interface ForcedTask {
   type: 'example';
   stage: Stage;
@@ -236,12 +250,18 @@ export interface AnswerResult {
 
 export type Rng = () => number;
 
+/** Forced examples of one step. */
+function stepExamples(stage: Stage, step: number): ForcedTask[] {
+  const before = EXAMPLES[stage].slice(0, step).flat().length;
+  return EXAMPLES[stage][step].map((_, i) => ({ type: 'example', stage, pick: before + i }));
+}
+
 function introExamples(stage: Stage): ForcedTask[] {
-  return EXAMPLES[stage].map((_, pick) => ({ type: 'example', stage, pick }));
+  return stepExamples(stage, 0);
 }
 
 function freshStage(unlocked: boolean): StageState {
-  return { unlocked, attempts: 0, window: [], mastery: 0, ready: false, readySession: null, secure: false };
+  return { unlocked, steps: unlocked ? 1 : 0, attempts: 0, window: [], mastery: 0, ready: false, readySession: null, secure: false };
 }
 
 export function freshProgress(now: number): Progress {
@@ -323,7 +343,7 @@ export class Engine {
     const p = this.progress;
     p.taskCounter += 1;
     this.currentSource = null;
-    const task = this.pickForced() ?? this.pickReview() ?? this.pickPractice();
+    const task = this.pickForced() ?? this.pickStep() ?? this.pickReview() ?? this.pickPractice();
     p.recent = [...p.recent, task.key].slice(-RECENT_SPAN);
     this.current = task;
     return task;
@@ -345,8 +365,8 @@ export class Engine {
     if (task.kind === 'example') return result;
     if (outcome.mistake) this.scheduleReview(task);
     if (outcome.shown && !p.forced.some((f) => f.stage === task.stage)) {
-      // Shown after two wrong checks: the example of the stage again, for one thing or several.
-      const examples = EXAMPLES[task.stage];
+      // Shown after two wrong checks: an example of the stage again, for one thing or several.
+      const examples = this.shownExamples(task.stage);
       const fitting = examples.findIndex((key) => (parseKey(key)!.count === 1) === (task.problem.count === 1));
       p.forced.push({ type: 'example', stage: task.stage, pick: Math.max(0, fitting) });
     }
@@ -419,6 +439,7 @@ export class Engine {
         const next = (stage + 1) as Stage;
         if (stage < STAGES.length && !this.stageState(next).unlocked) {
           this.stageState(next).unlocked = true;
+          this.stageState(next).steps = 1;
           unlocked.push(next);
           p.forced.push(...introExamples(next));
         }
@@ -444,11 +465,43 @@ export class Engine {
   private pickForced(): Task | null {
     const p = this.progress;
     // Examples removed in an update are dropped.
-    while (p.forced[0] && !EXAMPLES[p.forced[0].stage][p.forced[0].pick]) p.forced.shift();
+    while (p.forced[0] && !exampleKeys(p.forced[0].stage)[p.forced[0].pick]) p.forced.shift();
     const forced = p.forced[0];
     if (!forced) return null;
     this.currentSource = 'forced';
-    return this.makeTask(forced.stage, 'example', EXAMPLES[forced.stage][forced.pick])!;
+    return this.makeTask(forced.stage, 'example', exampleKeys(forced.stage)[forced.pick])!;
+  }
+
+  /** The examples of a stage's next step, once it has the learning points for it (also for progress from before the steps). */
+  private pickStep(): Task | null {
+    for (const stage of this.unlockedStages()) {
+      const s = this.stageState(stage);
+      if (s.steps >= EXAMPLES[stage].length || s.mastery < STEP_MASTERY * s.steps) continue;
+      this.progress.forced.push(...stepExamples(stage, s.steps));
+      s.steps += 1;
+      return this.pickForced();
+    }
+    return null;
+  }
+
+  /** The examples of a stage shown so far. */
+  private shownExamples(stage: Stage): string[] {
+    return EXAMPLES[stage].slice(0, Math.max(1, this.stageState(stage).steps)).flat();
+  }
+
+  /** Nouns shown in an example of any stage, and the numbers shown in a whole sentence: only these are asked. */
+  private known(): { nouns: Set<string>; counts: number[] } {
+    const shown = this.unlockedStages().flatMap((stage) => this.shownExamples(stage).map((key) => [stage, parseKey(key)!] as const));
+    return {
+      nouns: new Set(shown.map(([, p]) => p.noun.one)),
+      counts: [...new Set(shown.filter(([stage]) => stage === 3).map(([, p]) => p.count))],
+    };
+  }
+
+  /** A picture whose noun (and in the whole sentence, whose number) was explained. */
+  private askable(stage: Stage, p: Problem): boolean {
+    const { nouns, counts } = this.known();
+    return nouns.has(p.noun.one) && (stage !== 3 || counts.includes(p.count));
   }
 
   private pickReview(): Task | null {
@@ -457,6 +510,7 @@ export class Engine {
     p.reviewQueue = p.reviewQueue.filter((r) => parseKey(r.key) !== null);
     for (const item of p.reviewQueue) {
       if (item.dueAt > p.taskCounter || !this.stageState(item.stage).unlocked || p.recent.includes(item.key)) continue;
+      if (!this.askable(item.stage, parseKey(item.key)!)) continue;
       this.currentSource = item;
       return this.makeTask(item.stage, 'review', item.key)!;
     }
@@ -487,9 +541,22 @@ export class Engine {
    */
   private freshProblem(stage: Stage): Problem {
     const one = this.rng() < ONE_SHARE[stage];
-    const fresh = PROBLEMS.filter((p) => !this.progress.recent.includes(problemKey(p)));
+    const askable = PROBLEMS.filter((p) => this.askable(stage, p));
+    const fresh = askable.filter((p) => !this.progress.recent.includes(problemKey(p)));
     const fitting = fresh.filter((p) => (p.count === 1) === one);
-    return pick(fitting.length ? fitting : fresh, this.rng);
+    return pick(fitting.length ? fitting : fresh.length ? fresh : askable, this.rng);
+  }
+
+  /**
+   * Numbers a wrong card may show: those explained; in an example only those
+   * of the examples up to this one, so the first shows no wrong number.
+   */
+  private cardCounts(stage: Stage, kind: TaskKind, key: string): number[] {
+    if (stage !== 3) return [];
+    const keys = exampleKeys(3);
+    const at = keys.indexOf(key);
+    if (kind === 'example' && at >= 0) return keys.slice(0, at + 1).map((k) => parseKey(k)!.count);
+    return this.known().counts;
   }
 
   /** Builds the task for a key; null if the key does not exist (any more). */
@@ -507,7 +574,7 @@ export class Engine {
       words,
       gaps,
       answer: gaps.map((i) => words[i]),
-      cards: cardsFor(stage, problem, this.rng),
+      cards: cardsFor(stage, problem, this.rng, this.cardCounts(stage, kind, key)),
     };
   }
 }

@@ -13,7 +13,7 @@ import { exampleMessage, explainExample, helpText, withContext } from '../src/mo
 import type { Task as EnglishTask } from '../src/modules/english/engine';
 import { example, help as englishHelp } from '../src/modules/english/texts';
 import { WORDS } from '../src/modules/english/words';
-import { EXAMPLES as HOWMANY_EXAMPLES, STAGES as HOWMANY_STAGES, parseKey as parseHowMany } from '../src/modules/howmany/engine';
+import { STAGES as HOWMANY_STAGES, exampleKeys as howManyExampleKeys, parseKey as parseHowMany } from '../src/modules/howmany/engine';
 import {
   BUILD_PROMPT, CHOOSE_PROMPT, COMPLETE_HELP, HINTS as HOWMANY_HINTS, MARKED_CARD, explanation as howManyExample, help as howManyHelp,
   mistake as howManyMistake, reveal as howManyReveal,
@@ -127,7 +127,7 @@ export function germanTexts(): GermanText[] {
 
   // How many?: the German parts around the English words and sentences
   for (const stage of HOWMANY_STAGES) {
-    for (const key of HOWMANY_EXAMPLES[stage]) add(`How many ${stage}: Beispiel`, ...german(howManyExample(stage, parseHowMany(key)!)));
+    for (const key of howManyExampleKeys(stage)) add(`How many ${stage}: Beispiel`, ...german(howManyExample(stage, parseHowMany(key)!)));
   }
   add('How many: Beispiel', MARKED_CARD);
   add('How many: Frage', CHOOSE_PROMPT, BUILD_PROMPT, COMPLETE_HELP);

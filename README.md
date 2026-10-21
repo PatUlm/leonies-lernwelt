@@ -376,7 +376,10 @@ kommt:
   und bei is/are, „Zähle noch einmal genau“ bei der Zahl, sonst die Reihenfolge. Beim zweiten
   falschen Prüfen zeigt die App den Satz.
 - Die Hilfe lässt das passende Kärtchen leuchten (in Stufe 3 für den ersten falschen Platz).
-- Jede Stufe beginnt mit zwei erklärten Beispielen: eins und mehrere.
+- Jede Stufe beginnt mit zwei erklärten Beispielen: eins und mehrere. Abgefragt wird nur, was ein
+  Beispiel gezeigt hat: Stufe 1 beginnt mit „ghost“, „cat“ und „dog“ kommen nach den ersten
+  richtigen Antworten mit eigenem Beispiel dazu; Stufe 3 beginnt mit „one“ und „three“, dann
+  folgen „two“, „four“ und „five“. Auch die falsche Zahl unter den Kärtchen ist schon erklärt.
 
 Eine Aufgabe zählt als richtig, wenn sie beim ersten Versuch ohne Hilfe stimmt. Die nächste
 Stufe öffnet sich nach zehn solchen Aufgaben mit verschiedenen Anzahlen und Bildern. Ein

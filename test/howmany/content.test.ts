@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { answerText, answerWords, englishTexts, nounOf, questionText, sentenceFile } from '../../src/modules/howmany/content';
-import { Engine, EXAMPLES, STAGES, freshProgress, parseKey } from '../../src/modules/howmany/engine';
+import { Engine, STAGES, exampleKeys, freshProgress, parseKey } from '../../src/modules/howmany/engine';
 import { statsFromProgress } from '../../src/modules/howmany/stats';
 import { sanitizeProgress } from '../../src/modules/howmany/storage';
 import { answer, explanation, help, mistake, plain } from '../../src/modules/howmany/texts';
@@ -31,14 +31,16 @@ describe('how many sentences', () => {
 
 describe('how many texts', () => {
   it('explains one and several in every stage, with the English as its own part', () => {
-    const [one, three] = EXAMPLES[1].map((key) => explanation(1, parseKey(key)!));
-    expect(plain(one)).toBe('Hier ist nur ein Geist. Auf Englisch heißt das: ghost Bei einem bleibt das s weg. Tippe das Kärtchen an, das leuchtet.');
-    expect(plain(three)).toContain('Hier sind drei Geister.');
-    expect(plain(explanation(2, parseKey(EXAMPLES[2][0])!))).toBe('Hier ist nur ein Hund. Bei einem heißt es „is“: There is a dog. Tippe das Kärtchen an, das leuchtet.');
-    expect(explanation(2, parseKey(EXAMPLES[2][1])!)).toContainEqual({ en: 'There are dogs.' });
-    expect(explanation(3, parseKey(EXAMPLES[3][0])!)).toContainEqual({ en: 'There is one ghost.' });
+    const [one, three] = exampleKeys(1).map((key) => explanation(1, parseKey(key)!));
+    expect(plain(one)).toBe('Ein Geist heißt auf Englisch: ghost Bei einem bleibt das s weg. Tippe das Kärtchen an, das leuchtet.');
+    expect(plain(three)).toBe('Drei Geister heißen auf Englisch: ghosts Bei mehreren kommt ein s dazu. Tippe das Kärtchen an, das leuchtet.');
+    expect(plain(explanation(2, parseKey(exampleKeys(2)[0])!))).toBe('Hier ist nur ein Hund. Bei einem heißt es „is“: There is a dog. Tippe das Kärtchen an, das leuchtet.');
+    expect(explanation(2, parseKey(exampleKeys(2)[1])!)).toContainEqual({ en: 'There are dogs.' });
+    expect(plain(explanation(3, parseKey(exampleKeys(3)[0])!))).toBe(
+      '„How many“ fragt: Wie viele? Hier ist genau ein Geist: There is one ghost. Tippe die Kärtchen an, die leuchten.',
+    );
     for (const stage of STAGES) {
-      for (const key of EXAMPLES[stage]) expect(explanation(stage, parseKey(key)!).filter((p) => typeof p !== 'string')).toHaveLength(1);
+      for (const key of exampleKeys(stage)) expect(explanation(stage, parseKey(key)!).filter((p) => typeof p !== 'string')).toHaveLength(1);
     }
   });
 

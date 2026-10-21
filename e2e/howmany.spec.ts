@@ -20,7 +20,8 @@ async function startHowMany(page: Page, reviews: Review[] = [], old: Record<stri
     const p = freshProgress(Date.now());
     if (reviews.length) {
       const top = Math.max(...reviews.map((r) => r.stage));
-      p.stages.forEach((s: { unlocked: boolean }, i: number) => (s.unlocked = i < top));
+      // Every noun and number word explained (loading caps the steps of each stage).
+      p.stages.forEach((s: { unlocked: boolean; steps: number }, i: number) => Object.assign(s, { unlocked: i < top, steps: i < top ? 9 : 0 }));
       p.forced = [];
       p.reviewQueue = reviews;
     }
@@ -53,7 +54,7 @@ test('the Englisch area offers "How many?" next to the words', async ({ page }) 
 test('stage 1 starts with an example: one ghost, the card "ghost" lights up', async ({ page }) => {
   await startHowMany(page);
   await expect(page.locator('.message')).toHaveText(
-    'Hier ist nur ein Geist. Auf Englisch heißt das: ghost Bei einem bleibt das s weg. Tippe das Kärtchen an, das leuchtet.',
+    'Ein Geist heißt auf Englisch: ghost Bei einem bleibt das s weg. Tippe das Kärtchen an, das leuchtet.',
   );
   await expect(page.locator('.count-thing')).toHaveCount(1);
   await expect(page.locator('.count-question')).toHaveCount(0);
@@ -180,5 +181,5 @@ test('a progress of the first version starts at stage 1 and keeps the stars', as
   await expect(page.locator('.toast')).toHaveText('Neue Übungen! Sterne und Pokale bleiben.');
   await expect(page.locator('[data-ref="stars"]')).toHaveText('3');
   await expect(page.locator('[data-ref="trophies"]')).toHaveText('1');
-  await expect(page.locator('.message')).toContainText('Hier ist nur ein Geist.');
+  await expect(page.locator('.message')).toContainText('Ein Geist heißt auf Englisch:');
 });

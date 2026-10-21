@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NOUNS, nounOf } from '../../src/modules/howmany/content';
+import { NOUNS, NUMBER_WORDS, nounOf } from '../../src/modules/howmany/content';
 import {
   EXAMPLES, Engine, HELP_POINTS, MASTERY_CORRECT, MIN_DISTINCT_COUNTS, MIN_DISTINCT_NOUNS, ONE_SHARE, POINTS, PROBLEMS, READY_MASTERY,
   ROUND_TASKS, SECURE_MASTERY, SESSION_GAP_MS, STAGES, cardsFor, diagnose, freshProgress, gapsOf, parseKey, problemKey, roleOf, sentenceOf,
@@ -109,7 +109,10 @@ describe('how many engine', () => {
   });
 
   it('shows one thing as often as several in stage 1, in about four of ten tasks in stage 3', () => {
-    const engine = new Engine(freshProgress(T0), seeded(4));
+    // All three nouns explained already: with the ghost alone there is only one picture of one thing.
+    const progress = freshProgress(T0);
+    progress.stages[0].steps = EXAMPLES[1].length;
+    const engine = new Engine(progress, seeded(4));
     const first = play(engine, 300, (t) => (t.stage === 1 ? { ...CLEAN, mistake: true } : CLEAN)).filter((t) => t.kind === 'practice');
     const share = (tasks: Task[]) => tasks.filter((t) => t.problem.count === 1).length / tasks.length;
     expect(share(first)).toBeGreaterThan(ONE_SHARE[1] - 0.1);
@@ -151,7 +154,7 @@ describe('how many engine', () => {
       const correct = prev.window.filter((a) => a.ok);
       expect(new Set(correct.map((a) => a.count)).size).toBeGreaterThanOrEqual(MIN_DISTINCT_COUNTS);
       expect(new Set(correct.map((a) => a.noun)).size).toBeGreaterThanOrEqual(MIN_DISTINCT_NOUNS);
-      const count = EXAMPLES[stage].length;
+      const count = EXAMPLES[stage][0].length;
       const next = play(engine, count + 1);
       expect(next.slice(0, count).map((t) => [t.kind, t.stage])).toEqual(Array(count).fill(['example', stage]));
       expect(next[count].kind).not.toBe('example');
@@ -190,5 +193,33 @@ describe('how many engine', () => {
       return engine.answer(t, t.kind === 'example' ? CLEAN : { ...CLEAN, mistake: true });
     });
     expect(results.map((r) => r.offerPause)).toEqual([false, false, true]);
+  });
+  it('asks only nouns and number words its examples showed, the next ones after their own example', () => {
+    const engine = new Engine(freshProgress(T0), seeded(31));
+    const tasks: Task[] = [];
+    for (let i = 0; i < 1500 && !engine.stageState(3).ready; i++) tasks.push(...play(engine, 1));
+    const nouns = new Set<string>();
+    const numbers = new Set<number>();
+    for (const t of tasks) {
+      if (t.kind === 'example') {
+        nouns.add(t.problem.noun.one);
+        if (t.stage === 3) numbers.add(t.problem.count);
+        continue;
+      }
+      expect(nouns.has(t.problem.noun.one), `${t.key} in stage ${t.stage}`).toBe(true);
+      if (t.stage === 3) {
+        expect(numbers.has(t.problem.count), t.key).toBe(true);
+        // The wrong number card too.
+        for (const card of t.cards) {
+          const n = NUMBER_WORDS.indexOf(card as (typeof NUMBER_WORDS)[number]) + 1;
+          if (n) expect(numbers.has(n), card).toBe(true);
+        }
+      }
+    }
+    expect([...nouns].sort()).toEqual(['cat', 'dog', 'ghost']);
+    expect([...numbers].sort()).toEqual([1, 2, 3, 4, 5]);
+    // The very first whole sentence offers no wrong number yet.
+    const first = tasks.find((t) => t.kind === 'example' && t.stage === 3)!;
+    expect(first.cards.filter((c) => (NUMBER_WORDS as readonly string[]).includes(c))).toEqual(['one']);
   });
 });
