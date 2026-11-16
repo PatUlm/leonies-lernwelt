@@ -5,6 +5,19 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.1 – 2026-11-16
+
+### Neu
+
+- **HSU: „Der Baum“:** Die ersten Module im Bereich HSU, nach Leonies Arbeitsblättern zum Wald.
+  Ein Laubbaum mit aufgeschnittener Erde, ein Teil ist markiert. Stufe 1: den Teil benennen
+  (Wurzeln, Stamm, Baumkrone, dann Ast, Zweig, Blatt, zuletzt Rinde und Frucht). Stufe 2:
+  „Welcher Teil trägt die Baumkrone?“ Stufe 3: zum Teil die Aufgabe wählen („den Stamm
+  schützen“). Jede Frage kommt erst nach ihrem Beispiel.
+- **HSU: „Laubbäume“:** Ahorn, Eiche, Kastanie, Linde, Birke und Buche erkennen – erst am Blatt,
+  dann an der Frucht. Ähnliche Blätter und Früchte stehen nebeneinander, sobald beide erklärt
+  sind; Hilfe und Fehlererklärung sagen, woran man sie unterscheidet.
+
 ## 2026.10.19 – 2026-10-21
 
 ### Geändert

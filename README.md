@@ -8,8 +8,9 @@ eigene Süßigkeit. Das erste Modul heißt **„Die Uhr“** (Mathe): Leonie (8)
 Zeigeruhr zu lesen. Daneben löst sie in **„Umkehraufgaben“** Platzhalteraufgaben wie
 „__ + 23 = 90“ rückwärts. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
 Artikel. In Musik lernt sie mit **„Notenwerte“**, wie lange halbe, Viertel- und
-Achtelnoten dauern – ihre eigene Idee. In Englisch lernt **„Farben, Zahlen, Tiere“** die ersten
-englischen Wörter. Weitere Module folgen.
+Achtelnoten dauern – ihre eigene Idee. In HSU geht es um den Wald: **„Der Baum“** (Teile des
+Baumes und ihre Aufgaben) und **„Laubbäume“** (Bäume an Blatt und Frucht erkennen). In Englisch
+lernt **„Farben, Zahlen, Tiere“** die ersten englischen Wörter. Weitere Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
 
@@ -54,7 +55,7 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 | Mathe | Lolli | Die Uhr, Umkehraufgaben |
 | Deutsch | Bonbon | Der, die, das |
 | Musik | Cupcake | Notenwerte |
-| HSU – Heimat- und Sachunterricht | Gummibärchen | folgt |
+| HSU – Heimat- und Sachunterricht | Gummibärchen | Der Baum, Laubbäume |
 | Englisch | Schokolade | Farben, Zahlen, Tiere; How many? |
 
 Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
@@ -425,6 +426,34 @@ Die nächste Stufe öffnet sich nach zehn selbstständig richtigen Antworten, vo
 acht von zehn stimmen und bei denen jede Note dabei war. Ein Durchgang hat zehn Aufgaben;
 Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
+## HSU: Der Baum und Laubbäume
+
+Nach Leonies Arbeitsblättern zum Thema **Wald** (Klasse 3). Beide Module stellen eine Frage zu
+einem Bild mit drei Antworten und folgen derselben Grundregel: **Abgefragt wird nur, was vorher
+erklärt wurde**; neue Fragen einer Stufe kommen in kleinen Gruppen, jede mit ihrem Beispiel.
+Ähnliches steht bewusst nebeneinander (Ast und Zweig, Stamm und Rinde, Linde und Birke, Kastanie
+und Buche), aber erst, wenn beides erklärt ist.
+
+**Der Baum** zeigt einen Laubbaum mit aufgeschnittener Erde. Ein Teil ist kräftig mit blauem
+Rand markiert, der Rest blass; eine Linie führt wie auf dem Arbeitsblatt zu einem Kästchen.
+
+| Stufe | Aufgabe | Antworten |
+|:-:|---|---|
+| 1 | Wie heißt dieser Teil des Baumes? | Wurzeln, Stamm, Baumkrone – dann Ast, Zweig, Blatt – zuletzt Rinde, Frucht |
+| 2 | Welcher Teil trägt die Baumkrone? (neun Fragen) | Teile; der Baum zeigt den Teil erst nach der Antwort |
+| 3 | Welche Aufgabe hat dieser Teil? | Aufgaben in der Grundform: „den Stamm schützen“, „Wasser und Nährstoffe aufnehmen“ … |
+
+Die Hilfe sagt in Stufe 1, wo der Teil ist („Die Rinde ist außen am Stamm und oft rau.“); in
+Stufe 2 und 3 nimmt sie eine falsche Antwort weg.
+
+**Laubbäume** kennt sechs Bäume aus den Steckbriefen: Ahorn, Eiche, Kastanie, Linde, Birke und
+Buche. Stufe 1 fragt zum Blatt den Baum (erst die drei unverwechselbaren, dann Linde, Birke und
+Buche), Stufe 2 zur Frucht. Hilfe und Fehlererklärung sagen, woran man es erkennt: „Das Blatt
+sieht aus wie ein Herz: die Linde.“ Blattform und Blattrand als Fachwörter folgen später.
+
+Ein Durchgang hat zehn Aufgaben; Freischaltung, Abzeichen, Sterne und Pokale funktionieren wie
+bei „Notenwerte“.
+
 ## Ideen für später
 
 Gesammelt im [Backlog](BACKLOG.md) – zum Beispiel Zeitspannen („Wie lange noch?“), weitere
@@ -439,7 +468,8 @@ Für alle, die mitbauen möchten.
 - **Vite + TypeScript**, kein Framework. Die Uhr ist ein SVG.
 - Die Lernlogik (Stufen, Freischaltung, Anteile, Wiederholungen, Punkte) steckt in
   [`src/modules/clock/engine.ts`](src/modules/clock/engine.ts) und ist mit **Vitest**
-  getestet.
+  getestet. Die HSU-Module teilen sich eine Quiz-Engine in
+  [`src/shared/quiz`](src/shared/quiz); ein Modul bringt nur Inhalte, Texte und Bilder mit.
 - Fortschritt liegt im `localStorage` des Browsers und wird mit dem eigenen kleinen
   **API-Server** ([`server/src`](server/src), Node ohne Framework, JSON-Dateien) synchronisiert.
   Profile: Name + 4-stellige PIN (scrypt), Geräte-Token, Rate-Limits.

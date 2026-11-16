@@ -2174,6 +2174,46 @@ a.area-card:active {
   }
 }
 
+/* ---------- HSU quiz: Der Baum, Laubbäume ---------- */
+
+.quiz-show {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 100%;
+}
+
+.tree-svg,
+.leaf-svg,
+.fruit-svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: clamp(200px, 36vh, 380px);
+}
+
+/* A leaf or fruit alone is square: a little smaller than the wide tree. */
+.leaf-svg,
+.fruit-svg {
+  height: clamp(180px, 32vh, 320px);
+}
+
+@media (max-width: 600px) {
+  .tree-svg,
+  .leaf-svg,
+  .fruit-svg {
+    height: clamp(170px, 30vh, 300px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .tree-svg,
+  .leaf-svg,
+  .fruit-svg {
+    height: min(200px, 52vh);
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {

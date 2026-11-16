@@ -87,6 +87,25 @@ Aufgabenart bekommt zuerst ein eigenes kurzes Beispiel (nur abfragen, was erklä
   offen (Leonie fragen); erst dann in die Texte aufnehmen.
 - **Weitere Taktarten** (3/4, 2/4) und die punktierte halbe Note für Lücken von drei Schlägen.
 
+## HSU: Der Baum und Laubbäume
+
+Vom Game-Designer bewusst für später vorgesehen; alles steht auf den Arbeitsblättern zum Wald:
+
+- **Blattform und Blattrand (Laubbäume, Stufe 3 und 4):** handförmig, gefingert, herzförmig,
+  dreieckig, eiförmig; gezackt, gewellt, gebuchtet, glatt. Dieselben Blattbilder, ohne die Eiche
+  bei der Form (das Faltheft sagt „eiförmig“, das Bild zeigt Buchten) und ohne den Ahorn beim
+  Rand (seine Lappen sehen aus wie Buchten); „glatt“ braucht ein neutrales Musterblatt.
+- **Waldregeln:** elf Aussagen richtig oder falsch – braucht eine Zwei-Knopf-Form.
+- **Laub- oder Nadelbaum, Waldarten:** Blatt, Blüte, Frucht gegen Nadel und Zapfen; Tanne,
+  Fichte, Kiefer, Lärche gegen Buche, Eiche, Ahorn, Birke; Laub-, Nadel- und Mischwald. Passt zur
+  Sortier-Mechanik (Karten in Schalen).
+- **Weggelassene Fakten in „Der Baum“:** „Die Rinde leitet Baumsäfte“ (kollidiert mit „Der
+  Stamm leitet die Nährstoffe weiter“), „Äste und Zweige tragen die Blätter“, der Vergleich mit
+  der Lunge, „rau und rissig“, die Schutzregeln (keine Äste abbrechen, nichts einritzen).
+- **Steckbrief-Details:** wer welche Früchte frisst, Verbreitung durch den Wind, „Nasenzwicker“.
+- **Neue Formen:** Blatt und Frucht zuordnen, auf den Baum tippen statt drei Knöpfe, „Erst
+  sagen, dann aufdecken“.
+
 ## Weitere Module
 
-- HSU: Bereich ist angelegt, Inhalte fehlen noch.
+- Weitere HSU-Themen, sobald die Schule sie behandelt.
