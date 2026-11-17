@@ -192,6 +192,11 @@ export function contextRule(context: DayContext): string {
   }
 }
 
+/** The task of a setting example, as the question of the task says it: "Stelle die Uhr auf 7:55 Uhr." */
+function setTarget(target: string): string {
+  return `Stelle die Uhr auf ${target}.`;
+}
+
 /** How to set the hands, in one sentence before "Fertig"; at full hours only the hour hand moves. */
 function setInstruction(t: ClockTime, hourOnly: boolean): string {
   const hands = hourOnly
@@ -219,8 +224,9 @@ export function explainExample(task: TaskInfo): string {
     // One sentence after "Es ist Abend.": the rule and the clock time it maps, in digits (the words may not be known yet).
     return `${CONTEXT_EXAMPLE_RULES[task.context]}: ${digital} ${SUFFIX[task.context]} ist ${formatDaytime(t, hour24(task.context, hour))}.`;
   }
+  // Setting the hands: the target first, as in the task, then how to get there.
   if (track === 'daySet' && task.context) {
-    return `${towardsClock(task.context, hour)} ${setInstruction(t, !!task.hourOnly)}`;
+    return `${setTarget(formatDaytime(t, hour24(task.context, hour)))} ${towardsClock(task.context, hour)} ${setInstruction(t, !!task.hourOnly)}`;
   }
   if (track === 'dayInput' && task.context) {
     const written = `${hour24(task.context, hour)}:${String(minute).padStart(2, '0')}`;
@@ -228,7 +234,8 @@ export function explainExample(task: TaskInfo): string {
     return `${towards24(task.context, hour)} Tippe ${digits} – das ist ${written} Uhr.`;
   }
   if (track === 'set') {
-    return setInstruction(t, !!task.hourOnly);
+    const target = task.context ? formatDaytime(t, hour24(task.context, hour)) : digital;
+    return `${setTarget(target)} ${setInstruction(t, !!task.hourOnly)}`;
   }
   if (track === 'input') {
     const digits = [...`${hour}${String(minute).padStart(2, '0')}`].join(' ');

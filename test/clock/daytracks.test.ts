@@ -68,12 +68,20 @@ describe('hints for 24-hour times', () => {
 
   it('names only the hour hand when the minute hand stays on the 12', () => {
     expect(explainExample({ track: 'set', time: { hour: 2, minute: 0 }, hourOnly: true })).toBe(
-      'Der lange Zeiger bleibt auf der 12, zieh den kurzen Zeiger genau auf die 2. Dann tippe auf „Fertig“.',
+      'Stelle die Uhr auf 2:00 Uhr. Der lange Zeiger bleibt auf der 12, zieh den kurzen Zeiger genau auf die 2. Dann tippe auf „Fertig“.',
     );
     expect(explainExample({ track: 'daySet', time: { hour: 3, minute: 0 }, context: 'afternoon', hourOnly: true })).toContain(
       'Der lange Zeiger bleibt auf der 12, zieh den kurzen Zeiger genau auf die 3.',
     );
     expect(explainExample({ track: 'set', time: { hour: 2, minute: 0 } })).toContain('Zieh den langen Zeiger auf die 12');
+  });
+
+  it('names the target first in every example of setting the hands, as the task does', () => {
+    expect(explainExample({ track: 'set', time: { hour: 7, minute: 55 } })).toMatch(/^Stelle die Uhr auf 7:55 Uhr\. Zieh den langen Zeiger/);
+    expect(explainExample({ track: 'set', time: { hour: 3, minute: 45 }, context: 'afternoon' })).toMatch(/^Stelle die Uhr auf 15:45 Uhr\. /);
+    expect(explainExample({ track: 'daySet', time: { hour: 9, minute: 30 }, context: 'evening' })).toMatch(
+      /^Stelle die Uhr auf 21:30 Uhr\. 21 Uhr am Abend ist 9 Uhr: 21 − 12 = 9\. /,
+    );
   });
 });
 
