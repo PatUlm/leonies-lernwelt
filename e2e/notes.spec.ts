@@ -16,6 +16,8 @@ async function startNotes(page: Page, reviews: Review[] = [], mastery = 0): Prom
     const { saveProgress } = await load('/src/modules/notes/storage.ts');
     const { sync } = await load('/src/shared/sync.ts');
     const p = freshProgress(Date.now());
+    // "Anhören" is explained once before the first task; its own test below.
+    p.listenShown = true;
     if (reviews.length) {
       const top = Math.max(...reviews.map((r) => r.stage));
       p.stages.forEach((s: { unlocked: boolean; steps: number; mastery: number }, i: number) => {
@@ -108,4 +110,94 @@ test('stage 3: two empty beats take the half note', async ({ page }) => {
   await expect(page.locator('.notes-show')).toHaveAttribute('aria-label', 'Zwei Schläge: Lücke');
   await option(page, 'Viertelnote').click();
   await expect(page.locator('.message')).toHaveText('Damit sind die zwei Schläge noch nicht voll. Es fehlen zwei Schläge: die halbe Note.');
+});
+
+/**
+ * A learner from before the explanation of "Anhören": stage 2 open, points,
+ * a round in progress, no `listenShown` stored, and weekly points on the device.
+ */
+async function startExisting(page: Page): Promise<{ progress: string; weekly: string | null }> {
+  await page.goto('/');
+  const before = await page.evaluate(async () => {
+    localStorage.clear();
+    const load = (path: string) => import(/* @vite-ignore */ path);
+    const { Engine, freshProgress } = await load('/src/modules/notes/engine.ts');
+    const { saveProgress } = await load('/src/modules/notes/storage.ts');
+    const { readJson, writeJson } = await load('/src/shared/storage.ts');
+    const { sync } = await load('/src/shared/sync.ts');
+    const engine = new Engine(freshProgress(Date.now()));
+    for (let i = 0; i < 30; i++) {
+      const t = engine.nextTask();
+      engine.answer(t, i % 7 === 3 ? (t.correctIndex + 1) % t.options.length : t.correctIndex, false);
+    }
+    const p = engine.progress;
+    delete p.listenShown;
+    saveProgress(p);
+    sync.playLocally();
+    writeJson('points.v1', { week: '2026-W47', points: 340 });
+    return { progress: JSON.stringify(p), weekly: JSON.stringify(readJson('points.v1')) };
+  });
+  return before;
+}
+
+/** From now on records which count-in dot is lit, in order, in window.__dots ("-": none). */
+async function watchDots(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const lit: string[] = [];
+    Object.assign(window, { __dots: lit });
+    new MutationObserver(() => {
+      const on = [...document.querySelectorAll('.count-dot')].findIndex((d) => d.classList.contains('on'));
+      const state = on === -1 ? '-' : String(on + 1);
+      if ((lit.at(-1) ?? '-') !== state) lit.push(state);
+    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
+}
+
+async function stored(page: Page): Promise<{ progress: Record<string, unknown>; weekly: string }> {
+  return page.evaluate(async () => {
+    const load = (path: string) => import(/* @vite-ignore */ path);
+    const { readJson } = await load('/src/shared/storage.ts');
+    return { progress: readJson('noten.progress.v1'), weekly: JSON.stringify(readJson('points.v1')) };
+  });
+}
+
+test('"Anhören" is explained once before the next task: the dots light up with the clicks, progress and weekly points stay', async ({ page }) => {
+  const before = await startExisting(page);
+  await page.goto('/#/musik/noten');
+  await expect(page.locator('.message')).toHaveText('Bei „Anhören“ klickt es zuerst zweimal. Erst danach kommen die Noten.');
+  await expect(page.locator('.notes-answer')).toHaveCount(0);
+  await expect(page.locator('.next')).toBeHidden();
+  await watchDots(page);
+  await page.locator('.notes-card .listen-button').click();
+  // Two clicks to count in, then one beat: "Los geht's" follows once heard.
+  await expect(page.locator('.next')).toHaveText('Los geht’s', { timeout: 8000 });
+  expect(await page.evaluate(() => (window as unknown as { __dots: string[] }).__dots)).toEqual(['1', '2', '-']);
+  await page.locator('.next').click();
+  await expect(page.locator('.notes-answer')).not.toHaveCount(0);
+
+  const after = await stored(page);
+  const { listenShown, ...rest } = after.progress;
+  const { taskCounter: _a, lastActive: _b, recent: _c, ...kept } = rest;
+  const old = JSON.parse(before.progress);
+  const { taskCounter: _d, lastActive: _e, recent: _f, ...oldKept } = old;
+  expect(listenShown).toBe(true);
+  // Only the next task was drawn: learning, points, round and trophies are as before.
+  expect(kept).toEqual(oldKept);
+  expect(after.weekly).toBe(before.weekly);
+  // Not again.
+  await page.reload();
+  await expect(page.locator('.notes-answer')).not.toHaveCount(0);
+});
+
+test('"Anhören" stopped before the notes does not count as heard', async ({ page }) => {
+  await startExisting(page);
+  await page.goto('/#/musik/noten');
+  const listen = page.locator('.notes-card .listen-button');
+  await listen.click();
+  await expect(page.locator('.count-dot.on')).toHaveCount(1);
+  await listen.click();
+  await expect(page.locator('.count-dot.on')).toHaveCount(0);
+  await page.waitForTimeout(2500);
+  await expect(page.locator('.next')).toBeHidden();
+  expect((await stored(page)).progress.listenShown).toBeUndefined();
 });

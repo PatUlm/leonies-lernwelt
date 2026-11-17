@@ -13,7 +13,7 @@ import { lengthSvg, notesLabel, notesSvg } from './notation';
 import { RhythmPlayer, type PlayNote } from './player';
 import { BADGE_NAMES, STAGE_NAMES, statsFromProgress } from './stats';
 import { clearProgress, loadProgress, saveProgress } from './storage';
-import { PRAISE, confirmation, explanation, help, mistake, question, type Text } from './texts';
+import { LISTEN_INTRO, PRAISE, confirmation, explanation, help, mistake, question, type Text } from './texts';
 
 const CORRECT_DELAY_MS = 1800;
 const STAR_DELAY_MS = 900;
@@ -263,9 +263,20 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
         break;
       }
     }
-    ui.card.innerHTML = `<div class="notes-show" data-ref="show" role="img" aria-label="${escapeHtml(label)}">${content}</div>
+    showCard(content, label, () => playedNotes(filled));
+  }
+
+  /**
+   * The drawing with the two dots that light up while "Anhören" counts in,
+   * and the button; `onPlayed` runs whenever the notes have been heard.
+   */
+  function showCard(content: string, label: string, notes: () => PlayNote[], onPlayed: () => void = () => {}): void {
+    ui.card.innerHTML = `<div class="notes-line">
+        <span class="count-in" data-ref="countIn" aria-hidden="true"><span class="count-dot">1</span><span class="count-dot">2</span></span>
+        <div class="notes-show" data-ref="show" role="img" aria-label="${escapeHtml(label)}">${content}</div>
+      </div>
       <button type="button" class="listen-button" data-ref="listen"><span aria-hidden="true">♪</span> Anhören</button>`;
-    ui.card.querySelector('[data-ref="listen"]')!.addEventListener('click', () => listen(filled));
+    ui.card.querySelector('[data-ref="listen"]')!.addEventListener('click', () => listen(notes(), onPlayed));
   }
 
   function renderOptions(): void {
@@ -283,27 +294,75 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
     });
   }
 
-  /** Plays what the card shows; the note being heard lights up. */
-  function listen(filled: Value | null): void {
+  /** What "Anhören" plays for the task: a gap stays silent. */
+  function playedNotes(filled: Value | null): PlayNote[] {
+    if (task.stage !== 3) return [{ value: task.value }];
+    const row = task.row!;
+    return (filled === null ? row.notes : filledRow(row, filled)).map((value, i) => ({ value, silent: filled === null && i === row.gap }));
+  }
+
+  /**
+   * Plays what the card shows: the dots light up with the two clicks, then the
+   * note being heard. `onPlayed` only once the clicks and the last note were
+   * heard, not when stopped before.
+   */
+  function listen(notes: PlayNote[], onPlayed: () => void): void {
     if (player.playing) {
       player.stop();
       return;
     }
     shell.stopSpeaking();
-    let notes: PlayNote[];
-    if (task.stage === 3) {
-      const row = task.row!;
-      notes = (filled === null ? row.notes : filledRow(row, filled)).map((value, i) => ({ value, silent: filled === null && i === row.gap }));
-    } else {
-      notes = [{ value: task.value }];
-    }
     const show = ui.card.querySelector('[data-ref="show"]')!;
+    const dots = [...ui.card.querySelectorAll('.count-dot')];
     const button = ui.card.querySelector<HTMLButtonElement>('[data-ref="listen"]')!;
     button.classList.add('playing');
-    player.play(notes, (i) => {
-      show.querySelectorAll('[data-note]').forEach((n) => n.classList.toggle('playing', Number((n as HTMLElement).dataset.note) === i));
-      if (i === -1) button.classList.remove('playing');
+    let lastHeard = false;
+    player.play(
+      notes,
+      (i) => {
+        show.querySelectorAll('[data-note]').forEach((n) => n.classList.toggle('playing', Number((n as HTMLElement).dataset.note) === i));
+        if (i === notes.length - 1) lastHeard = true;
+        if (i !== -1) return;
+        button.classList.remove('playing');
+        if (lastHeard) onPlayed();
+      },
+      (i) => dots.forEach((d, j) => d.classList.toggle('on', j === i)),
+    );
+  }
+
+  /**
+   * Once, before the first task: the two clicks before the notes of "Anhören".
+   * No task: nothing to answer, no points, the learning progress stays as it is.
+   */
+  function showListenIntro(): void {
+    shell.stopSpeaking();
+    phase = 'feedback';
+    afterFeedback = null;
+    ui.next.hidden = true;
+    ui.answers.className = 'answers';
+    ui.answers.replaceChildren();
+    shell.setHelpEnabled(false);
+    // A quarter note, not named and not asked: only the clicks are new.
+    showCard(notesSvg(['q'], { className: 'card-notes' }), notesLabel(['q']), () => [{ value: 'q' }], () => {
+      ui.card.querySelector('[data-ref="listen"]')?.classList.remove('suggested');
+      if (!ui.next.hidden || engine.progress.listenShown) return;
+      ui.next.textContent = 'Los geht’s';
+      showNext(() => {
+        engine.progress.listenShown = true;
+        saveProgress(engine.progress);
+        ui.next.textContent = 'Weiter';
+        nextTask();
+      });
     });
+    ui.card.querySelector('[data-ref="listen"]')!.classList.add('suggested');
+    setMessage(LISTEN_INTRO, 'explain');
+    shell.explain(message);
+  }
+
+  /** The first task, after the explanation of "Anhören" if it is still due. */
+  function start(): void {
+    if (engine.progress.listenShown) nextTask();
+    else showListenIntro();
   }
 
   // --- tools -------------------------------------------------------------------
@@ -326,7 +385,8 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function readAloud(): void {
-    if (!task) return;
+    // Before the first task only the explanation of "Anhören" is on screen.
+    if (!message.length) return;
     player.stop();
     shell.speak(message);
   }
@@ -367,12 +427,12 @@ export function mountNotesGame(root: HTMLElement, ctx: ModuleContext): () => voi
       player.forget();
       engine = new Engine(loadProgress(Date.now()));
       round = newRoundStats();
-      shell.closeDialog(nextTask);
+      shell.closeDialog(start);
     });
   }
 
   renderScore();
-  nextTask();
+  start();
 
   return () => {
     player.dispose();

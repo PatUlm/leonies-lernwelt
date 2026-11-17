@@ -139,6 +139,8 @@ export interface Progress {
   correctStreak: number;
   round: RoundState;
   trophies: number;
+  /** The two clicks before the notes of "Anhören" were explained once; no learning progress. */
+  listenShown: boolean;
 }
 
 export interface AnswerResult {
@@ -202,6 +204,7 @@ export function freshProgress(now: number): Progress {
     correctStreak: 0,
     round: { tasks: 0, points: 0, correct: 0 },
     trophies: 0,
+    listenShown: false,
   };
 }
 

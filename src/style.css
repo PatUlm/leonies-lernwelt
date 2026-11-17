@@ -2112,6 +2112,46 @@ a.area-card:active {
   border-color: var(--hour);
 }
 
+.listen-button.suggested {
+  border-color: var(--accent);
+  animation: suggest 1.4s ease-in-out infinite;
+}
+
+/* The note and, in front of it, the two clicks of "Anhören" before the notes. */
+.notes-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 100%;
+}
+
+.count-in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Small and round, orange: not a beat field, not the blue of the note being heard. */
+.count-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 15px;
+  font-weight: 800;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.count-dot.on {
+  background: var(--minute);
+  border-color: var(--minute);
+  color: #fff;
+}
+
 .answer.notes-answer {
   display: grid;
   place-items: center;

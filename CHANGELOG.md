@@ -5,6 +5,19 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.2 – 2026-11-17
+
+### Geändert
+
+- **Die Uhr: Zieluhrzeit zuerst:** Die Beispiele zum Zeigerstellen nennen jetzt zuerst die
+  Uhrzeit, die eingestellt werden soll („Stelle die Uhr auf 7:55 Uhr.“), dann wohin die Zeiger
+  gehören. Vorher war die Zieluhrzeit nur kurz nach dem Beispiel zu sehen.
+- **Notenwerte: Einzählen bei „Anhören“:** Vor den Noten klickt es zweimal; das erklärt das Modul
+  jetzt einmal vor der ersten Aufgabe mit einer Viertelnote zum Anhören („Bei „Anhören“ klickt es
+  zuerst zweimal. Erst danach kommen die Noten.“). Wer schon übt, sieht die Erklärung einmal beim
+  nächsten Öffnen; Fortschritt und Punkte bleiben. Zwei kleine Punkte „1“ und „2“ leuchten bei
+  jedem Anhören mit den zwei Klicks.
+
 ## 2026.11.1 – 2026-11-16
 
 ### Neu

@@ -31,6 +31,9 @@ export const QUESTIONS: Record<Stage, string> = {
   3: 'Welche Note fehlt für zwei Schläge?',
 };
 
+/** Once before the first task: what "Anhören" plays before the notes. No new word ("Einzählen") to learn. */
+export const LISTEN_INTRO: Text = ['Bei „Anhören“ klickt es zuerst zweimal.', 'Erst danach kommen die Noten.'];
+
 /** Praise for an independent right answer, taken in turn for some variety. */
 export const PRAISE = ['Richtig!', 'Genau!', 'Das passt!'];
 

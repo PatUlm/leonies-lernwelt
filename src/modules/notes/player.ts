@@ -42,17 +42,23 @@ export class RhythmPlayer {
     return this.onEnd !== null;
   }
 
-  /** `onNote` reports the note being heard, -1 when done or stopped. */
-  play(notes: readonly PlayNote[], onNote: (index: number) => void): void {
+  /**
+   * `onNote` reports the note being heard, -1 when done or stopped;
+   * `onCount` the click counting in (0, 1), -1 once the notes begin or it stops.
+   */
+  play(notes: readonly PlayNote[], onNote: (index: number) => void, onCount: (index: number) => void = () => {}): void {
     this.stop();
     const ctx = this.context();
     if (!ctx) {
+      onCount(-1);
       onNote(-1);
       return;
     }
     const t0 = ctx.currentTime + 0.1;
     const total = notes.reduce((sum, n) => sum + EIGHTHS[n.value], 0) / 2;
     for (let b = 0; b < COUNT_IN + Math.ceil(total); b++) this.click(ctx, t0 + b * BEAT_S, b < COUNT_IN);
+    for (let b = 0; b < COUNT_IN; b++) this.later(() => onCount(b), t0 + b * BEAT_S - ctx.currentTime);
+    this.later(() => onCount(-1), t0 + COUNT_IN * BEAT_S - ctx.currentTime);
     let at = t0 + COUNT_IN * BEAT_S;
     notes.forEach((note, i) => {
       const length = (EIGHTHS[note.value] / 2) * BEAT_S;
@@ -60,7 +66,10 @@ export class RhythmPlayer {
       this.later(() => onNote(i), at - ctx.currentTime);
       at += length;
     });
-    this.onEnd = () => onNote(-1);
+    this.onEnd = () => {
+      onCount(-1);
+      onNote(-1);
+    };
     this.later(() => this.finish(), at - ctx.currentTime + 0.1);
   }
 

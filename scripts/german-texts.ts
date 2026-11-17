@@ -28,7 +28,7 @@ import {
 import { VALUES } from '../src/modules/notes/content';
 import { Engine as NotesEngine, STAGES as NOTES_STAGES, exampleKeys, freshProgress as freshNotes } from '../src/modules/notes/engine';
 import {
-  LOOKS, MISSING, PRAISE, QUESTIONS, ROW_FULL, ROW_HELP, RULES, TOO_LONG, TOO_SHORT, explanation as notesExample,
+  LISTEN_INTRO, LOOKS, MISSING, PRAISE, QUESTIONS, ROW_FULL, ROW_HELP, RULES, TOO_LONG, TOO_SHORT, explanation as notesExample,
 } from '../src/modules/notes/texts';
 import { leavesCourse } from '../src/modules/leaves/course';
 import { treeCourse } from '../src/modules/tree/course';
@@ -154,6 +154,7 @@ export function germanTexts(): GermanText[] {
   add('Noten: Regel', ...VALUES.map((v) => RULES[v]), ...VALUES.map((v) => LOOKS[v]));
   add('Noten 3: Hilfe', ROW_HELP, ROW_FULL, TOO_SHORT, TOO_LONG, ...VALUES.map((v) => MISSING[v]));
   add('Noten: Lob', ...PRAISE, 'Gemeinsam geschafft!');
+  add('Noten: Anhören', ...LISTEN_INTRO);
 
   // HSU: every message of a quiz is made of fixed sentences; a mistake repeats sentences of examples and help.
   for (const course of [treeCourse, leavesCourse]) {

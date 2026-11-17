@@ -118,7 +118,9 @@ Zuschauen ist leichter als selbst machen – deshalb gibt es zwei weitere Arten 
 - **Zeiger stellen:** Die Uhrzeit wird vorgegeben, als „12:30 Uhr“ oder in Worten („Viertel vor
   elf“). Beide Zeiger haben einen Griff zum Ziehen. Wie bei einer echten Uhr läuft der kurze
   Zeiger mit, wenn man den langen über die 12 zieht. Die Zeiger rasten passend zur Stufe ein
-  – erst auf volle Stunden, später auf halbe, Viertel, Fünfer und einzelne Minuten.
+  – erst auf volle Stunden, später auf halbe, Viertel, Fünfer und einzelne Minuten. Die
+  Beispiele nennen zuerst die Zieluhrzeit („Stelle die Uhr auf 7:55 Uhr.“), dann wohin die
+  Zeiger gehören.
 - **Uhrzeit eintippen:** Die Uhr wird gezeigt, die Uhrzeit wird über eine große
   Zifferntastatur eingetippt, z. B. „11:23“. Ohne Tageszeit sind 11:23 und 23:23 beide
   richtig – die App zeigt dann, wie man es üblicherweise schreibt.
@@ -416,7 +418,8 @@ kurze Sätze.
 - **„Anhören“** spielt die Note, die Länge oder die zwei Schläge: ein gehaltener Ton über einem
   leisen Klick je Schlag, nach zwei Klicks zum Einzählen; die gerade klingende Note leuchtet
   blau. Eine Lücke bleibt still, die Klicks laufen weiter. „Anhören“ klingt auch, wenn die Töne
-  aus sind.
+  aus sind. Zwei kleine orange Punkte „1“ und „2“ leuchten mit den zwei Klicks vor den Noten; vor
+  der ersten Aufgabe erklärt das Modul sie einmal mit einer Viertelnote zum Anhören.
 - Nach einem Fehler sagt die App in zwei Sätzen, warum es nicht passt: „Damit werden es mehr als
   zwei Schläge. Es fehlt ein Schlag: die Viertelnote.“ Die Hilfe beschreibt die Note
   („Ausgemalt, mit Fähnchen: die Achtelnote.“), nennt die Note zur Länge oder lässt zählen.

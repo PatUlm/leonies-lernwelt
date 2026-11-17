@@ -100,6 +100,7 @@ export function sanitizeProgress(input: unknown, now: number): Progress {
     correctStreak: num(raw.correctStreak, 0),
     round: { tasks: num(round.tasks, 0), points: num(round.points, 0), correct: num(round.correct, 0) },
     trophies: num(raw.trophies, 0),
+    listenShown: bool(raw.listenShown),
   };
 }
 
