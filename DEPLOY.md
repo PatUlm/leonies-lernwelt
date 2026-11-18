@@ -9,7 +9,7 @@ Runbook für das Ausrollen auf **netcup1**. Für die Entwicklung reicht `npm run
 |-----|------|
 | Domain | `lernwelt.nieda.de` (öffentlich) |
 | Server | `netcup1` (SSH-Host aus `~/.ssh/config`) |
-| Laufzeit | Docker-Container `lernwelt_web` (nginx-unprivileged, Port 8080, statische Seite) und `lernwelt_api` (Node, Port 8081, Pfad `/api`) |
+| Laufzeit | Docker-Container `lernwelt_web` (nginx als User 101, Port 8080, statische Seite) und `lernwelt_api` (Node, Port 8081, Pfad `/api`) |
 | Daten | Docker-Volume `lernwelt_data` (Profile als JSON-Dateien, Sprachaufnahmen unter `tts/`), in Terraform mit `prevent_destroy` geschützt |
 | Reverse-Proxy | Traefik im Docker-Netz `proxy-manager`, TLS via Certresolver `production` |
 | Verwaltung | Terraform (`terraform/main.tf`), State im S3-Bucket (`terraform/backend.hcl`) |

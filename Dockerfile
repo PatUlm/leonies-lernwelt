@@ -27,10 +27,19 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --start-interval=1s \
   CMD node -e "fetch('http://127.0.0.1:8081/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "server/src/main.ts"]
 
-# Web (default target): static files served by unprivileged nginx on port 8080.
-FROM nginxinc/nginx-unprivileged:1.29-alpine AS web
+# Web (default target): static files served by nginx as user nginx (101) on port 8080.
+# The official image starts as root; like nginx-unprivileged, drop the user
+# directive and move the pid file to /tmp (the temp paths are set in
+# deploy/nginx.conf). The greps fail the build if the upstream file changes.
+# Exact patch tag: the server builds without --pull, so a cached minor tag
+# could still be an old nginx.
+FROM nginx:1.31.9-alpine AS web
+RUN sed -i -e '/^user /d' -e 's,^pid .*,pid        /tmp/nginx.pid;,' /etc/nginx/nginx.conf \
+ && grep -q '^pid        /tmp/nginx.pid;$' /etc/nginx/nginx.conf \
+ && ! grep -q '^user ' /etc/nginx/nginx.conf
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
+USER 101
 EXPOSE 8080
 # Traefik only routes to healthy containers: check every second while starting,
 # so a deploy causes about a second of downtime instead of half a minute.

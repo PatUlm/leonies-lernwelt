@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.4 – 2026-11-18
+
+### Sicherheit
+
+- **Webserver nginx 1.31.9:** Schließt die Lücken „nginx2root“ (CVE-2026-123007, -123634,
+  -123633, -121810, -113425). Für das bisherige Image ohne Root-Rechte gab es kein gefixtes
+  Update; die Seite läuft jetzt auf dem offiziellen nginx-Image, weiterhin ohne Root-Rechte.
+
 ## 2026.11.3 – 2026-11-18
 
 ### Neu
