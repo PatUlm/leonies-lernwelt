@@ -30,6 +30,7 @@ import { Engine as NotesEngine, STAGES as NOTES_STAGES, exampleKeys, freshProgre
 import {
   LISTEN_INTRO, LOOKS, MISSING, PRAISE, QUESTIONS, ROW_FULL, ROW_HELP, RULES, TOO_LONG, TOO_SHORT, explanation as notesExample,
 } from '../src/modules/notes/texts';
+import { forestRulesCourse } from '../src/modules/forestrules/course';
 import { leavesCourse } from '../src/modules/leaves/course';
 import { treeCourse } from '../src/modules/tree/course';
 import { MARKED_IS_RIGHT } from '../src/shared/game/texts';
@@ -157,7 +158,7 @@ export function germanTexts(): GermanText[] {
   add('Noten: Anhören', ...LISTEN_INTRO);
 
   // HSU: every message of a quiz is made of fixed sentences; a mistake repeats sentences of examples and help.
-  for (const course of [treeCourse, leavesCourse]) {
+  for (const course of [treeCourse, leavesCourse, forestRulesCourse]) {
     const progress = freshQuiz(course, Date.now());
     progress.stages.forEach((s) => Object.assign(s, { unlocked: true, steps: 9 }));
     const quiz = new QuizEngine(course, progress);
@@ -165,7 +166,7 @@ export function germanTexts(): GermanText[] {
       for (const key of quizExampleKeys(course, stage)) {
         const task = quiz.makeTask(stage, 'practice', key);
         add(`${course.title} ${stage}: Beispiel`, ...course.explanation(task));
-        add(`${course.title} ${stage}: Frage`, ...course.question(task));
+        add(`${course.title} ${stage}: Frage`, ...course.question(task), ...(course.read?.(task) ?? []));
         add(`${course.title} ${stage}: Hilfe`, ...(course.help(task) ?? [ONE_GONE]));
         add(`${course.title} ${stage}: Antwort`, ...course.confirmation('Genau!', task).slice(1));
         for (const chosen of quiz.distractorPool(stage, key)) add(`${course.title} ${stage}: Fehler`, ...course.mistake(task, chosen));

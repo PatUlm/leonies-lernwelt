@@ -9,7 +9,8 @@ Zeigeruhr zu lesen. Daneben löst sie in **„Umkehraufgaben“** Platzhalterauf
 „__ + 23 = 90“ rückwärts. In Deutsch übt **„Der, die, das“** Nomen mit bestimmtem und unbestimmtem
 Artikel. In Musik lernt sie mit **„Notenwerte“**, wie lange halbe, Viertel- und
 Achtelnoten dauern – ihre eigene Idee. In HSU geht es um den Wald: **„Der Baum“** (Teile des
-Baumes und ihre Aufgaben) und **„Laubbäume“** (Bäume an Blatt und Frucht erkennen). In Englisch
+Baumes und ihre Aufgaben), **„Laubbäume“** (Bäume an Blatt und Frucht erkennen) und
+**„Waldregeln“**. In Englisch
 lernt **„Farben, Zahlen, Tiere“** die ersten englischen Wörter. Weitere Module folgen.
 
 **Ausprobieren:** [lernwelt.nieda.de](https://lernwelt.nieda.de)
@@ -55,7 +56,7 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 | Mathe | Lolli | Die Uhr, Umkehraufgaben |
 | Deutsch | Bonbon | Der, die, das |
 | Musik | Cupcake | Notenwerte |
-| HSU – Heimat- und Sachunterricht | Gummibärchen | Der Baum, Laubbäume |
+| HSU – Heimat- und Sachunterricht | Gummibärchen | Der Baum, Laubbäume, Waldregeln |
 | Englisch | Schokolade | Farben, Zahlen, Tiere; How many? |
 
 Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
@@ -429,7 +430,7 @@ Die nächste Stufe öffnet sich nach zehn selbstständig richtigen Antworten, vo
 acht von zehn stimmen und bei denen jede Note dabei war. Ein Durchgang hat zehn Aufgaben;
 Abzeichen, Sterne und Pokale funktionieren wie bei „Der, die, das“.
 
-## HSU: Der Baum und Laubbäume
+## HSU: Der Baum, Laubbäume und Waldregeln
 
 Nach Leonies Arbeitsblättern zum Thema **Wald** (Klasse 3). Beide Module stellen eine Frage zu
 einem Bild mit drei Antworten und folgen derselben Grundregel: **Abgefragt wird nur, was vorher
@@ -453,6 +454,13 @@ Stufe 2 und 3 nimmt sie eine falsche Antwort weg.
 Buche. Stufe 1 fragt zum Blatt den Baum (erst die drei unverwechselbaren, dann Linde, Birke und
 Buche), Stufe 2 zur Frucht. Hilfe und Fehlererklärung sagen, woran man es erkennt: „Das Blatt
 sieht aus wie ein Herz: die Linde.“ Blattform und Blattrand als Fachwörter folgen später.
+
+**Waldregeln** nach dem Blatt „Unsere Waldregeln“. Stufe 1 zeigt eine Szene und fragt nach der
+Regel („Ich bleibe auf dem Weg.“, „Ich verhalte mich leise.“ …, zuletzt „Ich nehme Rücksicht.“);
+die Bilder zeigen nur richtiges Verhalten. Stufe 2 stellt die elf Aussagen vom Blatt auf ein
+Holzschild: **Richtig** steht immer links, **Falsch** rechts. Nach der Antwort zeigt eine Szene,
+wie es richtig geht, und ein Satz sagt warum („Lärm erschreckt die Tiere.“) – das Warum wird
+erklärt, aber nie abgefragt.
 
 Ein Durchgang hat zehn Aufgaben; Freischaltung, Abzeichen, Sterne und Pokale funktionieren wie
 bei „Notenwerte“.

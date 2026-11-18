@@ -67,6 +67,8 @@ export function mountQuiz(course: QuizCourse, root: HTMLElement, ctx: ModuleCont
   let locked = false;
   let buttons: HTMLButtonElement[] = [];
   let message: Text = [];
+  /** The question of the open task, as long as the message shows it (help replaces it). */
+  let question: Text = [];
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
   let round = newRoundStats();
@@ -123,7 +125,8 @@ export function mountQuiz(course: QuizCourse, root: HTMLElement, ctx: ModuleCont
       });
     } else {
       locked = false;
-      setMessage(course.question(task), 'question');
+      question = course.question(task);
+      setMessage(question, 'question');
     }
 
     if (pendingToast) {
@@ -276,9 +279,18 @@ export function mountQuiz(course: QuizCourse, root: HTMLElement, ctx: ModuleCont
     shell.speak(message);
   }
 
+  /**
+   * The message; while a question with something to read on the card is open
+   * (the statement on the sign), that comes first – also after the help.
+   */
   function readAloud(): void {
     if (!task) return;
-    shell.speak(message);
+    const open = phase === 'question' && task.kind !== 'example' && course.read;
+    if (!open) {
+      shell.speak(message);
+      return;
+    }
+    shell.speak(message === question ? course.read!(task) : [...course.read!(task), ...message]);
   }
 
   function showParents(): void {

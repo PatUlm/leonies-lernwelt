@@ -1,6 +1,7 @@
 import { articleModule } from './modules/articles';
 import { clockModule } from './modules/clock';
 import { englishModule } from './modules/english';
+import { forestRulesModule } from './modules/forestrules';
 import { howManyModule } from './modules/howmany';
 import { inverseModule } from './modules/inverse';
 import { leavesModule } from './modules/leaves';
@@ -25,7 +26,7 @@ export const AREAS: Area[] = [
   { id: 'mathe', title: 'Mathe', color: '#63b3ed', candy: lollipopCandy, modules: [clockModule, inverseModule] },
   { id: 'deutsch', title: 'Deutsch', color: '#f29bc1', candy: wrappedCandy, modules: [articleModule] },
   { id: 'musik', title: 'Musik', color: '#b39ddb', candy: cupcakeCandy, modules: [notesModule] },
-  { id: 'hsu', title: 'HSU', subtitle: 'Heimat- und Sachunterricht', color: '#56c5b8', candy: gummyBear, modules: [treeModule, leavesModule] },
+  { id: 'hsu', title: 'HSU', subtitle: 'Heimat- und Sachunterricht', color: '#56c5b8', candy: gummyBear, modules: [treeModule, leavesModule, forestRulesModule] },
   { id: 'englisch', title: 'Englisch', color: '#cc9a76', candy: chocolateBar, modules: [englishModule, howManyModule] },
 ];
 

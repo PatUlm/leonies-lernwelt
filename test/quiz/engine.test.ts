@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { leavesCourse } from '../../src/modules/leaves/course';
+import { forestRulesCourse } from '../../src/modules/forestrules/course';
 import { treeCourse } from '../../src/modules/tree/course';
 import type { QuizCourse } from '../../src/shared/quiz/course';
 import {
@@ -12,7 +13,7 @@ import { statsFromProgress } from '../../src/shared/quiz/stats';
 import { seeded } from '../rng';
 
 const T0 = 1_700_000_000_000;
-const COURSES: [string, QuizCourse][] = [['Der Baum', treeCourse], ['Laubbäume', leavesCourse]];
+const COURSES: [string, QuizCourse][] = [['Der Baum', treeCourse], ['Laubbäume', leavesCourse], ['Waldregeln', forestRulesCourse]];
 
 /** Answers `n` tasks (examples always right), right unless `wrong` says otherwise. */
 function play(engine: Engine, n: number, wrong: (t: Task) => boolean = () => false, now = T0, helped = false): Task[] {
@@ -82,15 +83,18 @@ describe.each(COURSES)('quiz course %s', (_name, course) => {
     }
   });
 
-  it('offers three different answers with the right one, in every position', () => {
+  it('offers different answers with the right one, three where the stage has them, in every position', () => {
     const tasks = playAll(course, 5);
+    const answersOf = (stage: number) => new Set(exampleKeys(course, stage).map((k) => course.answer(stage, k))).size;
     for (const t of tasks) {
       expect(new Set(t.options).size).toBe(t.options.length);
       expect(t.options[t.correctIndex]).toBe(course.answer(t.stage, t.key));
-      if (t.kind !== 'example') expect(t.options).toHaveLength(OPTIONS);
+      if (t.kind !== 'example') expect(t.options).toHaveLength(Math.min(OPTIONS, answersOf(t.stage)));
+      const order = course.order?.(t.stage);
+      if (order) expect([...t.options].sort((a, b) => order.indexOf(a) - order.indexOf(b))).toEqual(t.options);
     }
     for (const stage of stages) {
-      expect(new Set(tasks.filter((t) => t.stage === stage).map((t) => t.correctIndex)).size).toBe(OPTIONS);
+      expect(new Set(tasks.filter((t) => t.stage === stage).map((t) => t.correctIndex)).size).toBe(Math.min(OPTIONS, answersOf(stage)));
     }
   });
 
@@ -209,5 +213,16 @@ describe('Der Baum', () => {
     const tasks = playAll(treeCourse, 21).filter((t) => t.stage === 1 && t.kind !== 'example' && t.key === 'rinde');
     expect(tasks.length).toBeGreaterThan(0);
     for (const t of tasks) expect(t.options).toContain('stamm');
+  });
+});
+
+describe('Waldregeln', () => {
+  it('starts "richtig oder falsch" with a right statement alone, then a wrong one, "Richtig" always left', () => {
+    const engine = new Engine(forestRulesCourse, freshProgress(forestRulesCourse, T0), seeded(30));
+    reach(engine, 2);
+    const [first, second, ...rest] = play(engine, 12).filter((t) => t.stage === 2);
+    expect([first.kind, first.key, first.options]).toEqual(['example', 'weg', ['richtig']]);
+    expect([second.kind, second.key, second.options]).toEqual(['example', 'schreien', ['richtig', 'falsch']]);
+    for (const t of rest) expect(t.options).toEqual(['richtig', 'falsch']);
   });
 });

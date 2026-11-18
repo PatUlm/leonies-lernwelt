@@ -95,7 +95,6 @@ Vom Game-Designer bewusst für später vorgesehen; alles steht auf den Arbeitsbl
   dreieckig, eiförmig; gezackt, gewellt, gebuchtet, glatt. Dieselben Blattbilder, ohne die Eiche
   bei der Form (das Faltheft sagt „eiförmig“, das Bild zeigt Buchten) und ohne den Ahorn beim
   Rand (seine Lappen sehen aus wie Buchten); „glatt“ braucht ein neutrales Musterblatt.
-- **Waldregeln:** elf Aussagen richtig oder falsch – braucht eine Zwei-Knopf-Form.
 - **Laub- oder Nadelbaum, Waldarten:** Blatt, Blüte, Frucht gegen Nadel und Zapfen; Tanne,
   Fichte, Kiefer, Lärche gegen Buche, Eiche, Ahorn, Birke; Laub-, Nadel- und Mischwald. Passt zur
   Sortier-Mechanik (Karten in Schalen).
@@ -105,6 +104,18 @@ Vom Game-Designer bewusst für später vorgesehen; alles steht auf den Arbeitsbl
 - **Steckbrief-Details:** wer welche Früchte frisst, Verbreitung durch den Wind, „Nasenzwicker“.
 - **Neue Formen:** Blatt und Frucht zuordnen, auf den Baum tippen statt drei Knöpfe, „Erst
   sagen, dann aufdecken“.
+
+## HSU: Waldregeln
+
+Mit dem Game-Designer für nach der ersten Version vorgesehen:
+
+- **Stufe 3 „Welche Regel hilft?“:** zu einer falschen Aussage die Regelkarte wählen, ohne
+  Pilze und Feuer (dahinter steht keine der sechs Regeln). Braucht keine neuen Bilder und gleicht
+  die Ratequote von richtig/falsch aus.
+- **Sortieren in zwei Schalen:** richtig und falsch ist der natürliche Fall für die Sortier-Idee.
+- **Szenen mit Fehlverhalten** und „Was stimmt hier nicht?“ – die Folge zeigen statt der Tat,
+  kein fröhliches Kind als Täter.
+- **Warum als eigene Frage** („Warum bin ich leise?“), Leonies eigene Bilder als Karten.
 
 ## Weitere Module
 

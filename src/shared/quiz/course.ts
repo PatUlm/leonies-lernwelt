@@ -29,6 +29,8 @@ export interface QuizCourse extends QuizRules {
   /** Stages whose answers are longer texts, one below the other on a phone. */
   textAnswers?(stage: number): boolean;
   question(task: Task): Text;
+  /** What the speaker reads while a question is open, if more than the question, e.g. the statement on the sign. */
+  read?(task: Task): Text;
   /** The guided example, read aloud at once; the answer lights up afterwards. */
   explanation(task: Task): Text;
   /** Help sentences, or null: then one wrong answer is taken away instead. */

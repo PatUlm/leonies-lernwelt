@@ -2254,6 +2254,96 @@ a.area-card:active {
   }
 }
 
+/* Waldregeln: a scene (stage 1), or a statement on a wooden sign (stage 2), with the scene once answered. */
+.scene-svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: clamp(190px, 32vh, 340px);
+  border-radius: 14px;
+}
+
+.rule-statement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.rule-statement .scene-svg {
+  height: clamp(120px, 20vh, 220px);
+}
+
+.rule-sign {
+  max-width: 520px;
+  padding: 18px 24px;
+  border: 4px solid #7a4a26;
+  border-radius: 14px;
+  background: repeating-linear-gradient(180deg, #e2b07a 0 22px, #d9a066 22px 24px);
+  box-shadow: 0 5px 0 #7a4a26;
+}
+
+.rule-sign-text {
+  color: #3b2410;
+  font-size: clamp(24px, 3.6vw, 32px);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.judgement {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.judgement > span {
+  font-size: 1.2em;
+}
+
+.judgement.richtig > span {
+  color: var(--good);
+}
+
+.judgement.falsch > span {
+  color: var(--bad);
+}
+
+@media (max-width: 600px) {
+  .scene-svg {
+    height: clamp(160px, 28vh, 280px);
+  }
+
+  .rule-statement .scene-svg {
+    height: clamp(100px, 16vh, 170px);
+  }
+
+  .rule-sign {
+    padding: 12px 16px;
+  }
+
+  .rule-sign-text {
+    font-size: 22px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .scene-svg {
+    height: min(200px, 52vh);
+  }
+
+  .rule-statement .scene-svg {
+    height: 110px;
+  }
+
+  .rule-sign {
+    padding: 8px 12px;
+  }
+
+  .rule-sign-text {
+    font-size: 18px;
+  }
+}
+
 /* ---------- dialogs ---------- */
 
 .dialog {

@@ -124,12 +124,12 @@ describe('pickRecommendation', () => {
 });
 
 describe('areas', () => {
-  it('has the five school subjects with the clock and the inverse tasks in maths, note values in music, the tree and deciduous trees in HSU, words and sentences in English', () => {
+  it('has the five school subjects with the clock and the inverse tasks in maths, note values in music, the tree, deciduous trees and forest rules in HSU, words and sentences in English', () => {
     expect(AREAS.map((a) => a.title)).toEqual(['Mathe', 'Deutsch', 'Musik', 'HSU', 'Englisch']);
     expect(AREAS[0].modules.map((m) => m.id)).toEqual(['uhr', 'umkehr']);
     expect(AREAS[1].modules.map((m) => m.id)).toEqual(['artikel']);
     expect(AREAS[2].modules.map((m) => m.id)).toEqual(['noten']);
-    expect(AREAS[3].modules.map((m) => m.id)).toEqual(['baum', 'laubbaeume']);
+    expect(AREAS[3].modules.map((m) => m.id)).toEqual(['baum', 'laubbaeume', 'waldregeln']);
     expect(AREAS[4].modules.map((m) => m.id)).toEqual(['woerter', 'howmany']);
   });
 });

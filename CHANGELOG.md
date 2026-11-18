@@ -5,6 +5,16 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.3 – 2026-11-18
+
+### Neu
+
+- **HSU: „Waldregeln“:** Nach Leonies Blatt „Unsere Waldregeln“. Stufe 1: zu einer Szene die
+  Regel wählen – auf dem Weg bleiben, Müll mitnehmen, leise sein, Pflanzen heile lassen, bei der
+  Gruppe bleiben, Rücksicht nehmen. Stufe 2: die elf Aussagen vom Blatt als richtig oder falsch
+  einordnen; danach zeigt eine Szene, wie es richtig geht, und ein Satz sagt warum. Die Bilder
+  zeigen nur richtiges Verhalten.
+
 ## 2026.11.2 – 2026-11-17
 
 ### Geändert

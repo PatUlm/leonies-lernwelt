@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { leavesCourse } from '../../src/modules/leaves/course';
+import { forestRulesCourse } from '../../src/modules/forestrules/course';
 import { treeCourse } from '../../src/modules/tree/course';
 import { FACTS, NAMES, type FactKey } from '../../src/modules/tree/content';
 import type { QuizCourse } from '../../src/shared/quiz/course';
@@ -23,7 +24,7 @@ function sentences(text: string[]): number {
   return text.filter((t) => t !== ANSWER_FOLLOWS).join(' ').split(/(?<=[.!?])\s+/).filter(Boolean).length;
 }
 
-describe.each([['Der Baum', treeCourse], ['Laubbäume', leavesCourse]] as const)('texts of %s', (_name, course) => {
+describe.each([['Der Baum', treeCourse], ['Laubbäume', leavesCourse], ['Waldregeln', forestRulesCourse]] as const)('texts of %s', (_name, course) => {
   const tasks = allTasks(course);
 
   it('explain in at most two short sentences before the answer', () => {
@@ -78,5 +79,18 @@ describe('Der Baum texts', () => {
     for (const key of exampleKeys(treeCourse, 2)) {
       expect(FACTS[key as FactKey].question).toMatch(/^Welcher Teil /);
     }
+  });
+});
+
+describe('Waldregeln texts', () => {
+  it('never praises a wrong statement with "Richtig!"', () => {
+    for (const t of allTasks(forestRulesCourse).filter((task) => task.stage === 2)) {
+      expect(forestRulesCourse.confirmation('Richtig!', t)[0]).toBe('Genau!');
+    }
+  });
+
+  it('reads the statement on the sign before the question', () => {
+    const t = allTasks(forestRulesCourse).find((task) => task.stage === 2 && task.key === 'feuer')!;
+    expect(forestRulesCourse.read!(t)).toEqual(['Im Wald darfst du Feuer machen.', 'Ist das im Wald richtig oder falsch?']);
   });
 });

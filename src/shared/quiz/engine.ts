@@ -27,6 +27,8 @@ export interface QuizRules {
   excluded?(stage: number, key: string, answer: string): boolean;
   /** Answers easily mixed up with the right one: one of them is always offered once explained. */
   partners?(stage: number, key: string): readonly string[];
+  /** Answers that keep their place instead of being shuffled, e.g. "richtig" left of "falsch". */
+  order?(stage: number): readonly string[] | undefined;
 }
 
 /**
@@ -479,7 +481,10 @@ export class Engine {
     const first = partners.length ? [pick(partners, this.rng)] : [];
     const rest = shuffled(pool.filter((a) => !first.includes(a)), this.rng);
     const others = [...first, ...rest].slice(0, OPTIONS - 1);
-    const options = shuffled([right, ...others], this.rng);
+    const order = this.rules.order?.(stage);
+    const options = order
+      ? [right, ...others].sort((a, b) => order.indexOf(a) - order.indexOf(b))
+      : shuffled([right, ...others], this.rng);
     return { id: this.progress.taskCounter, stage, kind, key, options, correctIndex: options.indexOf(right) };
   }
 }
