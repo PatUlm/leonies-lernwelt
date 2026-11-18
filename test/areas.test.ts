@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AREAS, pickRecommendation, type ModuleEntry } from '../src/areas';
+import { AREAS, newModules, pickRecommendation, sortAreas, type Area, type ModuleEntry } from '../src/areas';
 import { Engine, SESSION_GAP_MS, TRACK_TIERS, TRACKS, freshProgress, type Track } from '../src/modules/clock/engine';
 import type { Tier } from '../src/modules/clock/time';
 import { REFRESH_AFTER_MS, statsFromProgress } from '../src/modules/clock/stats';
@@ -100,13 +100,23 @@ describe('clock suggestion', () => {
   });
 });
 
+const entry = (
+  id: string,
+  priority: ModuleStats['suggestion']['priority'],
+  lastPlayed: number | null,
+  { area = AREAS[0], mastered = false }: { area?: Area; mastered?: boolean } = {},
+): ModuleEntry =>
+  ({
+    area,
+    module: { id } as ModuleEntry['module'],
+    stats: {
+      suggestion: { priority, label: id },
+      lastPlayed,
+      goals: { done: mastered ? 3 : 1, total: 3, label: '', sweets: [] },
+    } as unknown as ModuleStats,
+  }) as ModuleEntry;
+
 describe('pickRecommendation', () => {
-  const entry = (id: string, priority: ModuleStats['suggestion']['priority'], lastPlayed: number | null): ModuleEntry =>
-    ({
-      area: AREAS[0],
-      module: { id } as ModuleEntry['module'],
-      stats: { suggestion: { priority, label: id }, lastPlayed } as ModuleStats,
-    }) as ModuleEntry;
 
   it('picks exactly one module, the most urgent', () => {
     const picked = pickRecommendation([entry('a', 5, 1), entry('b', 1, 2), entry('c', 3, 0)]);
@@ -120,6 +130,53 @@ describe('pickRecommendation', () => {
 
   it('returns null without modules', () => {
     expect(pickRecommendation([])).toBeNull();
+  });
+
+  it('skips mastered modules, even when they are more urgent', () => {
+    const picked = pickRecommendation([entry('a', 3, 0, { mastered: true }), entry('b', 5, 1)]);
+    expect(picked?.module.id).toBe('b');
+  });
+
+  it('picks among mastered modules once every module is mastered', () => {
+    const picked = pickRecommendation([entry('a', 5, 1, { mastered: true }), entry('b', 3, 2, { mastered: true })]);
+    expect(picked?.module.id).toBe('b');
+  });
+});
+
+describe('sortAreas', () => {
+  const [mathe, deutsch, musik, hsu, englisch] = AREAS;
+  const entries = [
+    entry('uhr', 5, 1, { area: mathe }),
+    entry('artikel', 5, 1, { area: deutsch, mastered: true }),
+    entry('noten', 1, 1, { area: musik }),
+    entry('baum', 5, 1, { area: hsu, mastered: true }),
+    entry('waldregeln', 5, 1, { area: hsu }),
+    entry('woerter', 5, 1, { area: englisch, mastered: true }),
+  ];
+
+  it('puts the recommended area first and fully mastered areas last, otherwise keeps the order', () => {
+    const sorted = sortAreas(AREAS, entries, entries[2]);
+    expect(sorted.map((a) => a.id)).toEqual(['musik', 'mathe', 'hsu', 'deutsch', 'englisch']);
+  });
+
+  it('keeps the fixed order without a recommendation', () => {
+    expect(sortAreas(AREAS, [], null)).toEqual(AREAS);
+  });
+});
+
+describe('newModules', () => {
+  const area = (modules: Partial<ModuleEntry['module']>[]): Area => ({ ...AREAS[0], modules: modules as ModuleEntry['module'][] });
+
+  it('flags every module of the latest release that brought modules', () => {
+    const fresh = newModules([
+      area([{ id: 'alt' }, { id: 'a', addedIn: '2026.9.4' }]),
+      area([{ id: 'b', addedIn: '2026.11.10' }, { id: 'c', addedIn: '2026.11.9' }, { id: 'd', addedIn: '2026.11.10' }]),
+    ]);
+    expect([...fresh].map((m) => m.id)).toEqual(['b', 'd']);
+  });
+
+  it('flags nothing when no module names its release', () => {
+    expect(newModules([area([{ id: 'alt' }])]).size).toBe(0);
   });
 });
 

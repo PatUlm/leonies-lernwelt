@@ -62,7 +62,11 @@ auch ohne Internet. Auf dem iPad: Teilen → „Zum Home-Bildschirm“.
 Auf der Startseite wählt man zuerst den Bereich, dann das Modul. Ein grünes Schild
 **„Hier weiter“** zeigt immer genau eine Empfehlung – zum Beispiel einen angefangenen
 Durchgang fortsetzen, Fehler von neulich wiederholen oder nach ein paar Tagen Pause
-auffrischen. Kleine Süßigkeiten des Bereichs zeigen, wie viel eines Moduls schon sicher
+auffrischen; sicher gelernte Module empfiehlt es erst, wenn alles sicher gelernt ist. Der
+Bereich mit „Hier weiter“ steht ganz oben, Bereiche mit lauter sicher gelernten Modulen
+stehen unten. **„Neu“** tragen die Module des letzten Releases, das Module gebracht hat, bis
+ein späteres Release wieder ein Modul bringt, außerdem noch nie geöffnete Module; der Bereich
+zeigt es mit. Kleine Süßigkeiten des Bereichs zeigen, wie viel eines Moduls schon sicher
 sitzt: bei der Uhr eine je Übungsart (Zahl, Text, Zeiger stellen …), die sich wie ein Zeiger
 füllt, bei Deutsch und Englisch eine je Stufe. Darunter stehen alle sicheren Lernziele
 („8 von 35“) und das nächste Ziel.

@@ -5,6 +5,19 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.5 – 2026-11-18
+
+### Geändert
+
+- **Übersicht: „Hier weiter“ oben, „Sicher gelernt“ unten:** Der Bereich mit der Empfehlung
+  steht ganz oben, Bereiche mit lauter sicher gelernten Modulen stehen unten.
+- **„Hier weiter“ nicht mehr bei sicher Gelerntem:** Ein sicher gelerntes Modul wird erst
+  wieder empfohlen, wenn alle Module sicher gelernt sind.
+- **„Neu“ für neue Module:** Die Module des letzten Releases, das Module gebracht hat, tragen
+  „Neu“, bis ein späteres Release wieder ein Modul bringt – auch wenn sie schon geübt wurden.
+  Der Bereich zeigt „Neu“ mit. „Neu“ steht zusätzlich zu „Hier weiter“ oder „Sicher gelernt“.
+  Noch nie geöffnete Module tragen weiterhin „Neu“.
+
 ## 2026.11.4 – 2026-11-18
 
 ### Sicherheit

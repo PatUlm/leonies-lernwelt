@@ -1,4 +1,5 @@
-import { AREAS, collectModules, pickRecommendation, type Area, type ModuleEntry } from './areas';
+import { AREAS, collectModules, isMastered, newModules, pickRecommendation, sortAreas, type Area, type ModuleEntry } from './areas';
+import type { LearningModule } from './modules/types';
 import { appTitle } from './config';
 import { STATUS_ICONS } from './shared/candy';
 import { TROPHY_BRONZE, TROPHY_GOLD, TROPHY_SILVER, medal, plainStar, skyLayer, trophy } from './shared/decor';
@@ -25,6 +26,10 @@ type StatusKind = keyof typeof STATUS_ICONS;
 /** Status label: colour plus icon plus text, never colour alone. */
 function status(kind: StatusKind, text: string): string {
   return `<span class="status status-${kind}">${STATUS_ICONS[kind]}<span>${escapeHtml(text)}</span></span>`;
+}
+
+function statusRow(labels: string[]): string {
+  return labels.length ? `<span class="status-row">${labels.join('')}</span>` : '';
 }
 
 function plural(n: number, one: string, many: string): string {
@@ -76,12 +81,14 @@ function badgeList(entries: ModuleEntry[], heading: string): string {
     .join('')}</ul></section>`;
 }
 
-function areaStatus(area: Area, entries: ModuleEntry[], recommended: ModuleEntry | null): string {
+/** "Neu" (new in the latest release or never opened) next to "Hier weiter" or "Sicher gelernt". */
+function areaStatus(area: Area, entries: ModuleEntry[], recommended: ModuleEntry | null, fresh: Set<LearningModule>): string {
   if (!area.modules.length) return status('soon', 'Noch nicht verfügbar');
-  if (recommended?.area === area) return status('next', 'Hier weiter');
-  if (entries.every((e) => !e.stats.started)) return status('new', 'Neu');
-  if (entries.every((e) => e.stats.goals.done === e.stats.goals.total)) return status('secure', 'Sicher gelernt');
-  return '';
+  const labels: string[] = [];
+  if (area.modules.some((m) => fresh.has(m)) || entries.every((e) => !e.stats.started)) labels.push(status('new', 'Neu'));
+  if (recommended?.area === area) labels.push(status('next', 'Hier weiter'));
+  else if (entries.every(isMastered)) labels.push(status('secure', 'Sicher gelernt'));
+  return statusRow(labels);
 }
 
 function areaTitle(area: Area): string {
@@ -102,7 +109,8 @@ const SYNC_TEXT: Record<SyncStatus, string> = {
 export function renderDashboard(app: HTMLElement, rerender: () => void): () => void {
   const entries = collectModules();
   const recommended = pickRecommendation(entries);
-  const available = AREAS.filter((a) => a.modules.length);
+  const fresh = newModules();
+  const available = sortAreas(AREAS.filter((a) => a.modules.length), entries, recommended);
   const account = sync.account();
   const upcoming = AREAS.filter((a) => !a.modules.length);
 
@@ -115,7 +123,7 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
         <span class="area-text">
           <span class="area-title">${areaTitle(area)}</span>
           <span class="area-info">${plural(own.length, 'Modul', 'Module')} · ${plural(badges, 'Abzeichen', 'Abzeichen')}</span>
-          ${areaStatus(area, own, recommended)}
+          ${areaStatus(area, own, recommended, fresh)}
         </span>
         <span class="area-go" aria-hidden="true">›</span>
       </a>`;
@@ -124,7 +132,7 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
       <div class="area-card small" style="--area:${area.color}" aria-disabled="true">
         <span class="area-candy">${area.candy(area.color)}</span>
         <span class="area-title">${areaTitle(area)}</span>
-        ${areaStatus(area, [], recommended)}
+        ${areaStatus(area, [], recommended, fresh)}
       </div>`;
 
   app.className = 'dashboard';
@@ -230,13 +238,15 @@ export function renderArea(app: HTMLElement, area: Area): void {
   const all = collectModules();
   const recommended = pickRecommendation(all);
   const entries = all.filter((e) => e.area === area);
+  const fresh = newModules();
 
   const moduleCard = (entry: ModuleEntry) => {
     const { module, stats } = entry;
-    let badge = '';
-    if (recommended?.module === module) badge = status('next', `Hier weiter · ${stats.suggestion.label}`);
-    else if (!stats.started) badge = status('new', 'Neu');
-    else if (stats.goals.done === stats.goals.total) badge = status('secure', 'Sicher gelernt');
+    const labels: string[] = [];
+    if (fresh.has(module) || !stats.started) labels.push(status('new', 'Neu'));
+    if (recommended?.module === module) labels.push(status('next', `Hier weiter · ${stats.suggestion.label}`));
+    else if (isMastered(entry)) labels.push(status('secure', 'Sicher gelernt'));
+    const badge = statusRow(labels);
     return `
       <a class="module-tile" href="#/${area.id}/${module.id}" style="--area:${area.color}">
         <span class="module-icon">${module.icon}</span>

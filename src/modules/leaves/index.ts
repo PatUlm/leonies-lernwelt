@@ -20,6 +20,7 @@ export const leavesModule: LearningModule = {
   title: 'Laubbäume',
   description: 'Ahorn, Eiche, Kastanie & Co.: Welcher Baum hat dieses Blatt und diese Frucht?',
   icon: ICON,
+  addedIn: '2026.11.1',
   stats: () => quizStats(leavesCourse),
   mount: (root, ctx) => mountQuiz(leavesCourse, root, ctx),
 };

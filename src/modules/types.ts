@@ -68,6 +68,12 @@ export interface LearningModule {
   description: string;
   /** Inline SVG markup for the module card. */
   icon: string;
+  /**
+   * Release (CHANGELOG version, e.g. "2026.11.3") that brought the module. The
+   * modules of the latest such release are flagged "Neu" until a later release
+   * brings another module.
+   */
+  addedIn?: string;
   stats(): ModuleStats;
   /** Renders into `root`; returns a cleanup function. */
   mount(root: HTMLElement, ctx: ModuleContext): () => void;

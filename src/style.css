@@ -699,6 +699,12 @@ a.area-card:active {
   white-space: nowrap;
 }
 
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .status svg {
   width: 16px;
   height: 16px;

@@ -17,6 +17,7 @@ export const forestRulesModule: LearningModule = {
   title: 'Waldregeln',
   description: 'Auf dem Weg bleiben, leise sein, Müll mitnehmen: Was ist im Wald richtig, was falsch?',
   icon: ICON,
+  addedIn: '2026.11.3',
   stats: () => quizStats(forestRulesCourse),
   mount: (root, ctx) => mountQuiz(forestRulesCourse, root, ctx),
 };

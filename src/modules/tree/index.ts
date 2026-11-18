@@ -19,6 +19,7 @@ export const treeModule: LearningModule = {
   title: 'Der Baum',
   description: 'Wurzeln, Stamm und Baumkrone: Wie heißen die Teile, und was machen sie?',
   icon: ICON,
+  addedIn: '2026.11.1',
   stats: () => quizStats(treeCourse),
   mount: (root, ctx) => mountQuiz(treeCourse, root, ctx),
 };
