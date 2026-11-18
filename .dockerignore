@@ -1,6 +1,11 @@
 # Only sources and the lockfile are needed for the build. Keep everything else out
 # of the build context (and thus out of the SSH transfer to the server).
 **/node_modules
+# Local data: dev and e2e profiles, recordings (uploaded on their own, bin/tts-upload.sh).
+.data
+tmp
+test-results
+playwright-report
 **/dist
 .git
 .gitignore
