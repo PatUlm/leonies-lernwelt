@@ -151,7 +151,6 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
              <div class="areas-grid">${upcoming.map(smallCard).join('')}</div></section>`
         : ''
     }
-    ${badgeList(entries, 'Deine Abzeichen')}
     <section class="install" hidden>
       <span class="install-icon" aria-hidden="true">📲</span>
       <span class="install-text">Die Lernwelt als App auf den Startbildschirm legen – dann öffnet sie im Vollbild.</span>

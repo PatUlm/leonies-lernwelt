@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.8 – 2026-11-21
+
+### Geändert
+
+- **Übersicht ohne Abzeichenliste:** Die Liste „Deine Abzeichen“ steht nicht mehr auf der
+  Startseite; dort bleibt die Zahl der Abzeichen, insgesamt und je Lernbereich. Die Abzeichen
+  selbst stehen weiterhin auf der Seite ihres Lernbereichs.
+
 ## 2026.11.7 – 2026-11-21
 
 ### Geändert

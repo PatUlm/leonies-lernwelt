@@ -243,8 +243,8 @@ des Profils mit.
 
 ### Für Eltern
 
-- Auf der **Startseite** sieht man alle Pokale, Sterne und Abzeichen und die Lernbereiche,
-  unten das Profil, ob der Spielstand gespeichert ist, und die **Version** der App.
+- Auf der **Startseite** sieht man die Zahl der Pokale, Sterne und Abzeichen und die
+  Lernbereiche, unten das Profil, ob der Spielstand gespeichert ist, und die **Version** der App.
 - Das **Zahnrad** im Uhr-Modul öffnet den Elternbereich: Stand jeder Stufe und Spur,
   Töne an/aus, „Erst sagen, dann aufdecken“ an/aus und „Fortschritt löschen“ (drei
   Sekunden gedrückt halten).
