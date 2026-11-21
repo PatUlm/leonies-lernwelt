@@ -24,6 +24,8 @@ interface Shape {
   parts: readonly Part[];
   /** Outlined in blue when this part is marked. */
   outline?: readonly Part[];
+  /** More shape for the outline only, never drawn itself. */
+  halo?: string;
 }
 
 function leaf(x: number, y: number, angle: number, size = 1): string {
@@ -41,6 +43,9 @@ function stroke(d: string, width: number, color = BRANCH): string {
 }
 
 const CROWN_PARTS: readonly Part[] = ['krone'];
+
+/** The strip of bark peeling off the trunk's right edge, fast at the top. */
+const PEEL = 'M186 134C190 146 196 158 203 168C204 172 209 172 210 168C211 165 209 163 208 163C203 152 197 140 191.5 134Z';
 
 /** The tree, centred at x = 180 in a 360 × 270 box. */
 const SHAPES: readonly Shape[] = [
@@ -74,15 +79,25 @@ const SHAPES: readonly Shape[] = [
     parts: CROWN_PARTS,
   },
   { svg: stroke('M122 79C118 66 114 56 106 44', 5), parts: ['krone', 'zweig'], outline: ['zweig'] },
-  // Trunk: light wood where a little bark is missing, the bark around it.
+  // Trunk: light wood at the right edge where a strip of bark peels off, the bark around it.
+  // The trunk's outline goes around the strip too.
   {
-    svg: `<path d="M156 192C166 170 168 146 170 118H190C192 146 194 170 204 192Z" fill="${WOOD}"/>`,
+    svg: `<path d="M156 192C166 170 168 146 170 118H190C192 146 194 170 204 192Z" fill="${WOOD}"/>` +
+      stroke('M189 142v24', 1.5, '#c9a46e'),
     parts: ['stamm'],
     outline: ['stamm'],
+    halo: `<path d="${PEEL}"/>`,
   },
   {
-    svg: `<path d="M156 192C166 170 168 146 170 118H190C192 146 194 170 204 192ZM179 146c-7 0-10 8-10 15s4 14 10 14s9-7 9-14s-3-15-9-15Z" fill="${BARK}" fill-rule="evenodd"/>` +
-      stroke('M175 126v12M186 132v14M172 176v10M190 160v14M184 178v10M168 140v8', 2.5, '#4a2c14'),
+    svg: `<path d="M156 192C166 170 168 146 170 118H190C192 146 194 170 204 192ZM186 134H191.4C192 146 193.5 160 195 172C191 170 187 169 186 164C184 158 187 152 185 146C184 141 186 138 186 134Z" fill="${BARK}" fill-rule="evenodd"/>` +
+      stroke('M175 122v12M183 122v8M170 146v12M178 140v10M171 164v8M176 180v8M188 180v8', 2.5, '#4a2c14'),
+    parts: ['stamm', 'rinde'],
+  },
+  // The strip of bark peeling off: still fast at the top, it rolls away outwards and down.
+  {
+    svg: `<path d="${PEEL}" fill="${BARK}"/>` +
+      `<path d="M203 168C204 172 209 172 210 168C208 170 205 170 203 168Z" fill="#a8703f"/>` +
+      stroke('M194 146l3 5M199 154l3 5', 2, '#4a2c14'),
     parts: ['stamm', 'rinde'],
     outline: ['rinde'],
   },
@@ -102,8 +117,8 @@ const SHAPES: readonly Shape[] = [
 /** Where the line starts on the part, and on which side its box stands. */
 const POINTERS: Record<Part, { x: number; y: number; side: 'left' | 'right'; boxY: number }> = {
   wurzeln: { x: 236, y: 214, side: 'right', boxY: 252 },
-  stamm: { x: 186, y: 150, side: 'right', boxY: 150 },
-  rinde: { x: 166, y: 182, side: 'left', boxY: 182 },
+  stamm: { x: 177, y: 160, side: 'left', boxY: 160 },
+  rinde: { x: 201, y: 156, side: 'right', boxY: 150 },
   ast: { x: 222, y: 92, side: 'right', boxY: 112 },
   zweig: { x: 107, y: 46, side: 'left', boxY: 28 },
   blatt: { x: 302, y: 82, side: 'right', boxY: 22 },
@@ -140,7 +155,7 @@ export function treeSvg(mark: Part | null, name: string | null = null): string {
     if (mark === null || !s.parts.length) return s.svg;
     if (!s.parts.includes(mark)) return `<g opacity="0.3">${s.svg}</g>`;
     // The outline right behind its own shape, so nothing in between covers it.
-    return s.outline?.includes(mark) ? `<g filter="url(#tree-halo)">${s.svg}</g>${s.svg}` : s.svg;
+    return s.outline?.includes(mark) ? `<g filter="url(#tree-halo)">${s.svg}${s.halo ?? ''}</g>${s.svg}` : s.svg;
   });
   return `<svg class="tree-svg" viewBox="0 0 360 270" aria-hidden="true"${mark ? ` data-mark="${mark}"` : ''}>
     <defs><filter id="tree-halo" x="-20%" y="-20%" width="140%" height="140%">
