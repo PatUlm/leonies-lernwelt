@@ -1,12 +1,14 @@
 import { escapeHtml } from '../../shared/html';
 import type { QuizCourse } from '../../shared/quiz/course';
-import { JUDGEMENTS, RULE_PARTNERS, RULE_STEPS, RULE_TEXT, STATEMENTS, STATEMENT_STEPS, type StatementKey } from './content';
+import { JUDGEMENTS, RULE_PARTNERS, RULE_STEPS, RULE_TEXT, STATEMENTS, STATEMENT_STEPS, type Judgement, type StatementKey } from './content';
 import { SCENE_SVG, type Rule } from './pictures';
 import { confirmation, explanation, help, mistake, question, read } from './texts';
 
-/** Stage 2: the statement on a wooden sign. */
-function sign(text: string): string {
-  return `<div class="rule-sign"><span class="rule-sign-text">${escapeHtml(text)}</span></div>`;
+/** Stage 2: the statement on a wooden sign; once answered, stamped ✓ or struck through ✗. */
+function sign(text: string, judged: Judgement | null): string {
+  const stamp = judged ? `<span class="rule-stamp" aria-hidden="true">${judged === 'richtig' ? '✓' : '✗'}</span>` : '';
+  const state = judged ? ` judged ${judged}` : '';
+  return `<div class="rule-sign${state}"><span class="rule-sign-text">${escapeHtml(text)}</span>${stamp}</div>`;
 }
 
 export const forestRulesCourse: QuizCourse = {
@@ -37,9 +39,8 @@ export const forestRulesCourse: QuizCourse = {
   card(task, answered) {
     if (task.stage === 1) return { html: SCENE_SVG[task.key as Rule], label: 'Ein Bild aus dem Wald' };
     const s = STATEMENTS[task.key as StatementKey];
-    // Once answered, the scene of the rule behind it shows how it is done right.
-    const scene = answered && s.rule ? SCENE_SVG[s.rule] : '';
-    return { html: `<div class="rule-statement">${sign(s.text)}${scene}</div>`, label: s.text };
+    const label = answered ? `${s.text} ${s.judgement === 'richtig' ? 'Richtig.' : 'Falsch.'}` : s.text;
+    return { html: `<div class="rule-statement">${sign(s.text, answered ? s.judgement : null)}</div>`, label };
   },
   option(stage, answer) {
     if (stage === 1) {
@@ -59,7 +60,7 @@ export const forestRulesCourse: QuizCourse = {
   confirmation,
   legend: `Nach den HSU-Blättern „Unsere Waldregeln“ (Klasse 3). Stufe 1: zu einem Bild die Waldregel wählen – erst Weg,
     Müll und leise sein, dann Pflanzen heile lassen und bei der Gruppe bleiben, zuletzt Rücksicht. Die Bilder zeigen nur
-    richtiges Verhalten. Stufe 2: die elf Aussagen vom Blatt als richtig oder falsch einordnen; danach zeigt ein Bild, wie es
-    richtig geht. Warum eine Regel wichtig ist, hört das Kind nach jeder Antwort, abgefragt wird es nicht. Hilfe: was das
+    richtiges Verhalten. Stufe 2: die elf Aussagen vom Blatt als richtig oder falsch einordnen; danach bekommt das Schild einen Haken
+    oder wird durchgestrichen. Warum eine Regel wichtig ist, hört das Kind nach jeder Antwort, abgefragt wird es nicht. Hilfe: was das
     Bild zeigt (Stufe 1) oder warum (Stufe 2).`,
 };

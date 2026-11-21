@@ -40,7 +40,7 @@ export const JUDGEMENTS: readonly Judgement[] = ['richtig', 'falsch'];
 export interface Statement {
   text: string;
   judgement: Judgement;
-  /** The rule whose scene shows the right behaviour; none for mushrooms and fire. */
+  /** The rule behind it; none for mushrooms and fire. */
   rule: Rule | null;
   /** Why, in one short sentence. */
   why: string;

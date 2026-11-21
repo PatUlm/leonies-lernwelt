@@ -462,9 +462,9 @@ sieht aus wie ein Herz: die Linde.“ Blattform und Blattrand als Fachwörter fo
 **Waldregeln** nach dem Blatt „Unsere Waldregeln“. Stufe 1 zeigt eine Szene und fragt nach der
 Regel („Ich bleibe auf dem Weg.“, „Ich verhalte mich leise.“ …, zuletzt „Ich nehme Rücksicht.“);
 die Bilder zeigen nur richtiges Verhalten. Stufe 2 stellt die elf Aussagen vom Blatt auf ein
-Holzschild: **Richtig** steht immer links, **Falsch** rechts. Nach der Antwort zeigt eine Szene,
-wie es richtig geht, und ein Satz sagt warum („Lärm erschreckt die Tiere.“) – das Warum wird
-erklärt, aber nie abgefragt.
+Holzschild: **Richtig** steht immer links, **Falsch** rechts. Nach der Antwort bekommt das Schild
+einen grünen Haken oder wird rot durchgestrichen, und ein Satz sagt warum („Lärm erschreckt die
+Tiere.“) – das Warum wird erklärt, aber nie abgefragt.
 
 Ein Durchgang hat zehn Aufgaben; Freischaltung, Abzeichen, Sterne und Pokale funktionieren wie
 bei „Notenwerte“.

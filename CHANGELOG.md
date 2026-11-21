@@ -5,6 +5,14 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.7 – 2026-11-21
+
+### Geändert
+
+- **Waldregeln, Stufe 2: Das Schild zeigt das Urteil:** Nach der Antwort bekommt eine richtige
+  Aussage einen grünen Haken, eine falsche wird rot durchgestrichen. Die Szene aus Stufe 1, die
+  danach kurz erschien, entfällt.
+
 ## 2026.11.5 – 2026-11-18
 
 ### Geändert

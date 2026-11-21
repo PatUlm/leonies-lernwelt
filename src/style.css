@@ -2260,7 +2260,7 @@ a.area-card:active {
   }
 }
 
-/* Waldregeln: a scene (stage 1), or a statement on a wooden sign (stage 2), with the scene once answered. */
+/* Waldregeln: a scene (stage 1), or a statement on a wooden sign (stage 2), stamped once answered. */
 .scene-svg {
   display: block;
   width: auto;
@@ -2273,14 +2273,12 @@ a.area-card:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-}
-
-.rule-statement .scene-svg {
-  height: clamp(120px, 20vh, 220px);
+  /* Room for the stamp on the sign's corner, also while it lands: the card scrolls, it would cut it off. */
+  padding: 18px;
 }
 
 .rule-sign {
+  position: relative;
   max-width: 520px;
   padding: 18px 24px;
   border: 4px solid #7a4a26;
@@ -2294,6 +2292,53 @@ a.area-card:active {
   font-size: clamp(24px, 3.6vw, 32px);
   font-weight: 800;
   line-height: 1.25;
+}
+
+/* Answered: a right statement gets a green tick, a wrong one is struck through in red. */
+.rule-sign.judged.richtig {
+  border-color: var(--good);
+}
+
+.rule-sign.judged.falsch .rule-sign-text {
+  text-decoration: line-through var(--bad) 0.12em;
+}
+
+/* On the corner; the sign's border and padding keep the text clear of it. */
+.rule-stamp {
+  position: absolute;
+  top: -18px;
+  right: -18px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  animation: stamp 0.35s ease-out;
+}
+
+.richtig > .rule-stamp {
+  background: var(--good);
+}
+
+.falsch > .rule-stamp {
+  background: var(--bad);
+}
+
+@keyframes stamp {
+  0% {
+    transform: scale(1.3) rotate(-20deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
 }
 
 .judgement {
@@ -2319,12 +2364,8 @@ a.area-card:active {
     height: clamp(160px, 28vh, 280px);
   }
 
-  .rule-statement .scene-svg {
-    height: clamp(100px, 16vh, 170px);
-  }
-
   .rule-sign {
-    padding: 12px 16px;
+    padding: 12px 24px;
   }
 
   .rule-sign-text {
@@ -2337,12 +2378,21 @@ a.area-card:active {
     height: min(200px, 52vh);
   }
 
-  .rule-statement .scene-svg {
-    height: 110px;
+  .rule-statement {
+    padding: 16px;
   }
 
   .rule-sign {
-    padding: 8px 12px;
+    padding: 8px 20px;
+  }
+
+  .rule-stamp {
+    top: -14px;
+    right: -14px;
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+    font-size: 20px;
   }
 
   .rule-sign-text {

@@ -130,24 +130,38 @@ test('Waldregeln starts with the path: a scene, one rule card, the right one lig
   await expect(page.locator('.message')).toHaveText('Genau! Neben dem Weg wachsen junge Pflanzen und wohnen Tiere.');
 });
 
-test('Waldregeln, stage 2: a statement on the sign, "Richtig" left; a mistake says why and shows how it is done right', async ({ page }) => {
+test('Waldregeln, stage 2: a statement on the sign, "Richtig" left; a mistake says why and strikes the sign through', async ({ page }) => {
   await startQuiz(page, 'rules', [{ stage: 2, key: 'schreien', dueAt: 0 }]);
   await expect(page.locator('.rule-sign')).toHaveText('Im Wald darfst du laut schreien.');
   await expect(page.locator('.message')).toHaveText('Ist das im Wald richtig oder falsch?');
   await expect(page.locator('.quiz-answer')).toHaveText(['✓ Richtig', '✗ Falsch']);
-  await expect(page.locator('.rule-statement .scene-svg')).toHaveCount(0);
+  await expect(page.locator('.rule-stamp')).toHaveCount(0);
   await option(page, 'Richtig').click();
   await expect(page.locator('.message')).toHaveText('Das ist im Wald falsch. Lärm erschreckt die Tiere.');
   await expect(option(page, 'Falsch')).toHaveClass(/correct/);
-  await expect(page.locator('.rule-statement .scene-svg')).toBeVisible();
+  // The sign shows the right judgement, not the chosen one; no scene.
+  await expect(page.locator('.rule-sign')).toHaveClass(/judged falsch/);
+  await expect(page.locator('.rule-stamp')).toHaveText('✗');
+  await expect(page.locator('.rules-card .scene-svg')).toHaveCount(0);
 });
 
-test('Waldregeln, stage 2: a wrong statement judged right is praised without "Richtig!"', async ({ page }) => {
+test('Waldregeln, stage 2: a right statement gets a tick on the sign', async ({ page }) => {
+  await startQuiz(page, 'rules', [{ stage: 2, key: 'leise', dueAt: 0 }]);
+  await expect(page.locator('.quiz-show')).toHaveAttribute('aria-label', 'Im Wald verhältst du dich leise.');
+  await option(page, 'Richtig').click();
+  await expect(page.locator('.rule-sign')).toHaveClass(/judged richtig/);
+  await expect(page.locator('.rule-stamp')).toHaveText('✓');
+  await expect(page.locator('.quiz-show')).toHaveAttribute('aria-label', 'Im Wald verhältst du dich leise. Richtig.');
+  await expect(page.locator('.rules-card .scene-svg')).toHaveCount(0);
+});
+
+test('Waldregeln, stage 2: a wrong statement judged right is praised without "Richtig!" and struck through', async ({ page }) => {
   await startQuiz(page, 'rules', [{ stage: 2, key: 'pilze', dueAt: 0 }]);
   await option(page, 'Falsch').click();
   await expect(page.locator('.message')).toHaveText('Genau! Manche Pilze und Beeren sind giftig.');
-  // No rule of the six behind it: the sign stays alone.
-  await expect(page.locator('.rule-statement .scene-svg')).toHaveCount(0);
+  await expect(page.locator('.rule-sign')).toHaveClass(/judged falsch/);
+  await expect(page.locator('.rule-stamp')).toHaveText('✗');
+  await expect(page.locator('.quiz-show')).toHaveAttribute('aria-label', 'Pilze und Beeren darfst du in den Mund nehmen. Falsch.');
 });
 
 test('Waldregeln, stage 2: the speaker reads the statement on the sign, also after the help', async ({ page }) => {
