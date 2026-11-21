@@ -104,8 +104,12 @@ export function nightScene(): string {
   </svg>`;
 }
 
-/** Decorative sky layer behind the content: clouds, twinkling stars and sweets at the edges. */
-export function skyLayer(variant: 'dashboard' | 'game'): string {
+/**
+ * Decorative sky layer behind the content: clouds, twinkling stars and sweets at the edges.
+ * 'column' is for pages with the 900px content column: its sweets sit in the margins beside
+ * the column (the style sheet hides them where the column fills the screen).
+ */
+export function skyLayer(variant: 'dashboard' | 'column' | 'game'): string {
   const twinkle = (x: string, y: string, size: number, delay: number) =>
     `<span class="deco twinkle" style="left:${x};top:${y};width:${size}px;animation-delay:${delay}s">${plainStar()}</span>`;
   const item = (cls: string, x: string, y: string, size: number, svg: string, rot = 0) =>
@@ -118,13 +122,18 @@ export function skyLayer(variant: 'dashboard' | 'game'): string {
     twinkle('88%', '18%', 18, 1.2),
     twinkle('6%', '40%', 16, 0.6),
   ];
+  // Beside the column: 20px away from its edge (half the column is 450px; the candy is 90px wide).
+  const sweets =
+    variant === 'column'
+      ? { right: 'calc(50% + 470px)', left: 'calc(50% - 560px)' }
+      : { right: '86%', left: '4%' };
   const extra =
-    variant === 'dashboard'
+    variant !== 'game'
       ? [
           item('drift', '78%', '60%', 190, cloud()),
-          item('bob', '86%', '78%', 70, lollipop()),
-          item('bob late', '4%', '80%', 90, candy()),
-          item('bob', '90%', '44%', 60, cupcake(), 8),
+          item('bob', sweets.right, '78%', 70, lollipop()),
+          item('bob late', sweets.left, '80%', 90, candy()),
+          item('bob', variant === 'column' ? sweets.right : '90%', '44%', 60, cupcake(), 8),
           twinkle('60%', '90%', 20, 0.9),
           twinkle('40%', '70%', 14, 1.6),
         ]

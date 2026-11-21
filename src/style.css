@@ -108,6 +108,14 @@ button {
   }
 }
 
+/* The sweets need the free margin beside the 900px column; on narrower screens they would end up behind text and cards. */
+@media (max-width: 1139px) {
+  .dashboard .sky .bob,
+  .area-page .sky .bob {
+    display: none;
+  }
+}
+
 .dash-header,
 .area-header,
 .areas,
@@ -384,7 +392,12 @@ button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
+  gap: 0 14px;
+  /* An opaque card of its own: it closes the block above and keeps the sky decor from showing through the links. */
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: var(--card);
   font-size: 16px;
   color: var(--ink-soft);
 }
@@ -394,8 +407,43 @@ button {
   color: var(--ink);
 }
 
+/* Same line height as the links, whose padding spaces the wrapped lines. */
+.account-name,
+.sync-status {
+  padding: 6px 0;
+}
+
+.account-name:empty,
+.sync-status:empty {
+  display: none;
+}
+
 .account-bar .version {
   margin-left: auto;
+}
+
+/* Phones: name and status, the account links and the version each fill a centred line. */
+@media (max-width: 600px) {
+  .account-bar {
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* Forced line break after name and status, so no link ends up beside them. */
+  .account-bar::before {
+    content: '';
+    flex-basis: 100%;
+    order: 1;
+  }
+
+  .account-bar .link-button {
+    order: 2;
+  }
+
+  .account-bar .version {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
 }
 
 .link-button {

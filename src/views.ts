@@ -137,7 +137,7 @@ export function renderDashboard(app: HTMLElement, rerender: () => void): () => v
 
   app.className = 'dashboard';
   app.innerHTML = `
-    ${skyLayer('dashboard')}
+    ${skyLayer('column')}
     <header class="dash-header">
       <h1>${colorfulTitle(appTitle(account?.name))}</h1>
       <p class="greeting">Hallo${account ? ` ${escapeHtml(account.name)}` : ''}! Was möchtest du heute üben?</p>
@@ -266,7 +266,7 @@ export function renderArea(app: HTMLElement, area: Area): void {
   app.className = 'area-page';
   app.style.setProperty('--area', area.color);
   app.innerHTML = `
-    ${skyLayer('dashboard')}
+    ${skyLayer('column')}
     <header class="area-header">
       <a class="back-link" href="#/"><span class="back-arrow" aria-hidden="true">‹</span> Übersicht</a>
       <span class="area-candy big">${area.candy(area.color)}</span>

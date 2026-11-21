@@ -5,6 +5,17 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.9 – 2026-11-21
+
+### Geändert
+
+- **Übersicht: Kontozeile als eigene Karte:** Name, Speicherstatus, „Abmelden“, „Profil löschen“
+  und die Version stehen in einer weißen Karte unter der Bestenliste. Auf dem Handy bricht sie
+  in drei zentrierte Zeilen um.
+- **Schwebende Süßigkeiten nur noch am Rand:** Auf der Übersicht und den Bereichsseiten
+  schweben die Süßigkeiten neben der Inhaltsspalte und erscheinen erst ab 1140 px Breite. Auf
+  Handy und Tablet lagen sie hinter Text und Karten; dort bleiben Wolken und Sterne.
+
 ## 2026.11.8 – 2026-11-21
 
 ### Geändert
