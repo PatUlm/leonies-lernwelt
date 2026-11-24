@@ -27,6 +27,9 @@ function bool(v: unknown, fallback = false): boolean {
   return typeof v === 'boolean' ? v : fallback;
 }
 
+/** Tasks queued at most; a longer list keeps its newest ones. */
+const FORCED_MAX = 12;
+
 function list(v: unknown, max: number): unknown[] {
   return Array.isArray(v) ? v.slice(-max) : [];
 }
@@ -118,6 +121,19 @@ function catchUp(p: Progress): void {
   }
 }
 
+/**
+ * Typing a time got its "Minuten" key later. Who typed before sees it in an
+ * example of each typing track begun, before the next task – unless one is
+ * waiting there anyway.
+ */
+function showMinutesKey(p: Progress): void {
+  const missing = (['input', 'dayInput'] as const).filter(
+    (track) => p.tracks[track][0].unlocked && !p.forced.some((f) => f.type === 'example' && f.track === track),
+  );
+  // In front, and within the limit of what is stored: they are not cut off on the next load.
+  p.forced = [...missing.map((track): ForcedTask => ({ type: 'example', track, tier: 1, pick: 0 })), ...p.forced].slice(0, FORCED_MAX);
+}
+
 function contexts(v: unknown): DayContext[] {
   return Array.isArray(v) ? CONTEXTS.filter((c) => v.includes(c)) : [];
 }
@@ -159,7 +175,7 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
     correctTotal: num(raw.correctTotal, 0),
     tracks,
     reviewQueue: list(raw.reviewQueue, 12).map(reviewItem).filter((r): r is ReviewItem => r !== null),
-    forced: list(raw.forced, 12).map(forcedTask).filter((f): f is ForcedTask => f !== null),
+    forced: list(raw.forced, FORCED_MAX).map(forcedTask).filter((f): f is ForcedTask => f !== null),
     recent: list(raw.recent, 8).filter((r): r is string => typeof r === 'string' && /^\d{1,2}:\d{1,2}$/.test(r)),
     newestRun: num(raw.newestRun, 0),
     warmup: num(raw.warmup, 0, 0, 10),
@@ -178,8 +194,10 @@ export function sanitizeProgress(raw: unknown, now: number): Progress {
       daySet: contexts(shown.daySet),
       dayInput: contexts(shown.dayInput),
     },
+    minutesKeyShown: true,
   };
   if (raw.version === 1) catchUp(p);
+  if (raw.minutesKeyShown !== true) showMinutesKey(p);
   return p;
 }
 

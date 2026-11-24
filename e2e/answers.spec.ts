@@ -52,12 +52,31 @@ test('keys typed while the parents\' area is open do not type, delete or send th
     await page.locator('.dialog .btn.primary').click();
   };
 
-  await parents(() => page.keyboard.type('300'));
+  const digit = (d: string) => page.locator('.key-digit', { hasText: new RegExp(`^${d}$`) }).click();
+  const submit = page.locator('.key-submit');
+
+  await parents(async () => {
+    await page.keyboard.type('3');
+    await page.keyboard.press('Enter');
+  });
   await expect(page.locator('[data-field="hour"]')).toHaveText('–');
   await expect(page.locator('[data-field="minute"]')).toHaveText('––');
 
-  // The example's 3:00, typed on the pad: Backspace and Enter in the dialog leave it.
-  for (const d of '300') await page.locator('.key-digit', { hasText: new RegExp(`^${d}$`) }).click();
+  // The example's 3:00, typed on the pad: the hour, the "Minuten" key, both minute digits.
+  await expect(submit).toHaveText('Minuten');
+  await expect(submit).toBeDisabled();
+  await digit('3');
+  // A digit too many stays out of the hour field: the minutes have their own.
+  await digit('0');
+  await expect(page.locator('[data-field="hour"]')).toHaveText('3');
+  await expect(page.locator('[data-field="hour"]')).toHaveClass(/active/);
+  await submit.click();
+  await expect(page.locator('[data-field="minute"]')).toHaveClass(/active/);
+  await expect(submit).toHaveText('Fertig');
+  await expect(submit).toBeDisabled();
+  await digit('0');
+  await digit('0');
+  // Backspace and Enter in the dialog leave it.
   await parents(async () => {
     await page.keyboard.press('Backspace');
     await page.keyboard.press('Enter');
@@ -67,6 +86,84 @@ test('keys typed while the parents\' area is open do not type, delete or send th
   await expect(page.locator('.message')).not.toContainText('Genau!');
   await page.locator('.key-submit').click();
   await expect(page.locator('.message')).toContainText('Genau!');
+});
+
+test('typing 12:00 on a phone: every digit stays in its field, which can be corrected', async ({ page }) => {
+  await startDevice(page, { forced: [{ type: 'example', track: 'input', tier: 1, pick: 2 }] });
+  const hour = page.locator('[data-field="hour"]');
+  const minute = page.locator('[data-field="minute"]');
+  const submit = page.locator('.key-submit');
+  const digit = (d: string) => page.locator('.key-digit', { hasText: new RegExp(`^${d}$`) }).click();
+
+  for (const viewport of [{ width: 390, height: 844 }, { width: 375, height: 667 }, { width: 667, height: 375 }, { width: 1180, height: 820 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/#/mathe/uhr');
+    await page.reload();
+    await expect(page.locator('.message')).toHaveText('Es ist 12:00 Uhr. Tippe 12, dann auf „Minuten“ und 0 0.');
+    // Clock, fields and keys fit without scrolling; the word fits its key.
+    for (const selector of ['.clock', '.time-display', '.keypad', '.key-submit']) {
+      const box = (await page.locator(selector).boundingBox())!;
+      expect(box.y, selector).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height, selector).toBeLessThanOrEqual(viewport.height + 1);
+      expect(box.x + box.width, selector).toBeLessThanOrEqual(viewport.width + 1);
+    }
+    expect(await submit.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    expect((await page.locator('.key-digit').first().boundingBox())!.width).toBeGreaterThanOrEqual(44);
+  }
+
+  const steps: [string, string, string][] = [['1', '1', '––'], ['2', '12', '––'], ['0', '12', '––']];
+  for (const [d, h, m] of steps) {
+    await digit(d);
+    await expect(hour).toHaveText(h);
+    await expect(minute).toHaveText(m);
+  }
+  await submit.click();
+  await digit('3');
+  await digit('0');
+  await expect(minute).toHaveText('30');
+  // Correcting: backspace deletes in the minutes, from the empty field it goes back to the hour.
+  for (let i = 0; i < 3; i++) await page.locator('.key-back').click();
+  await expect(hour).toHaveClass(/active/);
+  await expect(hour).toHaveText('12');
+  await expect(submit).toHaveText('Minuten');
+  // A tap on a field makes it the active one.
+  await minute.click();
+  await expect(minute).toHaveClass(/active/);
+  await digit('0');
+  await digit('0');
+  await hour.click();
+  await expect(hour).toHaveClass(/active/);
+  await expect(minute).toHaveText('00');
+  // Enter is the key for the next step.
+  await page.waitForTimeout(1800);
+  await page.keyboard.press('Enter');
+  await expect(submit).toHaveText('Fertig');
+  // Minutes that do not exist are typed again; the explanation comes back with the next digit.
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.type('75');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.message')).toHaveText('12:75 gibt es nicht. Tippe die Minuten noch einmal.');
+  await expect(minute).toHaveText('––');
+  await expect(hour).toHaveAttribute('aria-label', 'Stunde: 12');
+  await page.keyboard.type('0');
+  await expect(page.locator('.message')).toContainText('Tippe 12, dann auf „Minuten“');
+  await page.keyboard.type('0');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.message')).toContainText('Genau!');
+});
+
+test('at a full hour the explanation marks the number the short hand points at, not the field after it', async ({ page }) => {
+  await startDevice(page, { forced: [{ type: 'example', track: 'digital', tier: 1, pick: 2 }] });
+  await openClock(page);
+  await expect(page.locator('.message')).toContainText('Es ist 12:00 Uhr.');
+  await expect(page.locator('.focus-hour-number')).toHaveCount(1);
+  await expect(page.locator('.focus-hour')).toHaveCount(0);
+  // Behind the 12, at the top of the dial.
+  const mark = (await page.locator('.focus-hour-number').boundingBox())!;
+  const twelve = (await page.locator('.clock-numbers text', { hasText: /^12$/ }).boundingBox())!;
+  expect(Math.abs(mark.x + mark.width / 2 - (twelve.x + twelve.width / 2))).toBeLessThan(3);
+  expect(Math.abs(mark.y + mark.height / 2 - (twelve.y + twelve.height / 2))).toBeLessThan(6);
 });
 
 test('a right choice stays green and greys out all other answers', async ({ page }) => {

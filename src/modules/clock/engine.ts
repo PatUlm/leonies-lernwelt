@@ -295,6 +295,8 @@ export interface Progress {
   dayMix: DayMix;
   /** Times of day whose example each time-of-day track has shown: only these are asked there. */
   contextsShown: Record<DayTrack, DayContext[]>;
+  /** Typing a time with the "Minuten" key has been shown, or is queued in `forced` (storage). */
+  minutesKeyShown: true;
 }
 
 export type TaskKind = 'example' | 'practice' | 'review' | 'easy';
@@ -386,6 +388,7 @@ export function freshProgress(now: number): Progress {
     trophies: 0,
     dayMix: { phase: 'off', since: 0, recent: [] },
     contextsShown: { daytime: [], daySet: [], dayInput: [] },
+    minutesKeyShown: true,
   };
 }
 

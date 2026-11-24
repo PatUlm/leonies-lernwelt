@@ -12,14 +12,18 @@ import {
   READY_MASTERY_BY_TRACK, SECURE_MASTERY, TRACK_TIERS, TRACKS, label, setStep,
   type AnswerResult, type GivenTime, type RoundSummary, type Task, type Track,
 } from './engine';
+import { backspace, complete, emptyEntry, toGiven, toHour, toMinutes, typeDigit, type TimeEntry } from './entry';
 import { capitalize, formatSpokenCapitalized, numberWord } from './german';
-import { confirmation, exampleMessage, helpText, withContext } from './hints';
+import { MINUTES_KEY_FIRST, confirmation, exampleMessage, helpText, withContext } from './hints';
 import { clearProgress, loadProgress, saveProgress } from './storage';
 import { BADGE_NAMES, TIER_NAMES, TRACK_NAMES, statsFromProgress, trackSecure } from './stats';
 import { TIERS, formatDaytime, formatDigital, wrapHour, type ClockTime, type Tier } from './time';
 
 const CORRECT_DELAY_MS = 1300;
 const STAR_DELAY_MS = 900;
+/** The key for the next step while typing a time: first on to the minutes, then send it. */
+const MINUTES_KEY = 'Minuten';
+const DONE_KEY = 'Fertig';
 
 const SCENES: Record<DayContext, () => string> = {
   afternoon: afternoonScene,
@@ -126,8 +130,10 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   document.addEventListener('visibilitychange', onVisibility);
   let buttons: HTMLButtonElement[] = [];
   let keypad: Keypad | null = null;
-  /** Typed digits, read like a digital clock: 3 digits = H:MM, 4 digits = HH:MM. */
-  let typed = '';
+  /** The typed time: the hour first, the minutes after the "Minuten" key. */
+  let entry = emptyEntry();
+  /** The message is about a typing slip (to the minutes with their key, no minute 75), until she goes on. */
+  let slipHint = false;
   let pendingToast: string | null = null;
   let afterFeedback: (() => void) | null = null;
   let round = newRoundStats();
@@ -289,45 +295,78 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function renderInput(): void {
-    typed = '';
+    entry = emptyEntry();
+    slipHint = false;
     const display = document.createElement('div');
     display.className = 'time-display';
-    display.innerHTML = '<span class="time-field" data-field="hour"></span><span class="time-colon">:</span><span class="time-field" data-field="minute"></span>';
+    display.innerHTML =
+      '<button type="button" class="time-field" data-field="hour"></button><span class="time-colon">:</span><button type="button" class="time-field" data-field="minute"></button>';
+    for (const [name, to] of [['hour', toHour], ['minute', toMinutes]] as const) {
+      display.querySelector(`[data-field="${name}"]`)!.addEventListener('click', (e) => {
+        // A tapped field does not keep the focus: Enter stays the key for the next step.
+        if ((e as MouseEvent).detail > 0) (e.currentTarget as HTMLElement).blur();
+        if (typing()) setEntry(to(entry));
+      });
+    }
+    // Enter on a field reached with the keyboard picks that field, and only that (the keypad listens on the document).
+    display.addEventListener('keydown', (e) => e.key === 'Enter' && e.stopPropagation());
     keypad = createKeypad({
-      onDigit: (d) => typeDigit(d),
-      onBackspace: () => {
-        if (shell.dialogOpen) return;
-        typed = typed.slice(0, -1);
-        updateDisplay();
-      },
-      onSubmit: onInputDone,
+      onDigit,
+      onBackspace: () => typing() && setEntry(backspace(entry)),
+      // One key for the next step: on to the minutes, then send the time.
+      onSubmit: () => (entry.field === 'hour' ? typing() && setEntry(toMinutes(entry)) : onInputDone()),
+      submitLabel: MINUTES_KEY,
+      wideSubmit: true,
     });
     ui.answers.replaceChildren(display, keypad.element);
     updateDisplay();
     showQuestion();
   }
 
-  /** Splits the typed digits into hour and minutes: "100" → 1:00, "1123" → 11:23. */
-  function typedParts(): { hour: string; minute: string } {
-    if (typed.length <= 2) return { hour: typed, minute: '' };
-    return { hour: typed.slice(0, typed.length - 2), minute: typed.slice(-2) };
+  /** The pad also listens to the keyboard: keys typed into a dialog (parents' area) are not answers. */
+  function typing(): boolean {
+    return phase === 'question' && shell.answersReady && !shell.dialogOpen;
   }
 
-  /** The pad also listens to the keyboard: keys typed into a dialog (parents' area) are not answers. */
-  function typeDigit(d: number): void {
-    if (phase !== 'question' || typed.length >= 4 || !shell.answersReady || shell.dialogOpen) return;
-    typed += String(d);
+  function onDigit(d: number): void {
+    if (!typing()) return;
+    const next = typeDigit(entry, d);
+    // A digit too many for the hour was meant for the minutes. An example keeps its explanation.
+    if (!next && entry.field === 'hour' && task.kind !== 'example') {
+      setMessage(MINUTES_KEY_FIRST, 'explain');
+      slipHint = true;
+    }
+    setEntry(next);
+  }
+
+  /** `next` is null for a step that does not fit: the key for the next step shows where to go on. */
+  function setEntry(next: TimeEntry | null): void {
+    if (!next) {
+      keypad?.nudgeSubmit();
+      return;
+    }
+    entry = next;
+    if (slipHint) {
+      // She goes on: back to the question, or to what the example explains.
+      slipHint = false;
+      if (task.kind === 'example') setMessage(exampleMessage(task.explanation ?? '', task.mode), 'explain');
+      else setMessage(questionText(), 'question');
+    }
     updateDisplay();
   }
 
   function updateDisplay(): void {
     const field = (name: 'hour' | 'minute') => ui.answers.querySelector<HTMLElement>(`[data-field="${name}"]`)!;
-    const { hour, minute } = typedParts();
-    field('hour').textContent = hour || '–';
-    field('minute').textContent = minute.padEnd(2, '–');
-    field('hour').classList.toggle('active', typed.length < 3);
-    field('minute').classList.toggle('active', typed.length >= 3 && typed.length < 4);
-    keypad?.setSubmitEnabled(typed.length >= 3);
+    field('hour').textContent = entry.hour || '–';
+    field('minute').textContent = entry.minute.padEnd(2, '–');
+    // What stands in a field and which one is typed into, also for a screen reader.
+    for (const [name, title, value] of [['hour', 'Stunde', entry.hour], ['minute', 'Minuten', entry.minute]] as const) {
+      field(name).classList.toggle('active', entry.field === name);
+      field(name).setAttribute('aria-label', `${title}: ${value || 'leer'}`);
+      field(name).setAttribute('aria-pressed', String(entry.field === name));
+    }
+    keypad?.setSubmitLabel(entry.field === 'hour' ? MINUTES_KEY : DONE_KEY);
+    keypad?.setSubmitEnabled(entry.field === 'hour' ? entry.hour !== '' : complete(entry));
   }
 
   function onChoice(index: number): void {
@@ -373,13 +412,13 @@ export function mountClockGame(root: HTMLElement, ctx: ModuleContext): () => voi
   }
 
   function onInputDone(): void {
-    if (phase !== 'question' || locked || typed.length < 3 || !shell.answersReady || shell.dialogOpen) return;
-    const parts = typedParts();
-    const given: GivenTime = { hour: Number(parts.hour), minute: Number(parts.minute) };
-    if (given.hour > 23 || given.minute > 59) {
-      // Not a time at all: a typing slip, not a reading mistake.
-      setMessage(`${parts.hour}:${parts.minute} gibt es nicht. Bitte noch einmal.`, 'explain');
-      typed = '';
+    if (locked || !typing() || !complete(entry)) return;
+    const given = toGiven(entry);
+    if (given.minute > 59) {
+      // Not a time at all: a typing slip, not a reading mistake. The hour stays, the minutes are typed again.
+      setMessage(`${entry.hour}:${entry.minute} gibt es nicht. Tippe die Minuten noch einmal.`, 'explain');
+      slipHint = true;
+      entry = { ...entry, minute: '' };
       updateDisplay();
       return;
     }

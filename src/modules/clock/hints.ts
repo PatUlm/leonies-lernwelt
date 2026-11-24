@@ -205,6 +205,17 @@ function setInstruction(t: ClockTime, hourOnly: boolean): string {
   return `${hands} Dann tippe auf „Fertig“.`;
 }
 
+/**
+ * How to type a time: the hour as a number, the key to the minutes, both minute
+ * digits one by one (a no-break space keeps them on one line).
+ */
+function typeInstruction(hour: number, minute: number): string {
+  return `Tippe ${hour}, dann auf „Minuten“ und ${[...String(minute).padStart(2, '0')].join(' ')}.`;
+}
+
+/** Typing on into the hour field: the minutes have their own field. */
+export const MINUTES_KEY_FIRST = 'Für die Minuten tippe zuerst auf „Minuten“.';
+
 /** The rule of a time of day in a daytime example, before the clock time it maps: why the hour is written that way. */
 const CONTEXT_EXAMPLE_RULES: Record<DayContext, string> = {
   afternoon: 'Nach zwölf Uhr mittags zählen wir weiter',
@@ -229,17 +240,14 @@ export function explainExample(task: TaskInfo): string {
     return `${setTarget(formatDaytime(t, hour24(task.context, hour)))} ${towardsClock(task.context, hour)} ${setInstruction(t, !!task.hourOnly)}`;
   }
   if (track === 'dayInput' && task.context) {
-    const written = `${hour24(task.context, hour)}:${String(minute).padStart(2, '0')}`;
-    const digits = [...written.replace(':', '')].join(' ');
-    return `${towards24(task.context, hour)} Tippe ${digits} – das ist ${written} Uhr.`;
+    return `${towards24(task.context, hour)} ${typeInstruction(hour24(task.context, hour), minute)}`;
   }
   if (track === 'set') {
     const target = task.context ? formatDaytime(t, hour24(task.context, hour)) : digital;
     return `${setTarget(target)} ${setInstruction(t, !!task.hourOnly)}`;
   }
   if (track === 'input') {
-    const digits = [...`${hour}${String(minute).padStart(2, '0')}`].join(' ');
-    return `Lies zuerst die Stunde, dann die Minuten: Es ist ${digital}. Tippe ${digits} – wie auf einer Digitaluhr.`;
+    return `Es ist ${digital}. ${typeInstruction(hour, minute)}`;
   }
   if (track === 'halb') {
     const diff = numberWord(Math.abs(30 - minute));

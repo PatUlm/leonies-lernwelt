@@ -606,6 +606,32 @@ button {
   opacity: 0.4;
 }
 
+/* A word on the submit key ("Minuten"): the right column is wider. */
+.keypad.wide-submit {
+  grid-template-columns: repeat(5, 1fr) 1.7fr;
+}
+
+/* A darker green than the tick's: the small word stays readable in white. */
+.keypad.wide-submit .key-submit {
+  background: #15803d;
+  border-color: #15803d;
+  box-shadow: 0 4px 0 #14532d;
+  padding: 0 2px;
+  font-size: clamp(17px, 2.2vw, 24px);
+}
+
+.key-submit.nudge {
+  animation: key-nudge 0.5s ease-in-out;
+}
+
+@keyframes key-nudge {
+  30%,
+  70% {
+    transform: scale(1.12);
+    box-shadow: 0 4px 0 #14532d, 0 0 0 5px rgba(22, 163, 74, 0.35);
+  }
+}
+
 /* ---------- learning areas ---------- */
 
 .areas {
@@ -1565,6 +1591,8 @@ a.area-card:active {
 }
 
 .time-field {
+  font: inherit;
+  color: inherit;
   min-width: 2.2em;
   padding: 4px 10px;
   border-radius: 14px;
@@ -1595,6 +1623,10 @@ a.area-card:active {
   .answers.mode-input .key {
     min-height: 42px;
     font-size: 22px;
+  }
+
+  .answers.mode-input .keypad.wide-submit .key-submit {
+    font-size: 17px;
   }
 }
 

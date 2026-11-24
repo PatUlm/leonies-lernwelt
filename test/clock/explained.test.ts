@@ -88,6 +88,30 @@ describe('only what was explained is asked: the clock', () => {
     expect(sanitizeProgress({ ...typing, version: 1 }, T0).forced).toEqual([{ type: 'example', track: 'input', tier: 1, pick: 2 }]);
   });
 
+  it('shows the "Minuten" key once to who typed times before it, in each typing track begun', () => {
+    const p = freshProgress(T0);
+    p.tracks.input[0].unlocked = true;
+    p.tracks.dayInput[0].unlocked = true;
+    p.forced = [{ type: 'easy' }];
+    const old = sanitizeProgress({ ...p, minutesKeyShown: undefined }, T0);
+    expect(old.forced).toEqual([
+      { type: 'example', track: 'input', tier: 1, pick: 0 },
+      { type: 'example', track: 'dayInput', tier: 1, pick: 0 },
+      { type: 'easy' },
+    ]);
+    // A full queue keeps them in front, also when loaded again before they were shown.
+    const full = sanitizeProgress({ ...p, forced: Array.from({ length: 11 }, () => ({ type: 'easy' })), minutesKeyShown: undefined }, T0);
+    expect(full.forced).toHaveLength(12);
+    expect(sanitizeProgress(JSON.parse(JSON.stringify(full)), T0).forced.slice(0, 2)).toEqual(old.forced.slice(0, 2));
+    // Saved again, it is not queued a second time.
+    expect(sanitizeProgress({ ...old, forced: [] }, T0).forced).toEqual([]);
+    // Typing not begun, or its example waiting anyway: nothing to catch up.
+    expect(sanitizeProgress({ ...freshProgress(T0), minutesKeyShown: undefined }, T0).forced).toEqual(freshProgress(T0).forced);
+    p.tracks.dayInput[0].unlocked = false;
+    p.forced = [{ type: 'example', track: 'input', tier: 1, pick: 2 }];
+    expect(sanitizeProgress({ ...p, minutesKeyShown: undefined }, T0).forced).toEqual(p.forced);
+  });
+
   it('brings a review with a time of day not yet explained there only after its example', () => {
     const p = freshProgress(T0);
     for (const track of ['digital', 'daytime', 'dayInput'] as const) for (const tier of [0, 1, 2]) Object.assign(p.tracks[track][tier], { unlocked: true, ready: true });

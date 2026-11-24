@@ -5,6 +5,22 @@ Alle nennenswerten Änderungen an Leonies Lernwelt. Das Format folgt
 Releases eine Kalenderversion `YYYY.MM.MICRO` (siehe [DEPLOY.md](DEPLOY.md)) und den
 Git-Tag `v<Version>`; ältere Einträge sind nach Datum gegliedert.
 
+## 2026.11.10 – 2026-11-24
+
+### Geändert
+
+- **Uhrzeit eintippen in zwei Schritten:** Erst die Stunde, dann die Taste „Minuten“, dann
+  beide Minutenziffern und „Fertig“. Jede Ziffer bleibt in dem Feld, in das sie getippt wurde;
+  ein Feld lässt sich antippen und mit ⌫ korrigieren. Vorher wanderten Ziffern beim Tippen
+  zwischen Stunde und Minuten („30“ im Stundenfeld bei 3:00). Wer schon Uhrzeiten getippt
+  hat, bekommt die neue Taste einmal in einem Beispiel gezeigt.
+
+### Behoben
+
+- **Volle Stunde: Zahl statt Feld markiert:** Steht der kurze Zeiger genau auf einer Zahl,
+  markiert die Erklärung diese Zahl. Bisher war das Feld bis zur nächsten Zahl blau, bei
+  12:00 Uhr also der Bereich von der 12 bis zur 1.
+
 ## 2026.11.9 – 2026-11-21
 
 ### Geändert

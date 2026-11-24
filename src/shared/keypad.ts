@@ -8,17 +8,22 @@ export interface KeypadOptions {
   onBackspace(): void;
   onSubmit(): void;
   submitLabel?: string;
+  /** A wider right column, for a word on the submit key. */
+  wideSubmit?: boolean;
 }
 
 export interface Keypad {
   element: HTMLElement;
   setSubmitEnabled(enabled: boolean): void;
+  setSubmitLabel(label: string): void;
+  /** Points to the submit key for a moment: it is the next step. */
+  nudgeSubmit(): void;
   setDisabled(disabled: boolean): void;
 }
 
 export function createKeypad(opts: KeypadOptions): Keypad {
   const el = document.createElement('div');
-  el.className = 'keypad';
+  el.className = opts.wideSubmit ? 'keypad wide-submit' : 'keypad';
   const button = (label: string, cls: string, aria: string, onClick: () => void) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -42,13 +47,27 @@ export function createKeypad(opts: KeypadOptions): Keypad {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
     if (/^\d$/.test(e.key)) opts.onDigit(Number(e.key));
     else if (e.key === 'Backspace') opts.onBackspace();
-    else if (e.key === 'Enter') opts.onSubmit();
+    else if (e.key === 'Enter') {
+      // Enter sends; it does not press the key tapped last as well (the space bar does that).
+      if (e.target instanceof Node && el.contains(e.target)) e.preventDefault();
+      opts.onSubmit();
+    }
   };
   document.addEventListener('keydown', onKey);
 
   return {
     element: el,
     setSubmitEnabled: (enabled) => (submit.disabled = !enabled),
+    setSubmitLabel: (label) => {
+      submit.textContent = label;
+      submit.setAttribute('aria-label', label);
+    },
+    nudgeSubmit: () => {
+      submit.classList.remove('nudge');
+      // Reading the size restarts the animation on a second nudge.
+      void submit.offsetWidth;
+      submit.classList.add('nudge');
+    },
     setDisabled: (disabled) => el.querySelectorAll('button').forEach((b) => (b.disabled = disabled)),
   };
 }

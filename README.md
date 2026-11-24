@@ -127,8 +127,9 @@ Zuschauen ist leichter als selbst machen – deshalb gibt es zwei weitere Arten 
   Beispiele nennen zuerst die Zieluhrzeit („Stelle die Uhr auf 7:55 Uhr.“), dann wohin die
   Zeiger gehören.
 - **Uhrzeit eintippen:** Die Uhr wird gezeigt, die Uhrzeit wird über eine große
-  Zifferntastatur eingetippt, z. B. „11:23“. Ohne Tageszeit sind 11:23 und 23:23 beide
-  richtig – die App zeigt dann, wie man es üblicherweise schreibt.
+  Zifferntastatur in zwei Felder eingetippt, z. B. „11:23“: erst die Stunde, dann die Taste
+  „Minuten“, dann beide Minutenziffern und „Fertig“. Ohne Tageszeit sind 11:23 und 23:23
+  beide richtig – die App zeigt dann, wie man es üblicherweise schreibt.
 
 Beides kommt nacheinander dazu, sobald die jeweilige Stufe beim Ablesen sitzt, und bringt
 10 Bonuspunkte. Nach einem Fehler gibt es wieder genau einen Hinweis, etwa „Der lange Zeiger

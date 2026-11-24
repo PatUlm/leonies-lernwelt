@@ -3,6 +3,7 @@ import { hour24 } from '../../src/modules/clock/daytime';
 import { Engine, TRACK_BONUS, freshProgress, type Task, type Track } from '../../src/modules/clock/engine';
 import { confirmation, dayInputHint, daySetHint, explainExample } from '../../src/modules/clock/hints';
 import { sanitizeProgress } from '../../src/modules/clock/storage';
+import { spokenGerman } from '../../src/shared/spoken';
 import { seeded } from '../rng';
 import { answerTask } from './answer';
 
@@ -62,7 +63,13 @@ describe('hints for 24-hour times', () => {
   it('confirms and explains with the 24-hour time', () => {
     expect(confirmation({ track: 'dayInput', time: { hour: 9, minute: 30 }, context: 'evening' })).toBe('21:30 Uhr – halb zehn am Abend.');
     expect(confirmation({ track: 'daySet', time: { hour: 3, minute: 0 }, context: 'afternoon' })).toBe('15:00 Uhr – drei Uhr am Nachmittag.');
-    expect(explainExample({ track: 'dayInput', time: { hour: 9, minute: 30 }, context: 'evening' })).toContain('Tippe 2 1 3 0');
+    expect(explainExample({ track: 'dayInput', time: { hour: 9, minute: 30 }, context: 'evening' })).toBe(
+      'Am Abend zählen wir nach zwölf weiter: 9 + 12 = 21. Tippe 21, dann auf „Minuten“ und 3 0.',
+    );
+    expect(explainExample({ track: 'dayInput', time: { hour: 12, minute: 30 }, context: 'night' })).toContain('Tippe 0, dann auf „Minuten“ und 3 0.');
+    expect(explainExample({ track: 'input', time: { hour: 3, minute: 0 } })).toBe('Es ist 3:00 Uhr. Tippe 3, dann auf „Minuten“ und 0 0.');
+    // Spoken, and looked up as a recording, with a plain space.
+    expect(spokenGerman(explainExample({ track: 'input', time: { hour: 3, minute: 0 } }))).toBe('Es ist 3 Uhr. Tippe 3, dann auf „Minuten“ und 0 0.');
     expect(explainExample({ track: 'daySet', time: { hour: 9, minute: 30 }, context: 'evening' })).toContain('21 − 12 = 9');
   });
 
