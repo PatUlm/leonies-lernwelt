@@ -1189,6 +1189,12 @@ a.area-card:active {
   fill: rgba(37, 99, 235, 0.18);
 }
 
+.focus-hour-number {
+  fill: rgba(37, 99, 235, 0.28);
+  stroke: rgba(37, 99, 235, 0.5);
+  stroke-width: 1.5;
+}
+
 .focus-minute {
   fill: none;
   stroke: var(--minute);

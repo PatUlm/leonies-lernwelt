@@ -205,7 +205,8 @@ Wiedererkennen. Im Elternbereich lässt sich das abschalten.
 ### Hilfe, wenn es hakt
 
 - Der **?-Knopf** blendet Hilfen an der Uhr ein: Minutenzahlen außen (05, 10, 15 …),
-  farbige Viertel und den Bereich, in dem der Stundenzeiger steht. Mit Hilfe gelöste
+  farbige Viertel und den Bereich, in dem der Stundenzeiger steht – bei einer vollen Stunde
+  die Zahl, auf die er zeigt. Mit Hilfe gelöste
   Aufgaben bringen halbe Punkte.
 - Nach einem Fehler erklärt die App genau **einen** Punkt, passend zum Fehler – zum
   Beispiel: „Der kurze Zeiger ist noch nicht bei der 4. Die Stunde ist noch 3.“

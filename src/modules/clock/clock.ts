@@ -20,6 +20,9 @@ function el<K extends keyof SVGElementTagNameMap>(
   return node;
 }
 
+/** Distance of the hour numbers from the centre. */
+const NUMBER_RADIUS = 66;
+
 function polar(angleDeg: number, r: number): [number, number] {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return [r * Math.cos(rad), r * Math.sin(rad)];
@@ -96,7 +99,7 @@ export class AnalogClock {
 
     const numbers = el('g', { class: 'clock-numbers' }, this.svg);
     for (let h = 1; h <= 12; h++) {
-      const [x, y] = polar(h * 30, 66);
+      const [x, y] = polar(h * 30, NUMBER_RADIUS);
       const text = el('text', { x, y, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, numbers);
       text.textContent = String(h);
     }
@@ -201,14 +204,18 @@ export class AnalogClock {
 
   /**
    * Visual focus for explanations: 'hour' tints the sector the hour hand is in,
-   * 'minute' draws the arc the minute hand has travelled from the 12.
+   * at a full hour the number it points at; 'minute' draws the arc the minute
+   * hand has travelled from the 12.
    */
   setFocus(focus: 'hour' | 'minute' | null, t?: ClockTime): void {
     this.focusLayer.replaceChildren();
     this.hourHand.classList.toggle('focused', focus === 'hour');
     this.minuteHand.classList.toggle('focused', focus === 'minute');
     if (!focus || !t) return;
-    if (focus === 'hour') {
+    if (focus === 'hour' && t.minute === 0) {
+      const [cx, cy] = polar((t.hour % 12) * 30, NUMBER_RADIUS);
+      el('circle', { cx, cy, r: 14, class: 'focus-hour-number' }, this.focusLayer);
+    } else if (focus === 'hour') {
       const start = (t.hour % 12) * 30;
       const [x1, y1] = polar(start, 92);
       const [x2, y2] = polar(start + 30, 92);
